@@ -10,11 +10,11 @@ export const metadata: Metadata = {
 export default function AdmissionsLoginPage() {
   return (
     <AuthShell
-      eyebrow="Admissions Login"
-      title="Sign in to continue your family admissions process."
-      description="Use your admissions email and password to continue with the next frontend-ready step of the parent registration journey."
-      footerPrompt="Need a new account?"
-      footerLinkLabel="Register here"
+      eyebrow="auth.login.eyebrow"
+      title="auth.login.title"
+      description="auth.login.description"
+      footerPrompt="auth.login.footer_prompt"
+      footerLinkLabel="auth.login.footer_link"
       footerHref="/admissions/register"
     >
       <LoginForm />

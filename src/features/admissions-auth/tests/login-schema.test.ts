@@ -11,8 +11,8 @@ describe("loginSchema", () => {
     expect(result.success).toBe(false);
 
     if (!result.success) {
-      expect(result.error.flatten().fieldErrors.email).toContain("Enter a valid email address.");
-      expect(result.error.flatten().fieldErrors.password).toContain("Password is required.");
+      expect(result.error.flatten().fieldErrors.email).toContain("validation.email.invalid");
+      expect(result.error.flatten().fieldErrors.password).toContain("validation.login.password_required");
     }
   });
 });
