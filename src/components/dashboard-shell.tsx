@@ -1,9 +1,15 @@
+"use client";
+
 import Link from "next/link";
+import LanguageToggle from "@/components/language-toggle";
 import ThemeToggle from "@/components/theme-toggle";
+import { useI18n } from "@/i18n";
 import {
-  DashboardConfig,
-  DashboardRole,
+  type DashboardConfig,
+  type DashboardRole,
   dashboardRoles,
+  type PriorityId,
+  type StatusId,
 } from "@/lib/dashboard-data";
 
 type DashboardShellProps = {
@@ -11,37 +17,63 @@ type DashboardShellProps = {
 };
 
 const roleLabelMap: Record<DashboardRole, string> = {
-  student: "Student",
-  parent: "Parent",
-  staff: "Staff/Admin",
+  student: "dashboard.roles.student",
+  parent: "dashboard.roles.parent",
+  staff: "dashboard.roles.staff",
 };
 
-function statusClassName(status: string): string {
-  if (status === "Excellent" || status === "On Track" || status === "Improving") {
+const statusLabelMap: Record<StatusId, string> = {
+  excellent: "dashboard.status.excellent",
+  improving: "dashboard.status.improving",
+  needs_review: "dashboard.status.needs_review",
+  attention_needed: "dashboard.status.attention_needed",
+  watchlist: "dashboard.status.watchlist",
+  on_track: "dashboard.status.on_track",
+  at_risk: "dashboard.status.at_risk",
+  delayed: "dashboard.status.delayed",
+};
+
+const priorityLabelMap: Record<PriorityId, string> = {
+  high: "common.priority.high",
+  medium: "common.priority.medium",
+  low: "common.priority.low",
+};
+
+function statusClassName(status: StatusId): string {
+  if (status === "excellent" || status === "on_track" || status === "improving") {
     return "status-pill status-positive";
   }
 
-  if (status === "At Risk" || status === "Delayed" || status === "Watchlist") {
+  if (status === "at_risk" || status === "delayed" || status === "watchlist") {
     return "status-pill status-negative";
   }
 
   return "status-pill status-neutral";
 }
 
-function priorityClassName(priority: string): string {
-  if (priority === "High") {
+function priorityClassName(priority: PriorityId): string {
+  if (priority === "high") {
     return "priority-chip priority-high";
   }
 
-  if (priority === "Low") {
+  if (priority === "low") {
     return "priority-chip priority-low";
   }
 
   return "priority-chip priority-medium";
 }
 
+function renderCell(key: string | undefined, text: string | undefined, t: (key: string, values?: Record<string, string | number>) => string) {
+  if (key) {
+    return t(key);
+  }
+
+  return text ?? "";
+}
+
 export default function DashboardShell({ config }: DashboardShellProps) {
-  const todayLabel = new Intl.DateTimeFormat("en-GB", {
+  const { language, t } = useI18n();
+  const todayLabel = new Intl.DateTimeFormat(language === "id" ? "id-ID" : "en-GB", {
     weekday: "long",
     day: "2-digit",
     month: "long",
@@ -55,14 +87,15 @@ export default function DashboardShell({ config }: DashboardShellProps) {
         <header className="brand-header mb-6 flex flex-col gap-4 rounded-3xl p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--ds-primary)]">
-              TWSI Digital School
+              {t("common.brand.twsi")}
             </p>
             <h1 className="mt-1 text-2xl font-semibold text-[var(--ds-text-primary)] sm:text-3xl">
-              Role-Based Dashboard Suite
+              {t("dashboard.shell.title")}
             </h1>
             <p className="mt-2 text-sm text-[var(--ds-text-secondary)]">{todayLabel}</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
+            <LanguageToggle />
             <ThemeToggle />
             {dashboardRoles.map((role) => (
               <Link
@@ -74,14 +107,14 @@ export default function DashboardShell({ config }: DashboardShellProps) {
                     : "border-[var(--ds-border)] bg-[var(--ds-surface)] text-[var(--ds-text-primary)] hover:bg-[var(--ds-highlight)] hover:text-[#0e1b2a]"
                 }`}
               >
-                {roleLabelMap[role]}
+                {t(roleLabelMap[role])}
               </Link>
             ))}
             <Link
               href="/"
               className="rounded-full border border-[var(--ds-border)] bg-[var(--ds-surface)] px-4 py-2 text-sm font-semibold text-[var(--ds-text-primary)] transition hover:border-[var(--ds-primary)]"
             >
-              Home
+              {t("common.navigation.home")}
             </Link>
           </div>
         </header>
@@ -89,15 +122,15 @@ export default function DashboardShell({ config }: DashboardShellProps) {
         <div className="grid gap-6 lg:grid-cols-[260px_1fr]">
           <aside className="surface-card h-fit rounded-3xl p-5 sm:p-6">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--ds-text-secondary)]">
-              {config.roleLabel}
+              {t(config.roleLabelKey)}
             </p>
-            <h2 className="mt-2 text-xl font-semibold text-[var(--ds-text-primary)]">{config.title}</h2>
-            <p className="mt-2 text-sm leading-relaxed text-[var(--ds-text-secondary)]">{config.subtitle}</p>
+            <h2 className="mt-2 text-xl font-semibold text-[var(--ds-text-primary)]">{t(config.titleKey)}</h2>
+            <p className="mt-2 text-sm leading-relaxed text-[var(--ds-text-secondary)]">{t(config.subtitleKey)}</p>
 
             <nav className="mt-6 space-y-2">
               {config.navItems.map((item) => (
                 <button
-                  key={item.label}
+                  key={item.labelKey}
                   type="button"
                   className={`w-full rounded-xl px-3 py-2 text-left text-sm font-semibold transition ${
                     item.active
@@ -105,7 +138,7 @@ export default function DashboardShell({ config }: DashboardShellProps) {
                       : "text-[var(--ds-text-primary)] hover:bg-[var(--ds-soft)]"
                   }`}
                 >
-                  {item.label}
+                  {t(item.labelKey)}
                 </button>
               ))}
             </nav>
@@ -114,54 +147,53 @@ export default function DashboardShell({ config }: DashboardShellProps) {
           <main className="space-y-6">
             <section className="hero-panel rounded-3xl p-5 sm:p-7">
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--ds-primary)]">
-                Unified Portal Experience
+                {t("dashboard.shell.experience_eyebrow")}
               </p>
               <h2 className="mt-2 text-2xl font-semibold text-[var(--ds-text-primary)] sm:text-3xl">
-                {config.roleLabel}
+                {t(config.roleLabelKey)}
               </h2>
               <p className="mt-3 max-w-3xl text-sm leading-relaxed text-[var(--ds-text-secondary)]">
-                Built on the roadmap architecture: persona-driven queries, attendance and learning aggregation,
-                communication alerts, and finance visibility from one consistent UX layer.
+                {t("dashboard.shell.experience_description")}
               </p>
               <div className="mt-5 flex flex-wrap gap-3">
                 <button type="button" className="cta-primary rounded-xl px-4 py-2 text-sm font-semibold">
-                  Open Reports
+                  {t("common.actions.open_reports")}
                 </button>
                 <button
                   type="button"
                   className="rounded-xl border border-[var(--ds-border)] bg-[var(--ds-surface)] px-4 py-2 text-sm font-semibold text-[var(--ds-text-primary)]"
                 >
-                  View Calendar
+                  {t("common.actions.view_calendar")}
                 </button>
               </div>
             </section>
 
             <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
               {config.metrics.map((metric) => (
-                <article key={metric.label} className="surface-card rounded-2xl p-4 sm:p-5">
+                <article key={metric.labelKey} className="surface-card rounded-2xl p-4 sm:p-5">
                   <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--ds-text-secondary)]">
-                    {metric.label}
+                    {t(metric.labelKey)}
                   </p>
                   <p className="mt-2 text-2xl font-semibold text-[var(--ds-text-primary)]">{metric.value}</p>
-                  <p className="mt-2 text-sm text-[var(--ds-primary)]">{metric.trend}</p>
+                  <p className="mt-2 text-sm text-[var(--ds-primary)]">{t(metric.trendKey)}</p>
                 </article>
               ))}
             </section>
 
             <section className="grid gap-6 xl:grid-cols-[1.3fr_1fr]">
               <article className="surface-card rounded-3xl p-5 sm:p-6">
-                <h3 className="text-lg font-semibold text-[var(--ds-text-primary)]">Learning & Operations Pulse</h3>
+                <h3 className="text-lg font-semibold text-[var(--ds-text-primary)]">{t("dashboard.shell.learning_pulse_title")}</h3>
                 <p className="mt-1 text-sm text-[var(--ds-text-secondary)]">
-                  Metrics aligned with roadmap dashboard aggregation contracts.
+                  {t("dashboard.shell.learning_pulse_description")}
                 </p>
                 <div className="mt-5 space-y-4">
                   {config.progress.map((item) => {
                     const width = `${Math.min(100, Math.round((item.value / item.max) * 100))}%`;
 
                     return (
-                      <div key={item.label}>
+                      <div key={item.labelKey}>
                         <div className="mb-2 flex items-baseline justify-between gap-3">
-                          <p className="text-sm font-semibold text-[var(--ds-text-primary)]">{item.label}</p>
+                          <p className="text-sm font-semibold text-[var(--ds-text-primary)]">{t(item.labelKey)}</p>
                           <p className="text-sm font-semibold text-[var(--ds-accent)]">
                             {item.value}/{item.max}
                           </p>
@@ -173,7 +205,7 @@ export default function DashboardShell({ config }: DashboardShellProps) {
                             aria-hidden="true"
                           />
                         </div>
-                        <p className="mt-2 text-xs text-[var(--ds-text-secondary)]">{item.helper}</p>
+                        <p className="mt-2 text-xs text-[var(--ds-text-secondary)]">{t(item.helperKey)}</p>
                       </div>
                     );
                   })}
@@ -181,16 +213,16 @@ export default function DashboardShell({ config }: DashboardShellProps) {
               </article>
 
               <article className="surface-card rounded-3xl p-5 sm:p-6">
-                <h3 className="text-lg font-semibold text-[var(--ds-text-primary)]">Alerts & Action Queue</h3>
-                <p className="mt-1 text-sm text-[var(--ds-text-secondary)]">Prioritized from communication and event rules.</p>
+                <h3 className="text-lg font-semibold text-[var(--ds-text-primary)]">{t("dashboard.shell.alerts_title")}</h3>
+                <p className="mt-1 text-sm text-[var(--ds-text-secondary)]">{t("dashboard.shell.alerts_description")}</p>
                 <div className="mt-4 space-y-3">
                   {config.alerts.map((alert) => (
-                    <div key={alert.title} className="rounded-2xl border border-[var(--ds-border)] p-4">
+                    <div key={alert.titleKey} className="rounded-2xl border border-[var(--ds-border)] p-4">
                       <div className="flex items-center justify-between gap-3">
-                        <p className="text-sm font-semibold text-[var(--ds-text-primary)]">{alert.title}</p>
-                        <span className={priorityClassName(alert.priority)}>{alert.priority}</span>
+                        <p className="text-sm font-semibold text-[var(--ds-text-primary)]">{t(alert.titleKey)}</p>
+                        <span className={priorityClassName(alert.priority)}>{t(priorityLabelMap[alert.priority])}</span>
                       </div>
-                      <p className="mt-2 text-sm leading-relaxed text-[var(--ds-text-secondary)]">{alert.detail}</p>
+                      <p className="mt-2 text-sm leading-relaxed text-[var(--ds-text-secondary)]">{t(alert.detailKey)}</p>
                     </div>
                   ))}
                 </div>
@@ -199,15 +231,15 @@ export default function DashboardShell({ config }: DashboardShellProps) {
 
             <section className="grid gap-6 xl:grid-cols-[1fr_1.2fr]">
               <article className="surface-card rounded-3xl p-5 sm:p-6">
-                <h3 className="text-lg font-semibold text-[var(--ds-text-primary)]">Today Schedule</h3>
-                <p className="mt-1 text-sm text-[var(--ds-text-secondary)]">Asia/Jakarta timezone schedule stream.</p>
+                <h3 className="text-lg font-semibold text-[var(--ds-text-primary)]">{t("dashboard.shell.schedule_title")}</h3>
+                <p className="mt-1 text-sm text-[var(--ds-text-secondary)]">{t("dashboard.shell.schedule_description")}</p>
                 <div className="mt-4 space-y-3">
                   {config.schedule.map((item) => (
-                    <div key={`${item.time}-${item.title}`} className="flex gap-3 rounded-2xl border border-[var(--ds-border)] p-4">
+                    <div key={`${item.time}-${item.titleKey}`} className="flex gap-3 rounded-2xl border border-[var(--ds-border)] p-4">
                       <div className="w-16 shrink-0 text-sm font-semibold text-[var(--ds-primary)]">{item.time}</div>
                       <div>
-                        <p className="text-sm font-semibold text-[var(--ds-text-primary)]">{item.title}</p>
-                        <p className="mt-1 text-xs text-[var(--ds-text-secondary)]">{item.meta}</p>
+                        <p className="text-sm font-semibold text-[var(--ds-text-primary)]">{t(item.titleKey)}</p>
+                        <p className="mt-1 text-xs text-[var(--ds-text-secondary)]">{t(item.metaKey)}</p>
                       </div>
                     </div>
                   ))}
@@ -216,35 +248,39 @@ export default function DashboardShell({ config }: DashboardShellProps) {
 
               <article className="surface-card rounded-3xl p-5 sm:p-6">
                 <div className="mb-3 flex items-center justify-between gap-3">
-                  <h3 className="text-lg font-semibold text-[var(--ds-text-primary)]">{config.tableTitle}</h3>
+                  <h3 className="text-lg font-semibold text-[var(--ds-text-primary)]">{t(config.tableTitleKey)}</h3>
                   <span className="rounded-full bg-[var(--ds-soft)] px-3 py-1 text-xs font-semibold text-[var(--ds-text-primary)]">
-                    Live Aggregation
+                    {t("dashboard.shell.live_aggregation")}
                   </span>
                 </div>
                 <div className="overflow-x-auto">
                   <table className="min-w-full border-separate border-spacing-y-2">
                     <thead>
                       <tr>
-                        {config.tableColumns.map((column) => (
+                        {config.tableColumnKeys.map((columnKey) => (
                           <th
-                            key={column}
+                            key={columnKey}
                             className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ds-text-secondary)]"
                           >
-                            {column}
+                            {t(columnKey)}
                           </th>
                         ))}
                       </tr>
                     </thead>
                     <tbody>
-                      {config.tableRows.map((row) => (
-                        <tr key={`${row.columnA}-${row.columnB}`} className="bg-[var(--ds-soft)]/45">
+                      {config.tableRows.map((row, index) => (
+                        <tr key={`${config.role}-${index}`} className="bg-[var(--ds-soft)]/45">
                           <td className="rounded-l-xl px-3 py-3 text-sm font-semibold text-[var(--ds-text-primary)]">
-                            {row.columnA}
+                            {renderCell(row.columnAKey, row.columnA, t)}
                           </td>
-                          <td className="px-3 py-3 text-sm text-[var(--ds-text-primary)]">{row.columnB}</td>
-                          <td className="px-3 py-3 text-sm text-[var(--ds-text-primary)]">{row.columnC}</td>
+                          <td className="px-3 py-3 text-sm text-[var(--ds-text-primary)]">
+                            {renderCell(row.columnBKey, row.columnB, t)}
+                          </td>
+                          <td className="px-3 py-3 text-sm text-[var(--ds-text-primary)]">
+                            {renderCell(row.columnCKey, row.columnC, t)}
+                          </td>
                           <td className="rounded-r-xl px-3 py-3">
-                            <span className={statusClassName(row.status)}>{row.status}</span>
+                            <span className={statusClassName(row.status)}>{t(statusLabelMap[row.status])}</span>
                           </td>
                         </tr>
                       ))}

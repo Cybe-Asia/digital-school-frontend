@@ -1,230 +1,239 @@
 export type DashboardRole = "student" | "parent" | "staff";
+export type PriorityId = "high" | "medium" | "low";
+export type StatusId =
+  | "excellent"
+  | "improving"
+  | "needs_review"
+  | "attention_needed"
+  | "watchlist"
+  | "on_track"
+  | "at_risk"
+  | "delayed";
 
 export type NavItem = {
-  label: string;
+  labelKey: string;
   active?: boolean;
 };
 
 export type Metric = {
-  label: string;
+  labelKey: string;
   value: string;
-  trend: string;
+  trendKey: string;
 };
 
 export type ProgressItem = {
-  label: string;
+  labelKey: string;
   value: number;
   max: number;
-  helper: string;
+  helperKey: string;
 };
 
 export type AlertItem = {
-  title: string;
-  detail: string;
-  priority: "High" | "Medium" | "Low";
+  titleKey: string;
+  detailKey: string;
+  priority: PriorityId;
 };
 
 export type ScheduleItem = {
   time: string;
-  title: string;
-  meta: string;
+  titleKey: string;
+  metaKey: string;
 };
 
 export type TableRow = {
-  columnA: string;
-  columnB: string;
-  columnC: string;
-  status: string;
+  columnA?: string;
+  columnAKey?: string;
+  columnB?: string;
+  columnBKey?: string;
+  columnC?: string;
+  columnCKey?: string;
+  status: StatusId;
 };
 
 export type DashboardConfig = {
   role: DashboardRole;
-  roleLabel: string;
-  title: string;
-  subtitle: string;
+  roleLabelKey: string;
+  titleKey: string;
+  subtitleKey: string;
   navItems: NavItem[];
   metrics: Metric[];
   progress: ProgressItem[];
   alerts: AlertItem[];
   schedule: ScheduleItem[];
-  tableTitle: string;
-  tableColumns: [string, string, string, string];
+  tableTitleKey: string;
+  tableColumnKeys: [string, string, string, string];
   tableRows: TableRow[];
 };
 
 export const dashboardData: Record<DashboardRole, DashboardConfig> = {
   student: {
     role: "student",
-    roleLabel: "Student Portal",
-    title: "Learning Command Center",
-    subtitle:
-      "Track assignments, grades, attendance, and upcoming live classes from one dashboard.",
+    roleLabelKey: "dashboard.student.role_label",
+    titleKey: "dashboard.student.title",
+    subtitleKey: "dashboard.student.subtitle",
     navItems: [
-      { label: "Dashboard", active: true },
-      { label: "My Learning" },
-      { label: "Assignments" },
-      { label: "Attendance" },
-      { label: "Live Sessions" },
-      { label: "Messages" },
-      { label: "Finance" },
+      { labelKey: "dashboard.student.nav.dashboard", active: true },
+      { labelKey: "dashboard.student.nav.learning" },
+      { labelKey: "dashboard.student.nav.assignments" },
+      { labelKey: "dashboard.student.nav.attendance" },
+      { labelKey: "dashboard.student.nav.live_sessions" },
+      { labelKey: "dashboard.student.nav.messages" },
+      { labelKey: "dashboard.student.nav.finance" },
     ],
     metrics: [
-      { label: "Active Courses", value: "6", trend: "+1 this term" },
-      { label: "Assignments Due", value: "3", trend: "2 due this week" },
-      { label: "Attendance", value: "94%", trend: "+2% vs last month" },
-      { label: "Outstanding Invoice", value: "Rp 1.250.000", trend: "Due 10 Mar" },
+      { labelKey: "dashboard.student.metrics.active_courses.label", value: "6", trendKey: "dashboard.student.metrics.active_courses.trend" },
+      { labelKey: "dashboard.student.metrics.assignments_due.label", value: "3", trendKey: "dashboard.student.metrics.assignments_due.trend" },
+      { labelKey: "dashboard.student.metrics.attendance.label", value: "94%", trendKey: "dashboard.student.metrics.attendance.trend" },
+      { labelKey: "dashboard.student.metrics.outstanding_invoice.label", value: "Rp 1.250.000", trendKey: "dashboard.student.metrics.outstanding_invoice.trend" },
     ],
     progress: [
-      { label: "Math Grade Average", value: 82, max: 100, helper: "Aligned with roadmap KPI" },
-      { label: "Science Completion", value: 76, max: 100, helper: "3 modules remaining" },
-      { label: "Quran Studies", value: 91, max: 100, helper: "On track for distinction" },
+      { labelKey: "dashboard.student.progress.math_average.label", value: 82, max: 100, helperKey: "dashboard.student.progress.math_average.helper" },
+      { labelKey: "dashboard.student.progress.science_completion.label", value: 76, max: 100, helperKey: "dashboard.student.progress.science_completion.helper" },
+      { labelKey: "dashboard.student.progress.quran_studies.label", value: 91, max: 100, helperKey: "dashboard.student.progress.quran_studies.helper" },
     ],
     alerts: [
-      {
-        title: "Physics Quiz Deadline",
-        detail: "Submit Quiz 4 before Friday, 20:00 WIB.",
-        priority: "High",
-      },
-      {
-        title: "Attendance Reminder",
-        detail: "No absence records this week. Keep the streak.",
-        priority: "Low",
-      },
-      {
-        title: "Payment Notice",
-        detail: "Tuition invoice #INV-0287 is waiting for payment.",
-        priority: "Medium",
-      },
+      { titleKey: "dashboard.student.alerts.physics_quiz.title", detailKey: "dashboard.student.alerts.physics_quiz.detail", priority: "high" },
+      { titleKey: "dashboard.student.alerts.attendance_reminder.title", detailKey: "dashboard.student.alerts.attendance_reminder.detail", priority: "low" },
+      { titleKey: "dashboard.student.alerts.payment_notice.title", detailKey: "dashboard.student.alerts.payment_notice.detail", priority: "medium" },
     ],
     schedule: [
-      { time: "08:00", title: "Live Math Session", meta: "Class 10A · Room Virtual-2" },
-      { time: "10:30", title: "Arabic Assignment Review", meta: "Mentor: Ust. Rafi" },
-      { time: "13:15", title: "Science Lab Discussion", meta: "Project Team B" },
-      { time: "15:00", title: "Tahfidz Checkpoint", meta: "Weekly progress sync" },
+      { time: "08:00", titleKey: "dashboard.student.schedule.live_math.title", metaKey: "dashboard.student.schedule.live_math.meta" },
+      { time: "10:30", titleKey: "dashboard.student.schedule.arabic_review.title", metaKey: "dashboard.student.schedule.arabic_review.meta" },
+      { time: "13:15", titleKey: "dashboard.student.schedule.science_discussion.title", metaKey: "dashboard.student.schedule.science_discussion.meta" },
+      { time: "15:00", titleKey: "dashboard.student.schedule.tahfidz.title", metaKey: "dashboard.student.schedule.tahfidz.meta" },
     ],
-    tableTitle: "Recent Grades",
-    tableColumns: ["Subject", "Latest Score", "Teacher", "Status"],
+    tableTitleKey: "dashboard.student.table.title",
+    tableColumnKeys: [
+      "dashboard.student.table.columns.subject",
+      "dashboard.student.table.columns.latest_score",
+      "dashboard.student.table.columns.teacher",
+      "dashboard.student.table.columns.status",
+    ],
     tableRows: [
-      { columnA: "Mathematics", columnB: "84", columnC: "Ms. Dina", status: "Improving" },
-      { columnA: "Science", columnB: "79", columnC: "Mr. Arif", status: "Needs Review" },
-      { columnA: "English", columnB: "88", columnC: "Ms. Nita", status: "Excellent" },
-      { columnA: "Quran Studies", columnB: "93", columnC: "Ust. Fikri", status: "Excellent" },
+      { columnAKey: "dashboard.student.table.rows.mathematics.subject", columnB: "84", columnC: "Ms. Dina", status: "improving" },
+      { columnAKey: "dashboard.student.table.rows.science.subject", columnB: "79", columnC: "Mr. Arif", status: "needs_review" },
+      { columnAKey: "dashboard.student.table.rows.english.subject", columnB: "88", columnC: "Ms. Nita", status: "excellent" },
+      { columnAKey: "dashboard.student.table.rows.quran.subject", columnB: "93", columnC: "Ust. Fikri", status: "excellent" },
     ],
   },
   parent: {
     role: "parent",
-    roleLabel: "Parent Portal",
-    title: "Family Learning Overview",
-    subtitle:
-      "Monitor child progress, assignments, tuition, and school communications in one place.",
+    roleLabelKey: "dashboard.parent.role_label",
+    titleKey: "dashboard.parent.title",
+    subtitleKey: "dashboard.parent.subtitle",
     navItems: [
-      { label: "Dashboard", active: true },
-      { label: "Children" },
-      { label: "Learning Progress" },
-      { label: "Attendance" },
-      { label: "Payments" },
-      { label: "Announcements" },
-      { label: "Messages" },
+      { labelKey: "dashboard.parent.nav.dashboard", active: true },
+      { labelKey: "dashboard.parent.nav.children" },
+      { labelKey: "dashboard.parent.nav.learning_progress" },
+      { labelKey: "dashboard.parent.nav.attendance" },
+      { labelKey: "dashboard.parent.nav.payments" },
+      { labelKey: "dashboard.parent.nav.announcements" },
+      { labelKey: "dashboard.parent.nav.messages" },
     ],
     metrics: [
-      { label: "Linked Students", value: "2", trend: "Aisha & Rayyan" },
-      { label: "Average Attendance", value: "92%", trend: "Stable this month" },
-      { label: "Upcoming Assignments", value: "5", trend: "Across all children" },
-      { label: "Tuition Due", value: "Rp 2.400.000", trend: "2 invoices pending" },
+      { labelKey: "dashboard.parent.metrics.linked_students.label", value: "2", trendKey: "dashboard.parent.metrics.linked_students.trend" },
+      { labelKey: "dashboard.parent.metrics.average_attendance.label", value: "92%", trendKey: "dashboard.parent.metrics.average_attendance.trend" },
+      { labelKey: "dashboard.parent.metrics.upcoming_assignments.label", value: "5", trendKey: "dashboard.parent.metrics.upcoming_assignments.trend" },
+      { labelKey: "dashboard.parent.metrics.tuition_due.label", value: "Rp 2.400.000", trendKey: "dashboard.parent.metrics.tuition_due.trend" },
     ],
     progress: [
-      { label: "Aisha Academic Progress", value: 87, max: 100, helper: "Top 15% in class" },
-      { label: "Rayyan Assignment Completion", value: 72, max: 100, helper: "2 tasks overdue" },
-      { label: "Family Payment Completion", value: 68, max: 100, helper: "Target full payment by Mar 12" },
+      { labelKey: "dashboard.parent.progress.aisha_progress.label", value: 87, max: 100, helperKey: "dashboard.parent.progress.aisha_progress.helper" },
+      { labelKey: "dashboard.parent.progress.rayyan_completion.label", value: 72, max: 100, helperKey: "dashboard.parent.progress.rayyan_completion.helper" },
+      { labelKey: "dashboard.parent.progress.family_payment.label", value: 68, max: 100, helperKey: "dashboard.parent.progress.family_payment.helper" },
     ],
     alerts: [
-      {
-        title: "Overdue Tuition Reminder",
-        detail: "Invoice #INV-0304 is 4 days overdue.",
-        priority: "High",
-      },
-      {
-        title: "Parent-Teacher Meeting",
-        detail: "Meeting slot opens tomorrow at 09:00 WIB.",
-        priority: "Medium",
-      },
-      {
-        title: "New School Announcement",
-        detail: "Ramadan schedule adjustment has been published.",
-        priority: "Low",
-      },
+      { titleKey: "dashboard.parent.alerts.overdue_tuition.title", detailKey: "dashboard.parent.alerts.overdue_tuition.detail", priority: "high" },
+      { titleKey: "dashboard.parent.alerts.parent_teacher.title", detailKey: "dashboard.parent.alerts.parent_teacher.detail", priority: "medium" },
+      { titleKey: "dashboard.parent.alerts.school_announcement.title", detailKey: "dashboard.parent.alerts.school_announcement.detail", priority: "low" },
     ],
     schedule: [
-      { time: "09:00", title: "Payment Follow-up Window", meta: "Finance Office" },
-      { time: "11:00", title: "Teacher Consultation", meta: "Aisha · Mathematics" },
-      { time: "14:00", title: "Assignment Checkpoint", meta: "Rayyan · Science" },
-      { time: "16:30", title: "School Broadcast", meta: "Weekly parent bulletin" },
+      { time: "09:00", titleKey: "dashboard.parent.schedule.payment_followup.title", metaKey: "dashboard.parent.schedule.payment_followup.meta" },
+      { time: "11:00", titleKey: "dashboard.parent.schedule.teacher_consultation.title", metaKey: "dashboard.parent.schedule.teacher_consultation.meta" },
+      { time: "14:00", titleKey: "dashboard.parent.schedule.assignment_checkpoint.title", metaKey: "dashboard.parent.schedule.assignment_checkpoint.meta" },
+      { time: "16:30", titleKey: "dashboard.parent.schedule.school_broadcast.title", metaKey: "dashboard.parent.schedule.school_broadcast.meta" },
     ],
-    tableTitle: "Child Performance Snapshot",
-    tableColumns: ["Child", "Focus Area", "Current Result", "Status"],
+    tableTitleKey: "dashboard.parent.table.title",
+    tableColumnKeys: [
+      "dashboard.parent.table.columns.child",
+      "dashboard.parent.table.columns.focus_area",
+      "dashboard.parent.table.columns.current_result",
+      "dashboard.parent.table.columns.status",
+    ],
     tableRows: [
-      { columnA: "Aisha", columnB: "Math Average", columnC: "89", status: "Excellent" },
-      { columnA: "Aisha", columnB: "Attendance", columnC: "96%", status: "Excellent" },
-      { columnA: "Rayyan", columnB: "Science Tasks", columnC: "72%", status: "Attention Needed" },
-      { columnA: "Rayyan", columnB: "Attendance", columnC: "88%", status: "Watchlist" },
+      { columnA: "Aisha", columnBKey: "dashboard.parent.table.rows.aisha_math.focus_area", columnC: "89", status: "excellent" },
+      { columnA: "Aisha", columnBKey: "dashboard.parent.table.rows.aisha_attendance.focus_area", columnC: "96%", status: "excellent" },
+      { columnA: "Rayyan", columnBKey: "dashboard.parent.table.rows.rayyan_science.focus_area", columnC: "72%", status: "attention_needed" },
+      { columnA: "Rayyan", columnBKey: "dashboard.parent.table.rows.rayyan_attendance.focus_area", columnC: "88%", status: "watchlist" },
     ],
   },
   staff: {
     role: "staff",
-    roleLabel: "Staff/Admin Portal",
-    title: "Operations & Academic Control",
-    subtitle:
-      "Oversee student lifecycle, academic operations, attendance, finance, and communication performance.",
+    roleLabelKey: "dashboard.staff.role_label",
+    titleKey: "dashboard.staff.title",
+    subtitleKey: "dashboard.staff.subtitle",
     navItems: [
-      { label: "Dashboard", active: true },
-      { label: "Student Management" },
-      { label: "Academic Calendar" },
-      { label: "Attendance" },
-      { label: "Finance" },
-      { label: "Admissions" },
-      { label: "Reports" },
+      { labelKey: "dashboard.staff.nav.dashboard", active: true },
+      { labelKey: "dashboard.staff.nav.student_management" },
+      { labelKey: "dashboard.staff.nav.academic_calendar" },
+      { labelKey: "dashboard.staff.nav.attendance" },
+      { labelKey: "dashboard.staff.nav.finance" },
+      { labelKey: "dashboard.staff.nav.admissions" },
+      { labelKey: "dashboard.staff.nav.reports" },
     ],
     metrics: [
-      { label: "Active Students", value: "1,248", trend: "+34 this semester" },
-      { label: "Classes Today", value: "46", trend: "5 with live sessions" },
-      { label: "Attendance Violations", value: "18", trend: "-6 vs last week" },
-      { label: "Overdue Invoices", value: "73", trend: "Collection rate 91%" },
+      { labelKey: "dashboard.staff.metrics.active_students.label", value: "1,248", trendKey: "dashboard.staff.metrics.active_students.trend" },
+      { labelKey: "dashboard.staff.metrics.classes_today.label", value: "46", trendKey: "dashboard.staff.metrics.classes_today.trend" },
+      { labelKey: "dashboard.staff.metrics.attendance_violations.label", value: "18", trendKey: "dashboard.staff.metrics.attendance_violations.trend" },
+      { labelKey: "dashboard.staff.metrics.overdue_invoices.label", value: "73", trendKey: "dashboard.staff.metrics.overdue_invoices.trend" },
     ],
     progress: [
-      { label: "Grade Sync Integrity", value: 99, max: 100, helper: "No reconciliation drift" },
-      { label: "Admissions Conversion", value: 64, max: 100, helper: "Phase 1 target: 70%" },
-      { label: "Report SLA Completion", value: 83, max: 100, helper: "17 reports pending approval" },
+      { labelKey: "dashboard.staff.progress.grade_sync.label", value: 99, max: 100, helperKey: "dashboard.staff.progress.grade_sync.helper" },
+      { labelKey: "dashboard.staff.progress.admissions_conversion.label", value: 64, max: 100, helperKey: "dashboard.staff.progress.admissions_conversion.helper" },
+      { labelKey: "dashboard.staff.progress.report_sla.label", value: 83, max: 100, helperKey: "dashboard.staff.progress.report_sla.helper" },
     ],
     alerts: [
-      {
-        title: "High Priority Attendance Cluster",
-        detail: "Class 8B crossed absentee threshold this week.",
-        priority: "High",
-      },
-      {
-        title: "Finance Escalation",
-        detail: "11 invoices are entering aging bucket 30+ days.",
-        priority: "High",
-      },
-      {
-        title: "Admissions Task Queue",
-        detail: "24 candidates awaiting document verification.",
-        priority: "Medium",
-      },
+      { titleKey: "dashboard.staff.alerts.attendance_cluster.title", detailKey: "dashboard.staff.alerts.attendance_cluster.detail", priority: "high" },
+      { titleKey: "dashboard.staff.alerts.finance_escalation.title", detailKey: "dashboard.staff.alerts.finance_escalation.detail", priority: "high" },
+      { titleKey: "dashboard.staff.alerts.admissions_queue.title", detailKey: "dashboard.staff.alerts.admissions_queue.detail", priority: "medium" },
     ],
     schedule: [
-      { time: "07:30", title: "Morning Operations Brief", meta: "Staff room sync" },
-      { time: "10:00", title: "Attendance Exception Review", meta: "Counselor + Homeroom" },
-      { time: "13:00", title: "Finance Reconciliation Check", meta: "Gateway status + aging" },
-      { time: "15:30", title: "Daily Reporting Cutoff", meta: "Generate admin summary" },
+      { time: "07:30", titleKey: "dashboard.staff.schedule.operations_brief.title", metaKey: "dashboard.staff.schedule.operations_brief.meta" },
+      { time: "10:00", titleKey: "dashboard.staff.schedule.attendance_review.title", metaKey: "dashboard.staff.schedule.attendance_review.meta" },
+      { time: "13:00", titleKey: "dashboard.staff.schedule.finance_check.title", metaKey: "dashboard.staff.schedule.finance_check.meta" },
+      { time: "15:30", titleKey: "dashboard.staff.schedule.reporting_cutoff.title", metaKey: "dashboard.staff.schedule.reporting_cutoff.meta" },
     ],
-    tableTitle: "Operational Queue",
-    tableColumns: ["Process", "Owner", "SLA", "Status"],
+    tableTitleKey: "dashboard.staff.table.title",
+    tableColumnKeys: [
+      "dashboard.staff.table.columns.process",
+      "dashboard.staff.table.columns.owner",
+      "dashboard.staff.table.columns.sla",
+      "dashboard.staff.table.columns.status",
+    ],
     tableRows: [
-      { columnA: "Grade Sync Verification", columnB: "Academic Ops", columnC: "Today 17:00", status: "On Track" },
-      { columnA: "Invoice Aging Escalation", columnB: "Finance Team", columnC: "Today 14:00", status: "At Risk" },
-      { columnA: "Admissions Review Batch", columnB: "Admissions Team", columnC: "Tomorrow 10:00", status: "On Track" },
-      { columnA: "Attendance Audit Export", columnB: "Discipline Unit", columnC: "Today 16:00", status: "Delayed" },
+      {
+        columnAKey: "dashboard.staff.table.rows.grade_sync.process",
+        columnBKey: "dashboard.staff.table.rows.grade_sync.owner",
+        columnCKey: "dashboard.staff.table.rows.grade_sync.sla",
+        status: "on_track",
+      },
+      {
+        columnAKey: "dashboard.staff.table.rows.invoice_aging.process",
+        columnBKey: "dashboard.staff.table.rows.invoice_aging.owner",
+        columnCKey: "dashboard.staff.table.rows.invoice_aging.sla",
+        status: "at_risk",
+      },
+      {
+        columnAKey: "dashboard.staff.table.rows.admissions_review.process",
+        columnBKey: "dashboard.staff.table.rows.admissions_review.owner",
+        columnCKey: "dashboard.staff.table.rows.admissions_review.sla",
+        status: "on_track",
+      },
+      {
+        columnAKey: "dashboard.staff.table.rows.attendance_audit.process",
+        columnBKey: "dashboard.staff.table.rows.attendance_audit.owner",
+        columnCKey: "dashboard.staff.table.rows.attendance_audit.sla",
+        status: "delayed",
+      },
     ],
   },
 };
