@@ -531,6 +531,14 @@ h4 {
   transform: translateY(-1px);
 }
 
+.theme-toggle-icon {
+  transition:
+    border-color 140ms ease,
+    transform 120ms ease,
+    background-color 220ms ease,
+    color 220ms ease;
+}
+
 @media (max-width: 639px) {
   .theme-select {
     min-width: 100%;
