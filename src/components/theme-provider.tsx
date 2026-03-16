@@ -1,26 +1,27 @@
 "use client";
 
-import { createContext, useContext, useMemo, useState, type ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
+import { create } from "zustand";
 
 export type ThemeMode = "light" | "dark";
 export type ThemePalette = "option1" | "option2" | "option3" | "option4" | "option5";
 export type ThemeId = `${ThemePalette}-${ThemeMode}`;
 
 type ThemeState = {
+  hydrated: boolean;
   palette: ThemePalette;
   mode: ThemeMode;
-};
-
-type ThemeContextValue = {
-  mode: ThemeMode;
-  palette: ThemePalette;
   themeId: ThemeId;
-  setPalette: (palette: ThemePalette) => void;
+  hydrate: () => void;
+  setMode: (mode: ThemeMode) => void;
   toggleMode: () => void;
+  setPalette: (palette: ThemePalette) => void;
 };
 
 const STORAGE_KEY = "ds-theme-id";
 const DEFAULT_PALETTE: ThemePalette = "option2";
+const DEFAULT_MODE: ThemeMode = "light";
+const DEFAULT_THEME_ID: ThemeId = `${DEFAULT_PALETTE}-${DEFAULT_MODE}`;
 
 export const paletteOptions: Array<{ id: ThemePalette; label: string }> = [
   { id: "option1", label: "Option 1 · Modern Islamic Minimal" },
@@ -30,21 +31,19 @@ export const paletteOptions: Array<{ id: ThemePalette; label: string }> = [
   { id: "option5", label: "Option 5 · Youth Islamic Contemporary" },
 ];
 
-const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
+function toThemeId(palette: ThemePalette, mode: ThemeMode): ThemeId {
+  return `${palette}-${mode}`;
+}
 
 function detectSystemMode(): ThemeMode {
   if (typeof window === "undefined") {
-    return "light";
+    return DEFAULT_MODE;
   }
 
   return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
 }
 
-function toThemeId(state: ThemeState): ThemeId {
-  return `${state.palette}-${state.mode}`;
-}
-
-function parseThemeId(value: string | null | undefined): ThemeState | null {
+function parseThemeId(value: string | null | undefined): ThemeId | null {
   if (!value) {
     return null;
   }
@@ -55,31 +54,36 @@ function parseThemeId(value: string | null | undefined): ThemeState | null {
     return null;
   }
 
-  return {
-    palette: match[1] as ThemePalette,
-    mode: match[2] as ThemeMode,
-  };
+  return `${match[1] as ThemePalette}-${match[2] as ThemeMode}`;
 }
 
-function applyTheme(state: ThemeState): void {
+function applyTheme(themeId: ThemeId): void {
   if (typeof document === "undefined") {
     return;
   }
 
-  document.documentElement.dataset.theme = toThemeId(state);
+  document.documentElement.dataset.theme = themeId;
 }
 
-function saveTheme(state: ThemeState): void {
+function readStoredThemeId(): ThemeId | null {
   try {
-    localStorage.setItem(STORAGE_KEY, toThemeId(state));
+    return parseThemeId(localStorage.getItem(STORAGE_KEY));
   } catch {
-    // Ignore storage failures (private mode, blocked storage).
+    return null;
   }
 }
 
-function getInitialState(): ThemeState {
+function saveThemeId(themeId: ThemeId): void {
+  try {
+    localStorage.setItem(STORAGE_KEY, themeId);
+  } catch {
+    // Ignore blocked storage.
+  }
+}
+
+function getInitialThemeId(): ThemeId {
   if (typeof document === "undefined") {
-    return { palette: DEFAULT_PALETTE, mode: "light" };
+    return DEFAULT_THEME_ID;
   }
 
   const fromDom = parseThemeId(document.documentElement.dataset.theme);
@@ -87,72 +91,69 @@ function getInitialState(): ThemeState {
     return fromDom;
   }
 
-  let stored: string | null = null;
-  try {
-    stored = localStorage.getItem(STORAGE_KEY);
-  } catch {
-    stored = null;
-  }
-
-  const fromStorage = parseThemeId(stored);
+  const fromStorage = readStoredThemeId();
   if (fromStorage) {
-    applyTheme(fromStorage);
     return fromStorage;
   }
 
-  const fallback: ThemeState = {
-    palette: DEFAULT_PALETTE,
-    mode: detectSystemMode(),
-  };
-
-  applyTheme(fallback);
-  return fallback;
+  return toThemeId(DEFAULT_PALETTE, detectSystemMode());
 }
+
+function splitThemeId(themeId: ThemeId): { palette: ThemePalette; mode: ThemeMode } {
+  const [palette, mode] = themeId.split("-") as [ThemePalette, ThemeMode];
+  return { palette, mode };
+}
+
+export const useTheme = create<ThemeState>((set, get) => {
+  const initialThemeId = getInitialThemeId();
+  const initialState = splitThemeId(initialThemeId);
+
+  return {
+    hydrated: false,
+    palette: initialState.palette,
+    mode: initialState.mode,
+    themeId: initialThemeId,
+    hydrate: () => {
+      const storedThemeId = readStoredThemeId();
+      const themeId = storedThemeId ?? parseThemeId(document.documentElement.dataset.theme) ?? DEFAULT_THEME_ID;
+      const nextState = splitThemeId(themeId);
+
+      applyTheme(themeId);
+
+      set({
+        hydrated: true,
+        palette: nextState.palette,
+        mode: nextState.mode,
+        themeId,
+      });
+    },
+    setMode: (mode) => {
+      const { palette } = get();
+      const themeId = toThemeId(palette, mode);
+      applyTheme(themeId);
+      saveThemeId(themeId);
+      set({ mode, themeId });
+    },
+    toggleMode: () => {
+      const { mode, setMode } = get();
+      setMode(mode === "dark" ? "light" : "dark");
+    },
+    setPalette: (palette) => {
+      const { mode } = get();
+      const themeId = toThemeId(palette, mode);
+      applyTheme(themeId);
+      saveThemeId(themeId);
+      set({ palette, themeId });
+    },
+  };
+});
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [state, setState] = useState<ThemeState>(getInitialState);
+  const hydrate = useTheme((state) => state.hydrate);
 
-  const value = useMemo<ThemeContextValue>(() => {
-    const setPalette = (palette: ThemePalette) => {
-      setState((previous) => {
-        const next: ThemeState = { ...previous, palette };
-        applyTheme(next);
-        saveTheme(next);
-        return next;
-      });
-    };
+  useEffect(() => {
+    hydrate();
+  }, [hydrate]);
 
-    const toggleMode = () => {
-      setState((previous) => {
-        const next: ThemeState = {
-          ...previous,
-          mode: previous.mode === "dark" ? "light" : "dark",
-        };
-
-        applyTheme(next);
-        saveTheme(next);
-        return next;
-      });
-    };
-
-    return {
-      mode: state.mode,
-      palette: state.palette,
-      themeId: toThemeId(state),
-      setPalette,
-      toggleMode,
-    };
-  }, [state]);
-
-  return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
-}
-
-export function useTheme(): ThemeContextValue {
-  const context = useContext(ThemeContext);
-
-  if (!context) {
-    throw new Error("useTheme must be used within ThemeProvider.");
-  }
-
-  return context;
+  return children;
 }
