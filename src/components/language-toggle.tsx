@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useI18n } from "@/i18n";
 import { cn } from "@/shared/lib/cn";
 
@@ -30,6 +31,16 @@ function IndonesiaFlag() {
 
 export default function LanguageToggle({ className }: LanguageToggleProps) {
   const { language, setLanguage, t } = useI18n();
+  const router = useRouter();
+
+  const handleSetLanguage = (nextLanguage: "en" | "id") => {
+    if (nextLanguage === language) {
+      return;
+    }
+
+    setLanguage(nextLanguage);
+    router.refresh();
+  };
 
   return (
     <div
@@ -47,7 +58,7 @@ export default function LanguageToggle({ className }: LanguageToggleProps) {
             ? "bg-[var(--ds-primary)] text-[var(--ds-on-primary)]"
             : "text-[var(--ds-text-primary)] hover:bg-[var(--ds-soft)]"
         }`}
-        onClick={() => setLanguage("en")}
+        onClick={() => handleSetLanguage("en")}
       >
         <EnglishFlag />
         EN
@@ -59,7 +70,7 @@ export default function LanguageToggle({ className }: LanguageToggleProps) {
             ? "bg-[var(--ds-primary)] text-[var(--ds-on-primary)]"
             : "text-[var(--ds-text-primary)] hover:bg-[var(--ds-soft)]"
         }`}
-        onClick={() => setLanguage("id")}
+        onClick={() => handleSetLanguage("id")}
       >
         <IndonesiaFlag />
         ID

@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import { GoogleCallbackContent } from "@/features/admissions-auth/presentation/components/google-callback-content";
+import { getSingleSearchParam, type SearchParamsRecord } from "@/shared/lib/search-params";
 
 export const metadata: Metadata = {
   title: "Google Login Callback | Cybe Digital School",
@@ -7,15 +9,25 @@ export const metadata: Metadata = {
 };
 
 type GoogleCallbackPageProps = {
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
+  searchParams: Promise<SearchParamsRecord>;
 };
+
+function getSafeReturnTo(value: string | undefined): string | undefined {
+  if (!value || !value.startsWith("/")) {
+    return undefined;
+  }
+
+  return value;
+}
 
 export default async function GoogleCallbackPage({ searchParams }: GoogleCallbackPageProps) {
   const params = await searchParams;
-  const errorParam = params.error;
-  const returnToParam = params.returnTo;
-  const error = Array.isArray(errorParam) ? errorParam[0] : errorParam;
-  const returnTo = Array.isArray(returnToParam) ? returnToParam[0] : returnToParam;
+  const error = getSingleSearchParam(params.error) ?? undefined;
+  const returnTo = getSafeReturnTo(getSingleSearchParam(params.returnTo) ?? undefined);
+
+  if (!error && returnTo) {
+    redirect(returnTo);
+  }
 
   return <GoogleCallbackContent error={error} returnTo={returnTo} />;
 }

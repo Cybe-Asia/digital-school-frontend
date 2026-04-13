@@ -1,15 +1,24 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import DashboardShell from "@/components/dashboard-shell";
-import { getDashboardConfig } from "@/lib/dashboard-data";
+import { getDashboardConfig, getParentAdmissionsContextFromSearchParams } from "@/lib/dashboard-data";
 import en from "@/i18n/translations/en.json";
 
 type DashboardPageProps = {
   params: Promise<{ role: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
 
-export async function generateMetadata({ params }: DashboardPageProps): Promise<Metadata> {
+export async function generateMetadata({ params }: Pick<DashboardPageProps, "params">): Promise<Metadata> {
   const { role } = await params;
+
+  if (role === "staff") {
+    return {
+      title: en["admissions.admin.metadata_title"],
+      description: en["admissions.admin.metadata_description"],
+    };
+  }
+
   const config = getDashboardConfig(role);
 
   if (!config) {
@@ -27,9 +36,16 @@ export async function generateMetadata({ params }: DashboardPageProps): Promise<
   };
 }
 
-export default async function DashboardPage({ params }: DashboardPageProps) {
+export default async function DashboardPage({ params, searchParams }: DashboardPageProps) {
   const { role } = await params;
-  const config = getDashboardConfig(role);
+
+  if (role === "staff") {
+    redirect("/admin/admissions");
+  }
+
+  const query = await searchParams;
+  const parentAdmissionsContext = role === "parent" ? getParentAdmissionsContextFromSearchParams(query) : null;
+  const config = getDashboardConfig(role, parentAdmissionsContext);
 
   if (!config) {
     notFound();

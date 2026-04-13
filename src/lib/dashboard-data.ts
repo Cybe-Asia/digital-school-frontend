@@ -1,3 +1,6 @@
+import type { AdmissionsStudentProfile, SchoolCode } from "@/features/admissions-auth/domain/types";
+import { getSingleSearchParam, type SearchParamsRecord } from "@/shared/lib/search-params";
+
 export type DashboardRole = "student" | "parent" | "staff";
 export type PriorityId = "high" | "medium" | "low";
 export type StatusId =
@@ -13,6 +16,10 @@ export type StatusId =
 export type NavItem = {
   labelKey: string;
   active?: boolean;
+  href?: string;
+  descriptionKey?: string;
+  descriptionValues?: TranslationValues;
+  badge?: string;
 };
 
 export type Metric = {
@@ -50,6 +57,70 @@ export type TableRow = {
   status: StatusId;
 };
 
+export type TranslationValues = Record<string, string | number>;
+
+export type ParentPortalSummaryCard = {
+  labelKey: string;
+  value: string;
+  helperKey: string;
+  helperValues?: TranslationValues;
+};
+
+export type ParentPortalStudentCard = {
+  studentName: string;
+  currentSchool: string;
+  targetGrade: string;
+  studentBirthDate?: string;
+  status: StatusId;
+  statusLabelKey: string;
+  progress: number;
+  stageLabelKey: string;
+  documentStatusKey: string;
+  nextActionLabelKey: string;
+  nextActionValues?: TranslationValues;
+  nextActionDetailKey: string;
+  nextActionDetailValues?: TranslationValues;
+  actionLabelKey: string;
+};
+
+export type ParentPortalAction = {
+  titleKey: string;
+  titleValues?: TranslationValues;
+  detailKey: string;
+  detailValues?: TranslationValues;
+  priority: PriorityId;
+  ctaLabelKey: string;
+};
+
+export type ParentPortalTimelineStep = {
+  titleKey: string;
+  titleValues?: TranslationValues;
+  detailKey: string;
+  detailValues?: TranslationValues;
+  state: "complete" | "active" | "upcoming";
+};
+
+export type ParentPortalExperience = {
+  summaryCards: ParentPortalSummaryCard[];
+  studentCards: ParentPortalStudentCard[];
+  actions: ParentPortalAction[];
+  timeline: ParentPortalTimelineStep[];
+  schoolShortName: string;
+  paymentSummary: {
+    amount: string;
+    statusKey: string;
+    helperKey: string;
+    helperValues?: TranslationValues;
+    ctaLabelKey: string;
+  };
+  updates: Array<{
+    titleKey: string;
+    detailKey: string;
+    detailValues?: TranslationValues;
+    tagKey: string;
+  }>;
+};
+
 export type DashboardConfig = {
   role: DashboardRole;
   roleLabelKey: string;
@@ -63,7 +134,25 @@ export type DashboardConfig = {
   tableTitleKey: string;
   tableColumnKeys: [string, string, string, string];
   tableRows: TableRow[];
+  admissionsContext?: ParentAdmissionsContext;
+  parentPortal?: ParentPortalExperience;
 };
+
+export type ParentAdmissionsContext = {
+  parentName: string;
+  email: string;
+  school: SchoolCode;
+  students: AdmissionsStudentProfile[];
+  studentName: string;
+  currentSchool: string;
+  targetGrade: string;
+  hasExistingStudents: "yes" | "no";
+  existingChildrenCount?: number;
+  locationSuburb: string;
+  notes?: string;
+};
+
+export type DashboardSearchParams = SearchParamsRecord;
 
 export const dashboardData: Record<DashboardRole, DashboardConfig> = {
   student: {
@@ -240,10 +329,426 @@ export const dashboardData: Record<DashboardRole, DashboardConfig> = {
 
 export const dashboardRoles: DashboardRole[] = ["student", "parent", "staff"];
 
-export function getDashboardConfig(role: string): DashboardConfig | null {
-  if (role === "student" || role === "parent" || role === "staff") {
+export function getDashboardConfig(role: string, admissionsContext?: ParentAdmissionsContext | null): DashboardConfig | null {
+  if (role === "student" || role === "staff") {
     return dashboardData[role];
   }
 
+  if (role === "parent") {
+    return admissionsContext ? createParentAdmissionsDashboard(admissionsContext) : dashboardData.parent;
+  }
+
   return null;
+}
+
+export function getParentAdmissionsContextFromSearchParams(searchParams: DashboardSearchParams): ParentAdmissionsContext | null {
+  const parentName = getSingleSearchParam(searchParams.parentName);
+  const email = getSingleSearchParam(searchParams.email);
+  const school = getSingleSearchParam(searchParams.school);
+  const studentsValue = getSingleSearchParam(searchParams.students);
+  const studentName = getSingleSearchParam(searchParams.studentName);
+  const currentSchool = getSingleSearchParam(searchParams.currentSchool);
+  const targetGrade = getSingleSearchParam(searchParams.targetGrade);
+  const hasExistingStudents = getSingleSearchParam(searchParams.hasExistingStudents);
+  const locationSuburb = getSingleSearchParam(searchParams.locationSuburb);
+  const notes = getSingleSearchParam(searchParams.notes);
+  const existingChildrenCountValue = getSingleSearchParam(searchParams.existingChildrenCount);
+  const students = parseAdmissionsStudents(studentsValue) ?? parseLegacyAdmissionsStudent(studentName, currentSchool, targetGrade);
+
+  if (!parentName || !email || !locationSuburb || !students?.length) {
+    return null;
+  }
+
+  if ((school !== "iihs" && school !== "iiss") || (hasExistingStudents !== "yes" && hasExistingStudents !== "no")) {
+    return null;
+  }
+
+  const primaryStudent = students[0];
+  const existingChildrenCount =
+    existingChildrenCountValue && Number.isFinite(Number(existingChildrenCountValue))
+      ? Number(existingChildrenCountValue)
+      : undefined;
+
+  return {
+    parentName,
+    email,
+    school,
+    students,
+    studentName: primaryStudent.studentName,
+    currentSchool: primaryStudent.currentSchool,
+    targetGrade: primaryStudent.targetGrade,
+    hasExistingStudents,
+    existingChildrenCount,
+    locationSuburb,
+    notes: notes ?? undefined,
+  };
+}
+
+function createParentAdmissionsDashboard(context: ParentAdmissionsContext): DashboardConfig {
+  const primaryStudent = context.students[0];
+  const linkedStudents = context.hasExistingStudents === "yes" ? (context.existingChildrenCount ?? 0) + context.students.length : context.students.length;
+  const attendanceValue = getAttendanceValue(primaryStudent.targetGrade);
+  const assignmentCount = linkedStudents > 1 ? "5" : "3";
+  const tuitionDue = context.school === "iihs" ? "Rp 2.400.000" : "Rp 2.100.000";
+  const schoolName = context.school === "iihs" ? "IIHS" : "IISS";
+  const additionalStudents = linkedStudents - 1;
+  const siblingLabel = additionalStudents > 0 ? `${primaryStudent.studentName} + ${additionalStudents} sibling${additionalStudents > 1 ? "s" : ""}` : primaryStudent.studentName;
+  const parentPortal = buildParentPortalExperience(context, schoolName);
+
+  return {
+    ...dashboardData.parent,
+    navItems: buildParentPortalNavItems(context),
+    subtitleKey: buildAdmissionsSubtitle(primaryStudent.studentName, context.students.length),
+    metrics: [
+      { labelKey: "dashboard.parent.metrics.linked_students.label", value: String(linkedStudents), trendKey: siblingLabel },
+      { labelKey: "dashboard.parent.metrics.average_attendance.label", value: attendanceValue, trendKey: `Readiness snapshot for ${primaryStudent.studentName}` },
+      { labelKey: "dashboard.parent.metrics.upcoming_assignments.label", value: assignmentCount, trendKey: `${primaryStudent.studentName} onboarding tasks` },
+      { labelKey: "dashboard.parent.metrics.tuition_due.label", value: tuitionDue, trendKey: `${schoolName} admissions invoice` },
+    ],
+    progress: [
+      { labelKey: `${primaryStudent.studentName} enrollment readiness`, value: 84, max: 100, helperKey: `Target grade ${toReadableGrade(primaryStudent.targetGrade)} at ${schoolName}` },
+      { labelKey: `${primaryStudent.studentName} placement checklist`, value: 72, max: 100, helperKey: `Current school: ${primaryStudent.currentSchool}` },
+      { labelKey: "Family onboarding completion", value: linkedStudents > 1 ? 78 : 66, max: 100, helperKey: `Parent account owner: ${context.parentName}` },
+    ],
+    alerts: [
+      { titleKey: `${primaryStudent.studentName} file is ready for review`, detailKey: `Admissions has the EOI, OTP verification, and additional details from ${context.parentName}.`, priority: "high" },
+      { titleKey: "Welcome call pending confirmation", detailKey: `Use ${context.email} for the first parent onboarding call in ${context.locationSuburb}.`, priority: "medium" },
+      { titleKey: `${schoolName} orientation notice`, detailKey: `${primaryStudent.studentName} is queued for the next ${schoolName} orientation update.`, priority: "low" },
+    ],
+    schedule: [
+      { time: "09:00", titleKey: "Admissions document review", metaKey: `${primaryStudent.studentName} · ${toReadableGrade(primaryStudent.targetGrade)}` },
+      { time: "11:00", titleKey: "Parent onboarding call", metaKey: `${context.parentName} · ${context.email}` },
+      { time: "14:00", titleKey: "Placement readiness check", metaKey: `${primaryStudent.currentSchool}` },
+      { time: "16:30", titleKey: "School communication digest", metaKey: `${schoolName} parent bulletin` },
+    ],
+    tableRows: [
+      ...context.students.flatMap((student) => [
+        { columnA: student.studentName, columnB: "Admissions status", columnC: "Additional form complete", status: "excellent" as const },
+        { columnA: student.studentName, columnB: "Target grade", columnC: toReadableGrade(student.targetGrade), status: "improving" as const },
+      ]),
+      { columnA: context.parentName, columnB: "Parent account", columnC: "Google / password access ready", status: "excellent" },
+    ],
+    admissionsContext: context,
+    parentPortal,
+  };
+}
+
+function parseAdmissionsStudents(value: string | null): AdmissionsStudentProfile[] | null {
+  if (!value) {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse(value) as unknown;
+
+    if (!Array.isArray(parsed)) {
+      return null;
+    }
+
+    const students = parsed.filter(isAdmissionsStudentProfile);
+    return students.length > 0 ? students : null;
+  } catch {
+    return null;
+  }
+}
+
+function parseLegacyAdmissionsStudent(
+  studentName: string | null,
+  currentSchool: string | null,
+  targetGrade: string | null,
+): AdmissionsStudentProfile[] | null {
+  if (!studentName || !currentSchool || !targetGrade) {
+    return null;
+  }
+
+  return [
+    {
+      studentName,
+      currentSchool,
+      targetGrade,
+    },
+  ];
+}
+
+function isAdmissionsStudentProfile(value: unknown): value is AdmissionsStudentProfile {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+
+  const candidate = value as Record<string, unknown>;
+  const hasRequiredFields =
+    typeof candidate.studentName === "string" &&
+    candidate.studentName.length > 0 &&
+    typeof candidate.currentSchool === "string" &&
+    candidate.currentSchool.length > 0 &&
+    typeof candidate.targetGrade === "string" &&
+    candidate.targetGrade.length > 0;
+
+  if (!hasRequiredFields) {
+    return false;
+  }
+
+  return candidate.studentBirthDate === undefined || typeof candidate.studentBirthDate === "string";
+}
+
+function buildAdmissionsSubtitle(primaryStudentName: string, studentCount: number): string {
+  if (studentCount === 1) {
+    return `Monitor ${primaryStudentName}'s onboarding, class readiness, tuition, and school communication in one place.`;
+  }
+
+  return `Monitor ${primaryStudentName} and ${studentCount - 1} more student${studentCount > 2 ? "s" : ""} across onboarding, class readiness, tuition, and school communication in one place.`;
+}
+
+function buildParentPortalExperience(
+  context: ParentAdmissionsContext,
+  schoolShortName: string,
+): ParentPortalExperience {
+  const studentCards = context.students.map((student, index) => {
+    const templates = [
+      {
+        status: "excellent" as const,
+        statusLabelKey: "dashboard.parent.portal.student.status.review_ready",
+        progress: 84,
+        stageLabelKey: "dashboard.parent.portal.student.stage.review",
+        documentStatusKey: "dashboard.parent.portal.student.document.ready",
+        nextActionLabelKey: "dashboard.parent.portal.student.action.book_assessment",
+        nextActionDetailKey: "dashboard.parent.portal.student.action_detail.book_assessment",
+        actionLabelKey: "dashboard.parent.portal.student.cta.view_file",
+      },
+      {
+        status: "attention_needed" as const,
+        statusLabelKey: "dashboard.parent.portal.student.status.documents_needed",
+        progress: 68,
+        stageLabelKey: "dashboard.parent.portal.student.stage.documents",
+        documentStatusKey: "dashboard.parent.portal.student.document.pending",
+        nextActionLabelKey: "dashboard.parent.portal.student.action.upload_documents",
+        nextActionDetailKey: "dashboard.parent.portal.student.action_detail.upload_documents",
+        actionLabelKey: "dashboard.parent.portal.student.cta.complete_requirements",
+      },
+      {
+        status: "improving" as const,
+        statusLabelKey: "dashboard.parent.portal.student.status.profile_complete",
+        progress: 74,
+        stageLabelKey: "dashboard.parent.portal.student.stage.profile",
+        documentStatusKey: "dashboard.parent.portal.student.document.synced",
+        nextActionLabelKey: "dashboard.parent.portal.student.action.confirm_profile",
+        nextActionDetailKey: "dashboard.parent.portal.student.action_detail.confirm_profile",
+        actionLabelKey: "dashboard.parent.portal.student.cta.review_details",
+      },
+    ] as const;
+    const template = templates[index % templates.length];
+
+    return {
+      studentName: student.studentName,
+      currentSchool: student.currentSchool,
+      targetGrade: student.targetGrade,
+      studentBirthDate: student.studentBirthDate,
+      status: template.status,
+      statusLabelKey: template.statusLabelKey,
+      progress: template.progress,
+      stageLabelKey: template.stageLabelKey,
+      documentStatusKey: template.documentStatusKey,
+      nextActionLabelKey: template.nextActionLabelKey,
+      nextActionValues: { student: student.studentName },
+      nextActionDetailKey: template.nextActionDetailKey,
+      nextActionDetailValues: { student: student.studentName, school: schoolShortName },
+      actionLabelKey: template.actionLabelKey,
+    };
+  });
+
+  const averageProgress = Math.round(
+    studentCards.reduce((sum, student) => sum + student.progress, 0) / Math.max(studentCards.length, 1),
+  );
+
+  const actions: ParentPortalAction[] = studentCards.slice(0, 3).map((studentCard) => ({
+    titleKey: studentCard.nextActionLabelKey,
+    titleValues: studentCard.nextActionValues,
+    detailKey: studentCard.nextActionDetailKey,
+    detailValues: studentCard.nextActionDetailValues,
+    priority: studentCard.status === "attention_needed" ? "high" : studentCard.status === "improving" ? "medium" : "low",
+    ctaLabelKey: studentCard.actionLabelKey,
+  }));
+
+  actions.push(
+    context.notes?.trim()
+      ? {
+          titleKey: "dashboard.parent.portal.family_action.review_notes",
+          detailKey: "dashboard.parent.portal.family_action.review_notes_detail",
+          detailValues: { parent: context.parentName },
+          priority: "medium",
+          ctaLabelKey: "dashboard.parent.portal.family_action.cta_open_notes",
+        }
+      : {
+          titleKey: "dashboard.parent.portal.family_action.confirm_contact",
+          detailKey: "dashboard.parent.portal.family_action.confirm_contact_detail",
+          detailValues: { email: context.email },
+          priority: "low",
+          ctaLabelKey: "dashboard.parent.portal.family_action.cta_update_contact",
+        },
+  );
+
+  return {
+    schoolShortName,
+    summaryCards: [
+      {
+        labelKey: "dashboard.parent.portal.summary.registered_students.label",
+        value: String(context.students.length),
+        helperKey: "dashboard.parent.portal.summary.registered_students.helper",
+        helperValues: { school: schoolShortName },
+      },
+      {
+        labelKey: "dashboard.parent.portal.summary.active_applications.label",
+        value: String(studentCards.length),
+        helperKey: "dashboard.parent.portal.summary.active_applications.helper",
+        helperValues: { count: studentCards.length },
+      },
+      {
+        labelKey: "dashboard.parent.portal.summary.next_actions.label",
+        value: String(actions.length),
+        helperKey: "dashboard.parent.portal.summary.next_actions.helper",
+        helperValues: { student: context.students[0]?.studentName ?? context.parentName },
+      },
+      {
+        labelKey: "dashboard.parent.portal.summary.family_completion.label",
+        value: `${averageProgress}%`,
+        helperKey: "dashboard.parent.portal.summary.family_completion.helper",
+        helperValues: { school: schoolShortName },
+      },
+    ],
+    studentCards,
+    actions,
+    timeline: [
+      {
+        titleKey: "dashboard.parent.portal.timeline.eoi_submitted.title",
+        detailKey: "dashboard.parent.portal.timeline.eoi_submitted.detail",
+        detailValues: { count: context.students.length },
+        state: "complete",
+      },
+      {
+        titleKey: "dashboard.parent.portal.timeline.account_verified.title",
+        detailKey: "dashboard.parent.portal.timeline.account_verified.detail",
+        detailValues: { parent: context.parentName },
+        state: "complete",
+      },
+      {
+        titleKey: "dashboard.parent.portal.timeline.additional_details.title",
+        detailKey: "dashboard.parent.portal.timeline.additional_details.detail",
+        detailValues: { school: schoolShortName },
+        state: "complete",
+      },
+      {
+        titleKey: "dashboard.parent.portal.timeline.review.title",
+        detailKey: "dashboard.parent.portal.timeline.review.detail",
+        detailValues: { student: context.students[0]?.studentName ?? context.parentName },
+        state: "active",
+      },
+      {
+        titleKey: "dashboard.parent.portal.timeline.assessment.title",
+        detailKey: "dashboard.parent.portal.timeline.assessment.detail",
+        detailValues: { school: schoolShortName },
+        state: "upcoming",
+      },
+      {
+        titleKey: "dashboard.parent.portal.timeline.offer.title",
+        detailKey: "dashboard.parent.portal.timeline.offer.detail",
+        detailValues: { school: schoolShortName },
+        state: "upcoming",
+      },
+    ],
+    paymentSummary: {
+      amount: context.school === "iihs" ? "Rp 2.400.000" : "Rp 2.100.000",
+      statusKey: "dashboard.parent.portal.payments.status.pending",
+      helperKey: "dashboard.parent.portal.payments.helper",
+      helperValues: { school: schoolShortName },
+      ctaLabelKey: "dashboard.parent.portal.payments.cta",
+    },
+    updates: [
+      {
+        titleKey: "dashboard.parent.portal.updates.orientation.title",
+        detailKey: "dashboard.parent.portal.updates.orientation.detail",
+        detailValues: { school: schoolShortName },
+        tagKey: "dashboard.parent.portal.updates.tag.school",
+      },
+      {
+        titleKey: "dashboard.parent.portal.updates.documents.title",
+        detailKey: "dashboard.parent.portal.updates.documents.detail",
+        detailValues: { count: context.students.length },
+        tagKey: "dashboard.parent.portal.updates.tag.admissions",
+      },
+      {
+        titleKey: "dashboard.parent.portal.updates.contact.title",
+        detailKey: "dashboard.parent.portal.updates.contact.detail",
+        detailValues: { email: context.email },
+        tagKey: "dashboard.parent.portal.updates.tag.family",
+      },
+    ],
+  };
+}
+
+function buildParentPortalNavItems(context: ParentAdmissionsContext): NavItem[] {
+  return [
+    {
+      labelKey: "dashboard.parent.portal.nav.overview.label",
+      descriptionKey: "dashboard.parent.portal.nav.overview.description",
+      href: "#family-overview",
+      active: true,
+    },
+    {
+      labelKey: "dashboard.parent.portal.nav.students.label",
+      descriptionKey: "dashboard.parent.portal.nav.students.description",
+      descriptionValues: { count: context.students.length },
+      href: "#registered-students",
+      badge: String(context.students.length),
+    },
+    {
+      labelKey: "dashboard.parent.portal.nav.timeline.label",
+      descriptionKey: "dashboard.parent.portal.nav.timeline.description",
+      href: "#admissions-timeline",
+      badge: "6",
+    },
+    {
+      labelKey: "dashboard.parent.portal.nav.actions.label",
+      descriptionKey: "dashboard.parent.portal.nav.actions.description",
+      href: "#next-actions",
+      badge: String(Math.min(context.students.length + 1, 4)),
+    },
+    {
+      labelKey: "dashboard.parent.portal.nav.payments.label",
+      descriptionKey: "dashboard.parent.portal.nav.payments.description",
+      href: "#payments-center",
+    },
+    {
+      labelKey: "dashboard.parent.portal.nav.updates.label",
+      descriptionKey: "dashboard.parent.portal.nav.updates.description",
+      href: "#family-updates",
+      badge: "3",
+    },
+    {
+      labelKey: "dashboard.parent.portal.nav.messages.label",
+      descriptionKey: "dashboard.parent.portal.nav.messages.description",
+      href: "#contact-desk",
+    },
+  ];
+}
+
+function getAttendanceValue(targetGrade: string): string {
+  if (targetGrade === "year11" || targetGrade === "year12") {
+    return "91%";
+  }
+
+  if (targetGrade === "year9" || targetGrade === "year10") {
+    return "93%";
+  }
+
+  return "95%";
+}
+
+function toReadableGrade(targetGrade: string): string {
+  const match = /^year(\d+)$/i.exec(targetGrade);
+
+  if (!match) {
+    return targetGrade;
+  }
+
+  return `Year ${match[1]}`;
 }

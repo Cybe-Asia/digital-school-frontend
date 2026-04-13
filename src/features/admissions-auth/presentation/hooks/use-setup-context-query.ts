@@ -4,13 +4,11 @@ import { useQuery } from "@tanstack/react-query";
 import { getSetupContext } from "@/features/admissions-auth/application/get-setup-context";
 import { createAdmissionsAuthRepository } from "@/features/admissions-auth/infrastructure/create-admissions-auth-repository";
 
-const repository = createAdmissionsAuthRepository();
-
-export function useSetupContextQuery(token: string, enabled = true) {
+export function useSetupContextQuery(admissionId: string, enabled = true) {
   return useQuery({
-    queryKey: ["setup-context", token],
-    enabled: Boolean(token) && enabled,
+    queryKey: ["setup-context", admissionId],
+    enabled: Boolean(admissionId) && enabled,
     retry: false,
-    queryFn: async () => getSetupContext(repository, token),
+    queryFn: async () => getSetupContext(createAdmissionsAuthRepository(), admissionId),
   });
 }

@@ -1,15 +1,23 @@
 import type { Metadata } from "next";
-import { Suspense } from "react";
 import { AuthShell } from "@/features/admissions-auth/presentation/components/auth-shell";
-import { SetupAccountLoading } from "@/features/admissions-auth/presentation/components/setup-account-loading";
 import { SetupAccountOtpForm } from "@/features/admissions-auth/presentation/components/setup-account-otp-form";
+import { getSetupAdmissionIdFromSearchParams } from "@/features/admissions-auth/presentation/lib/setup-account-routes";
+import { getSingleSearchParam } from "@/shared/lib/search-params";
 
 export const metadata: Metadata = {
   title: "Setup Account OTP | Cybe Digital School",
   description: "Verify your WhatsApp OTP before continuing to account access setup.",
 };
 
-export default function SetupAccountOtpPage() {
+type SetupAccountOtpPageProps = {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+};
+
+export default async function SetupAccountOtpPage({ searchParams }: SetupAccountOtpPageProps) {
+  const resolved = await searchParams;
+  const admissionId = getSetupAdmissionIdFromSearchParams(resolved);
+  const phoneNumber = getSingleSearchParam(resolved.phone) ?? "";
+
   return (
     <AuthShell
       eyebrow="auth.setup.otp_page.eyebrow"
@@ -19,9 +27,7 @@ export default function SetupAccountOtpPage() {
       footerLinkLabel="auth.setup.footer_link"
       footerHref="/admissions/login"
     >
-      <Suspense fallback={<SetupAccountLoading />}>
-        <SetupAccountOtpForm />
-      </Suspense>
+      <SetupAccountOtpForm admissionId={admissionId} phoneNumber={phoneNumber} />
     </AuthShell>
   );
 }

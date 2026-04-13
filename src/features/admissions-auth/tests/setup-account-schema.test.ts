@@ -1,9 +1,9 @@
 import { setupAccountSchema } from "@/features/admissions-auth/schemas/setup-account-schema";
 
 describe("setupAccountSchema", () => {
-  it("requires token and matching passwords", () => {
+  it("requires accessToken and matching passwords", () => {
     const result = setupAccountSchema.safeParse({
-      token: "",
+      accessToken: "",
       password: "short",
       confirmPassword: "mismatch",
     });
@@ -12,7 +12,7 @@ describe("setupAccountSchema", () => {
 
     if (!result.success) {
       const errors = result.error.flatten().fieldErrors;
-      expect(errors.token).toContain("validation.setup.token_required");
+      expect(errors.accessToken).toContain("validation.setup.token_required");
       expect(errors.password).toContain("validation.setup.password_min");
       expect(errors.confirmPassword).toContain("validation.setup.password_mismatch");
     }
@@ -20,7 +20,7 @@ describe("setupAccountSchema", () => {
 
   it("accepts valid payload", () => {
     const result = setupAccountSchema.safeParse({
-      token: "valid-token",
+      accessToken: "jwt-access-token",
       password: "password123",
       confirmPassword: "password123",
     });

@@ -1,15 +1,20 @@
 import type { Metadata } from "next";
-import { Suspense } from "react";
 import { AuthShell } from "@/features/admissions-auth/presentation/components/auth-shell";
-import { SetupAccountLoading } from "@/features/admissions-auth/presentation/components/setup-account-loading";
 import { SetupAccountMethodForm } from "@/features/admissions-auth/presentation/components/setup-account-method-form";
+import { getSetupAdmissionIdFromSearchParams } from "@/features/admissions-auth/presentation/lib/setup-account-routes";
 
 export const metadata: Metadata = {
   title: "Setup Account Method | Cybe Digital School",
   description: "Choose Google login or set your own password after OTP verification.",
 };
 
-export default function SetupAccountMethodPage() {
+type SetupAccountMethodPageProps = {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+};
+
+export default async function SetupAccountMethodPage({ searchParams }: SetupAccountMethodPageProps) {
+  const admissionId = getSetupAdmissionIdFromSearchParams(await searchParams);
+
   return (
     <AuthShell
       eyebrow="auth.setup.method.eyebrow"
@@ -19,9 +24,7 @@ export default function SetupAccountMethodPage() {
       footerLinkLabel="auth.setup.footer_link"
       footerHref="/admissions/login"
     >
-      <Suspense fallback={<SetupAccountLoading />}>
-        <SetupAccountMethodForm />
-      </Suspense>
+      <SetupAccountMethodForm admissionId={admissionId} />
     </AuthShell>
   );
 }

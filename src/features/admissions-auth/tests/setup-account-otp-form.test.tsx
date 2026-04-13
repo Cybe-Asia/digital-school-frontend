@@ -4,13 +4,9 @@ import { QueryProvider } from "@/components/query-provider";
 import { SetupAccountOtpForm } from "@/features/admissions-auth/presentation/components/setup-account-otp-form";
 import { getSetupOtpSessionKey } from "@/features/admissions-auth/presentation/lib/setup-otp-session";
 
-const searchState = {
-  value: "token=valid-token",
-};
 const routerPush = vi.fn();
 
 vi.mock("next/navigation", () => ({
-  useSearchParams: () => new URLSearchParams(searchState.value),
   useRouter: () => ({
     push: routerPush,
   }),
@@ -26,12 +22,10 @@ describe("SetupAccountOtpForm", () => {
     vi.useRealTimers();
   });
 
-  it("shows missing token state", () => {
-    searchState.value = "";
-
+  it("shows missing token state when no phoneNumber", () => {
     render(
       <QueryProvider>
-        <SetupAccountOtpForm />
+        <SetupAccountOtpForm admissionId="valid-token" phoneNumber="" />
       </QueryProvider>,
     );
 
@@ -41,11 +35,10 @@ describe("SetupAccountOtpForm", () => {
 
   it("auto sends otp on page open and re-enables resend after 60 seconds", async () => {
     vi.useFakeTimers();
-    searchState.value = "token=valid-token";
 
     render(
       <QueryProvider>
-        <SetupAccountOtpForm />
+        <SetupAccountOtpForm admissionId="valid-token" phoneNumber="628123456789" />
       </QueryProvider>,
     );
 
@@ -53,7 +46,6 @@ describe("SetupAccountOtpForm", () => {
       await vi.advanceTimersByTimeAsync(450);
     });
 
-    expect(screen.getByText(/otp has been sent to your whatsapp number/i)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /resend available in 60s/i })).toBeDisabled();
 
     for (let second = 0; second < 61; second += 1) {
@@ -66,41 +58,39 @@ describe("SetupAccountOtpForm", () => {
   });
 
   it("verifies otp and moves to the next page", async () => {
-    searchState.value = "token=valid-token";
     const user = userEvent.setup();
 
     render(
       <QueryProvider>
-        <SetupAccountOtpForm />
+        <SetupAccountOtpForm admissionId="valid-token" phoneNumber="628123456789" />
       </QueryProvider>,
     );
 
     await waitFor(() => {
-      expect(screen.getByText(/otp has been sent to your whatsapp number/i)).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /verify otp/i })).toBeInTheDocument();
     });
 
     await user.type(screen.getByRole("textbox", { name: /otp digit 1/i }), "1234");
     await user.click(screen.getByRole("button", { name: /verify otp/i }));
 
     await waitFor(() => {
-      expect(routerPush).toHaveBeenCalledWith("/auth/setup-account/method?token=valid-token");
+      expect(routerPush).toHaveBeenCalledWith("/auth/setup-account/method?admissionId=valid-token");
     });
 
     expect(sessionStorage.getItem(getSetupOtpSessionKey("valid-token"))).toBe("1");
   });
 
   it("supports pasting the otp into the first slot", async () => {
-    searchState.value = "token=valid-token";
     const user = userEvent.setup();
 
     render(
       <QueryProvider>
-        <SetupAccountOtpForm />
+        <SetupAccountOtpForm admissionId="valid-token" phoneNumber="628123456789" />
       </QueryProvider>,
     );
 
     await waitFor(() => {
-      expect(screen.getByText(/otp has been sent to your whatsapp number/i)).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /verify otp/i })).toBeInTheDocument();
     });
 
     const firstSlot = screen.getByRole("textbox", { name: /otp digit 1/i });

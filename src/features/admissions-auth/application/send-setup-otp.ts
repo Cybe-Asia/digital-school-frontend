@@ -3,7 +3,7 @@ import type { SendSetupOtpResult } from "@/features/admissions-auth/domain/types
 
 export async function sendSetupOtp(
   repository: AdmissionsAuthRepository,
-  token: string,
+  phoneNumber: string,
 ): Promise<SendSetupOtpResult> {
-  return repository.sendSetupOtp(token);
+  return repository.sendSetupOtp(phoneNumber);
 }

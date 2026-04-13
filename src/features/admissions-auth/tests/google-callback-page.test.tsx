@@ -1,3 +1,4 @@
+import { isRedirectError } from "next/dist/client/components/redirect-error";
 import { render, screen } from "@testing-library/react";
 import GoogleCallbackPage from "@/app/(public)/auth/google/callback/page";
 
@@ -12,13 +13,13 @@ describe("GoogleCallbackPage", () => {
     expect(screen.getByText("Sign-in failed")).toBeInTheDocument();
   });
 
-  it("renders success state when no error", async () => {
-    const page = await GoogleCallbackPage({
-      searchParams: Promise.resolve({ returnTo: "/dashboard/parent" }),
+  it("redirects on the server when returnTo is present", async () => {
+    await expect(
+      GoogleCallbackPage({
+        searchParams: Promise.resolve({ returnTo: "/auth/setup-account/additional?token=valid-token" }),
+      }),
+    ).rejects.toSatisfy((error: unknown) => {
+      return isRedirectError(error);
     });
-
-    render(page);
-
-    expect(screen.getByText("Sign-in completed")).toBeInTheDocument();
   });
 });

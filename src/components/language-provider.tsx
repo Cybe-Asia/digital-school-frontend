@@ -1,28 +1,21 @@
 "use client";
 
-import { useEffect, type ReactNode } from "react";
-import { create } from "zustand";
-
-export type LanguageCode = "en" | "id";
+import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import {
+  DEFAULT_LANGUAGE,
+  LANGUAGE_COOKIE_NAME,
+  parseLanguage,
+  type LanguageCode,
+} from "@/shared/lib/ui-preferences";
 
 type LanguageState = {
-  hydrated: boolean;
   language: LanguageCode;
-  hydrate: () => void;
   setLanguage: (language: LanguageCode) => void;
   toggleLanguage: () => void;
 };
 
-const STORAGE_KEY = "ds-language";
-const DEFAULT_LANGUAGE: LanguageCode = "en";
-
-function parseLanguage(value: string | null | undefined): LanguageCode | null {
-  if (value === "en" || value === "id") {
-    return value;
-  }
-
-  return null;
-}
+const STORAGE_KEY = LANGUAGE_COOKIE_NAME;
+const COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 365;
 
 function readStoredLanguage(): LanguageCode | null {
   try {
@@ -32,12 +25,14 @@ function readStoredLanguage(): LanguageCode | null {
   }
 }
 
-function saveLanguage(language: LanguageCode): void {
+function saveLanguage(language: LanguageCode) {
   try {
     localStorage.setItem(STORAGE_KEY, language);
   } catch {
     // Ignore blocked storage.
   }
+
+  document.cookie = `${LANGUAGE_COOKIE_NAME}=${encodeURIComponent(language)}; Path=/; Max-Age=${COOKIE_MAX_AGE_SECONDS}; SameSite=Lax`;
 }
 
 function applyLanguage(language: LanguageCode): void {
@@ -48,61 +43,57 @@ function applyLanguage(language: LanguageCode): void {
   document.documentElement.lang = language;
 }
 
-function getInitialLanguage(): LanguageCode {
-  if (typeof document === "undefined") {
-    return DEFAULT_LANGUAGE;
-  }
+const defaultLanguageState: LanguageState = {
+  language: DEFAULT_LANGUAGE,
+  setLanguage: () => undefined,
+  toggleLanguage: () => undefined,
+};
 
-  const fromDom = parseLanguage(document.documentElement.lang);
-  if (fromDom) {
-    return fromDom;
-  }
+const LanguageContext = createContext<LanguageState>(defaultLanguageState);
 
-  const fromStorage = readStoredLanguage();
-  if (fromStorage) {
-    return fromStorage;
-  }
-
-  return DEFAULT_LANGUAGE;
+export function useLanguage<T>(selector: (state: LanguageState) => T): T {
+  return selector(useContext(LanguageContext));
 }
 
-export const useLanguage = create<LanguageState>((set, get) => {
-  const initialLanguage = getInitialLanguage();
+type LanguageProviderProps = {
+  children: ReactNode;
+  initialLanguage?: LanguageCode;
+};
 
-  return {
-    hydrated: false,
-    language: initialLanguage,
-    hydrate: () => {
-      const language = readStoredLanguage() ?? parseLanguage(document.documentElement.lang) ?? DEFAULT_LANGUAGE;
-      applyLanguage(language);
-      set({
-        hydrated: true,
-        language,
-      });
-    },
-    setLanguage: (language) => {
-      applyLanguage(language);
-      saveLanguage(language);
-      set({ language });
-    },
-    toggleLanguage: () => {
-      const { language, setLanguage } = get();
-      setLanguage(language === "en" ? "id" : "en");
-    },
-  };
-});
+export function LanguageProvider({ children, initialLanguage = DEFAULT_LANGUAGE }: LanguageProviderProps) {
+  const [language, setLanguageState] = useState<LanguageCode>(() => {
+    if (typeof window === "undefined") {
+      return initialLanguage;
+    }
 
-export function LanguageProvider({ children }: { children: ReactNode }) {
-  const hydrate = useLanguage((state) => state.hydrate);
-  const language = useLanguage((state) => state.language);
-
-  useEffect(() => {
-    hydrate();
-  }, [hydrate]);
+    return readStoredLanguage() ?? initialLanguage;
+  });
 
   useEffect(() => {
     applyLanguage(language);
+    saveLanguage(language);
   }, [language]);
 
-  return children;
+  const commitLanguage = (nextLanguage: LanguageCode) => {
+    applyLanguage(nextLanguage);
+    saveLanguage(nextLanguage);
+    setLanguageState(nextLanguage);
+  };
+
+  const value = useMemo<LanguageState>(
+    () => ({
+      language,
+      setLanguage: (nextLanguage) => {
+        commitLanguage(nextLanguage);
+      },
+      toggleLanguage: () => {
+        commitLanguage(language === "en" ? "id" : "en");
+      },
+    }),
+    [language],
+  );
+
+  return <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>;
 }
+
+export type { LanguageCode };

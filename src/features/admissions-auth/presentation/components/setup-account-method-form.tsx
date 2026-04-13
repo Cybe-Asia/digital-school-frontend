@@ -2,12 +2,13 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { useGoogleLoginMutation } from "@/features/admissions-auth/presentation/hooks/use-google-login-mutation";
 import { useSetupContextQuery } from "@/features/admissions-auth/presentation/hooks/use-setup-context-query";
 import { useSetupAccountMutation } from "@/features/admissions-auth/presentation/hooks/use-setup-account-mutation";
-import { hasSetupOtpVerified } from "@/features/admissions-auth/presentation/lib/setup-otp-session";
+import { getSetupAdditionalFormHref, getSetupOtpHref } from "@/features/admissions-auth/presentation/lib/setup-account-routes";
+import { getSetupAccessToken, hasSetupOtpVerified } from "@/features/admissions-auth/presentation/lib/setup-otp-session";
 import { setupAccountSchema, type SetupAccountFormValues } from "@/features/admissions-auth/schemas/setup-account-schema";
 import { useI18n } from "@/i18n";
 import { Button } from "@/shared/ui/button";
@@ -38,13 +39,18 @@ function GoogleIcon() {
   );
 }
 
-export function SetupAccountMethodForm() {
-  const searchParams = useSearchParams();
-  const tokenFromUrl = searchParams.get("token") ?? "";
-  const otpVerified = hasSetupOtpVerified(tokenFromUrl);
-  const { t } = useI18n();
+type SetupAccountMethodFormProps = {
+  admissionId: string;
+};
 
-  const setupContextQuery = useSetupContextQuery(tokenFromUrl, otpVerified);
+export function SetupAccountMethodForm({ admissionId }: SetupAccountMethodFormProps) {
+  const router = useRouter();
+  const otpVerified = hasSetupOtpVerified(admissionId);
+  const accessToken = getSetupAccessToken(admissionId);
+  const { t } = useI18n();
+  const additionalFormHref = getSetupAdditionalFormHref(admissionId);
+
+  const setupContextQuery = useSetupContextQuery(admissionId, otpVerified);
   const setupAccountMutation = useSetupAccountMutation();
   const googleMutation = useGoogleLoginMutation();
 
@@ -56,14 +62,17 @@ export function SetupAccountMethodForm() {
   } = useForm<SetupAccountFormValues>({
     resolver: zodResolver(setupAccountSchema),
     defaultValues: {
-      token: tokenFromUrl,
+      accessToken,
       password: "",
       confirmPassword: "",
     },
   });
 
   const onSetupPassword = handleSubmit(async (values) => {
-    const result = await setupAccountMutation.mutateAsync(values);
+    const result = await setupAccountMutation.mutateAsync({
+      accessToken: values.accessToken,
+      newPassword: values.password,
+    });
 
     if (!result.success) {
       for (const [field, message] of Object.entries(result.fieldErrors ?? {})) {
@@ -71,11 +80,15 @@ export function SetupAccountMethodForm() {
           setError(field as keyof SetupAccountFormValues, { message });
         }
       }
+
+      return;
     }
+
+    router.push(additionalFormHref);
   });
 
   const onGoogleSignIn = async () => {
-    const result = await googleMutation.mutateAsync("/dashboard/parent");
+    const result = await googleMutation.mutateAsync(additionalFormHref);
 
     if (result.success && result.redirectTo) {
       window.location.href = result.redirectTo;
@@ -87,7 +100,7 @@ export function SetupAccountMethodForm() {
   const setupSuccess = setupAccountMutation.data?.success ? setupAccountMutation.data : null;
   const setupFailure = setupAccountMutation.data && !setupAccountMutation.data.success ? setupAccountMutation.data : null;
 
-  if (!tokenFromUrl) {
+  if (!admissionId) {
     return (
       <div className="rounded-2xl border border-[#b42318]/15 bg-[#fee9e9] px-4 py-3 text-sm text-[#8b1f1f]">
         {t("auth.setup.missing_token")}
@@ -95,13 +108,13 @@ export function SetupAccountMethodForm() {
     );
   }
 
-  if (!otpVerified) {
+  if (!otpVerified || !accessToken) {
     return (
       <div className="space-y-4">
         <div className="rounded-2xl border border-[#b42318]/15 bg-[#fee9e9] px-4 py-3 text-sm text-[#8b1f1f]">
           {t("auth.setup.method.blocked")}
         </div>
-        <Link href={`/auth/setup-account/otp?token=${encodeURIComponent(tokenFromUrl)}`} className="inline-flex text-sm font-semibold text-[var(--ds-primary)]">
+        <Link href={getSetupOtpHref(admissionId)} className="inline-flex text-sm font-semibold text-[var(--ds-primary)]">
           {t("auth.setup.method.back_to_verify")}
         </Link>
       </div>
@@ -147,7 +160,7 @@ export function SetupAccountMethodForm() {
           </div>
 
           <form className="space-y-4" onSubmit={onSetupPassword} noValidate>
-            <input type="hidden" {...register("token")} />
+            <input type="hidden" {...register("accessToken")} />
 
             {setupFailure?.formError ? (
               <div className="rounded-2xl border border-[#b42318]/15 bg-[#fee9e9] px-4 py-3 text-sm text-[#8b1f1f]">
@@ -175,8 +188,9 @@ export function SetupAccountMethodForm() {
           <p className="font-semibold">{t("auth.setup.success_title")}</p>
           {setupSuccess.message ? <p className="mt-1">{t(setupSuccess.message)}</p> : null}
           <p className="mt-1">{t("auth.setup.account_ready", { value: t(setupSuccess.accountReady ? "common.boolean.yes" : "common.boolean.no") })}</p>
-          <Link href={setupSuccess.redirectTo ?? "/dashboard/parent"} className="mt-2 inline-flex font-semibold text-[var(--ds-primary)]">
-            {t("auth.setup.continue_dashboard")}
+          <p className="mt-1">{t("auth.setup.redirecting_additional")}</p>
+          <Link href={additionalFormHref} className="mt-2 inline-flex font-semibold text-[var(--ds-primary)]">
+            {t("auth.setup.continue_additional")}
           </Link>
         </div>
       ) : null}

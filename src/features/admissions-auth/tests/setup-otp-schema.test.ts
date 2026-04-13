@@ -3,7 +3,7 @@ import { setupOtpSchema } from "@/features/admissions-auth/schemas/setup-otp-sch
 describe("setupOtpSchema", () => {
   it("requires 4-digit otp", () => {
     const result = setupOtpSchema.safeParse({
-      token: "valid-token",
+      phoneNumber: "628123456789",
       otp: "12",
     });
 
@@ -17,7 +17,7 @@ describe("setupOtpSchema", () => {
 
   it("accepts valid payload", () => {
     const result = setupOtpSchema.safeParse({
-      token: "valid-token",
+      phoneNumber: "628123456789",
       otp: "1234",
     });
 

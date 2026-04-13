@@ -1,19 +1,9 @@
 import { render, screen } from "@testing-library/react";
 import { EOISuccessView } from "@/features/admissions-auth/presentation/components/eoi-success-view";
 
-const searchState = {
-  value: "email=parent%40example.com",
-};
-
-vi.mock("next/navigation", () => ({
-  useSearchParams: () => new URLSearchParams(searchState.value),
-}));
-
 describe("EOISuccessView", () => {
   it("shows the submitted email and both navigation actions", () => {
-    searchState.value = "email=parent%40example.com";
-
-    render(<EOISuccessView />);
+    render(<EOISuccessView submittedEmail="parent@example.com" />);
 
     expect(screen.getByText("Check your email for the next step.")).toBeInTheDocument();
     expect(
@@ -24,8 +14,6 @@ describe("EOISuccessView", () => {
   });
 
   it("falls back to the generic hint when the email is missing", () => {
-    searchState.value = "";
-
     render(<EOISuccessView />);
 
     expect(screen.getByText("If the message is not in your inbox, check spam or promotions.")).toBeInTheDocument();

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { useGoogleLoginMutation } from "@/features/admissions-auth/presentation/hooks/use-google-login-mutation";
 import { useLoginMutation } from "@/features/admissions-auth/presentation/hooks/use-login-mutation";
+import { setSession } from "@/features/admissions-auth/infrastructure/session-api";
 import { loginSchema, type LoginFormValues } from "@/features/admissions-auth/schemas/login-schema";
 import { useI18n } from "@/i18n";
 import { Button } from "@/shared/ui/button";
@@ -64,6 +65,12 @@ export function LoginForm() {
       }
 
       return;
+    }
+
+    await setSession(result.accessToken);
+
+    if (result.redirectTo) {
+      window.location.href = result.redirectTo;
     }
   });
 

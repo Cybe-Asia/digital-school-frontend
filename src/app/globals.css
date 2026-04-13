@@ -312,6 +312,10 @@ body {
   transition: background-color 260ms ease, color 220ms ease;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 h1,
 h2,
 h3,
@@ -347,6 +351,22 @@ h4 {
   background: linear-gradient(140deg, var(--ds-hero-1) 0%, var(--ds-hero-2) 45%, var(--ds-hero-3) 100%);
   box-shadow: var(--ds-shadow-strong);
   transition: background 260ms ease, border-color 220ms ease, box-shadow 220ms ease;
+}
+
+.parent-portal-section {
+  animation: parent-portal-section-enter 460ms ease both;
+}
+
+@keyframes parent-portal-section-enter {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .cta-primary {
@@ -445,21 +465,60 @@ h4 {
   border-color: color-mix(in srgb, var(--ds-primary) 35%, var(--ds-border));
 }
 
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  .parent-portal-section {
+    animation: none;
+  }
+}
+
 .auth-shell {
   position: relative;
   overflow: hidden;
   background:
-    radial-gradient(circle at 14% 16%, rgb(111 214 179 / 26%) 0%, transparent 32%),
-    radial-gradient(circle at 84% 12%, rgb(225 193 90 / 14%) 0%, transparent 24%),
+    radial-gradient(circle at 14% 16%, var(--ds-radial-a) 0%, transparent 32%),
+    radial-gradient(circle at 84% 12%, var(--ds-radial-b) 0%, transparent 24%),
     linear-gradient(180deg, var(--ds-bg-grad-start) 0%, var(--ds-bg) 48%, var(--ds-bg-grad-end) 100%);
 }
 
 .auth-orb {
   position: absolute;
   border-radius: 999px;
-  filter: blur(10px);
+  filter: blur(40px);
   opacity: 0.72;
   pointer-events: none;
+  translate: calc(var(--mouse-x, 0) * var(--parallax-intensity, 10px)) calc(var(--mouse-y, 0) * var(--parallax-intensity, 10px));
+  transition: translate 0.1s ease-out;
+}
+
+@keyframes morphingBlob {
+  0% { border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%; }
+  50% { border-radius: 30% 60% 70% 40% / 50% 60% 30% 60%; }
+  100% { border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%; }
+}
+
+@keyframes floatOrbA {
+  0% { transform: translate(0px, 0px) scale(1); opacity: 0.5; filter: blur(40px); }
+  33% { transform: translate(30px, -50px) scale(1.1); opacity: 0.8; filter: blur(50px); }
+  66% { transform: translate(-20px, 20px) scale(0.9); opacity: 0.6; filter: blur(35px); }
+  100% { transform: translate(0px, 0px) scale(1); opacity: 0.5; filter: blur(40px); }
+}
+
+@keyframes floatOrbB {
+  0% { transform: translate(0px, 0px) scale(1); opacity: 0.6; filter: blur(35px); }
+  33% { transform: translate(-30px, 50px) scale(1.1); opacity: 0.8; filter: blur(45px); }
+  66% { transform: translate(20px, -20px) scale(0.9); opacity: 0.5; filter: blur(55px); }
+  100% { transform: translate(0px, 0px) scale(1); opacity: 0.6; filter: blur(35px); }
+}
+
+@keyframes floatOrbC {
+  0% { transform: translate(0px, 0px) scale(0.9); opacity: 0.4; filter: blur(30px); }
+  33% { transform: translate(-40px, -30px) scale(1.1); opacity: 0.6; filter: blur(40px); }
+  66% { transform: translate(30px, 40px) scale(1.2); opacity: 0.3; filter: blur(35px); }
+  100% { transform: translate(0px, 0px) scale(0.9); opacity: 0.4; filter: blur(30px); }
 }
 
 .auth-orb-a {
@@ -467,7 +526,9 @@ h4 {
   left: -3rem;
   height: 14rem;
   width: 14rem;
-  background: rgb(111 214 179 / 20%);
+  background: var(--ds-radial-a);
+  animation: floatOrbA 14s ease-in-out infinite, morphingBlob 10s ease-in-out infinite;
+  --parallax-intensity: -20px;
 }
 
 .auth-orb-b {
@@ -475,7 +536,19 @@ h4 {
   bottom: 10%;
   height: 18rem;
   width: 18rem;
-  background: rgb(43 65 98 / 12%);
+  background: var(--ds-radial-b);
+  animation: floatOrbB 18s ease-in-out infinite, morphingBlob 12s ease-in-out infinite reverse;
+  --parallax-intensity: 25px;
+}
+
+.auth-orb-c {
+  right: 30%;
+  top: 25%;
+  height: 12rem;
+  width: 12rem;
+  background: var(--ds-highlight);
+  animation: floatOrbC 22s ease-in-out infinite, morphingBlob 15s ease-in-out infinite;
+  --parallax-intensity: -35px;
 }
 
 .auth-panel {
