@@ -4,6 +4,17 @@ import { QueryProvider } from "@/components/query-provider";
 import { LoginForm } from "@/features/admissions-auth/presentation/components/login-form";
 
 describe("LoginForm", () => {
+  it("shows Google and reset-password options", () => {
+    render(
+      <QueryProvider>
+        <LoginForm />
+      </QueryProvider>,
+    );
+
+    expect(screen.getByRole("button", { name: /continue with google/i })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /forgot password/i })).toHaveAttribute("href", "/auth/request-reset");
+  });
+
   it("shows inline validation errors", async () => {
     const user = userEvent.setup();
 

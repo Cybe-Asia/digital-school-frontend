@@ -1,15 +1,43 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import Link from "next/link";
 import { useForm } from "react-hook-form";
+import { useGoogleLoginMutation } from "@/features/admissions-auth/presentation/hooks/use-google-login-mutation";
 import { useLoginMutation } from "@/features/admissions-auth/presentation/hooks/use-login-mutation";
 import { loginSchema, type LoginFormValues } from "@/features/admissions-auth/schemas/login-schema";
+import { useI18n } from "@/i18n";
 import { Button } from "@/shared/ui/button";
 import { Input } from "@/shared/ui/input";
 import { FormField } from "./form-field";
 
+function GoogleIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-4 w-4" aria-hidden="true">
+      <path
+        fill="#EA4335"
+        d="M12 10.2v3.9h5.5c-.2 1.2-.9 2.2-1.9 2.9l3 2.3c1.8-1.6 2.8-3.9 2.8-6.7 0-.6-.1-1.2-.2-1.8H12Z"
+      />
+      <path
+        fill="#34A853"
+        d="M12 22c2.6 0 4.8-.8 6.4-2.2l-3-2.3c-.8.6-1.9 1-3.4 1-2.6 0-4.8-1.8-5.6-4.1l-3.1 2.4C5 20 8.2 22 12 22Z"
+      />
+      <path
+        fill="#4A90E2"
+        d="M6.4 14.4c-.2-.6-.3-1.3-.3-2s.1-1.4.3-2L3.3 8C2.5 9.6 2 11.2 2 12.4c0 1.2.5 2.8 1.3 4.4l3.1-2.4Z"
+      />
+      <path
+        fill="#FBBC05"
+        d="M12 5.9c1.4 0 2.7.5 3.7 1.5l2.7-2.7C16.8 3.1 14.6 2 12 2 8.2 2 5 4 3.3 8l3.1 2.4c.8-2.3 3-4.5 5.6-4.5Z"
+      />
+    </svg>
+  );
+}
+
 export function LoginForm() {
   const mutation = useLoginMutation();
+  const googleMutation = useGoogleLoginMutation();
+  const { t } = useI18n();
   const {
     register,
     handleSubmit,
@@ -39,51 +67,95 @@ export function LoginForm() {
     }
   });
 
+  const onGoogleSignIn = async () => {
+    const result = await googleMutation.mutateAsync("/dashboard/parent");
+
+    if (result.success && result.redirectTo) {
+      window.location.href = result.redirectTo;
+    }
+  };
+
   const successData = mutation.data?.success ? mutation.data : null;
   const failureData = mutation.data && !mutation.data.success ? mutation.data : null;
+  const googleFailureData = googleMutation.data && !googleMutation.data.success ? googleMutation.data : null;
 
   return (
     <form className="space-y-4" onSubmit={onSubmit} noValidate>
       {successData ? (
         <div className="rounded-2xl border border-[#0f8f63]/20 bg-[#dbf7ee] px-4 py-3 text-sm text-[#0f5c45]">
-          <p className="font-semibold">Sign-in simulated successfully.</p>
-          <p className="mt-1">{successData.message}</p>
-          <p className="mt-1">Next route: {successData.redirectTo}</p>
+          <p className="font-semibold">{t("auth.login.success_title")}</p>
+          {successData.message ? <p className="mt-1">{t(successData.message)}</p> : null}
+          <p className="mt-1">{t("auth.login.next_route", { route: successData.redirectTo ?? "" })}</p>
         </div>
       ) : null}
 
       {failureData?.formError ? (
         <div className="rounded-2xl border border-[#b42318]/15 bg-[#fee9e9] px-4 py-3 text-sm text-[#8b1f1f]">
-          {failureData.formError}
+          {t(failureData.formError)}
         </div>
       ) : null}
 
+      {googleFailureData?.formError ? (
+        <div className="rounded-2xl border border-[#b42318]/15 bg-[#fee9e9] px-4 py-3 text-sm text-[#8b1f1f]">
+          {t(googleFailureData.formError)}
+        </div>
+      ) : null}
+
+      <Button
+        type="button"
+        variant="secondary"
+        className="w-full gap-2"
+        onClick={onGoogleSignIn}
+        disabled={googleMutation.isPending || isSubmitting || mutation.isPending}
+      >
+        <GoogleIcon />
+          {googleMutation.isPending ? t("auth.login.google_loading") : t("auth.login.google_cta")}
+      </Button>
+
+      <div className="flex items-center gap-3">
+        <div className="h-px flex-1 bg-[var(--ds-border)]" />
+        <span className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--ds-text-secondary)]">{t("common.or")}</span>
+        <div className="h-px flex-1 bg-[var(--ds-border)]" />
+      </div>
+
       <FormField
-        label="Email address"
+        label="auth.login.email_label"
         htmlFor="email"
-        hint="Use the email you plan to use for the admissions account."
+        hint="auth.login.email_hint"
         error={errors.email?.message}
       >
-        <Input id="email" type="email" autoComplete="email" placeholder="parent@example.com" {...register("email")} />
+        <Input
+          id="email"
+          type="email"
+          autoComplete="email"
+          placeholder={t("auth.login.email_placeholder")}
+          {...register("email")}
+        />
       </FormField>
 
       <FormField
-        label="Password"
+        label="auth.login.password_label"
         htmlFor="password"
-        hint="This phase is frontend-only. Any valid input signs in unless the mock repo blocks it."
+        hint="auth.login.password_hint"
         error={errors.password?.message}
       >
         <Input
           id="password"
           type="password"
           autoComplete="current-password"
-          placeholder="Enter your password"
+          placeholder={t("auth.login.password_placeholder")}
           {...register("password")}
         />
       </FormField>
 
-      <Button type="submit" className="w-full" disabled={isSubmitting || mutation.isPending}>
-        {isSubmitting || mutation.isPending ? "Signing in..." : "Sign in to admissions"}
+      <div className="flex items-center justify-end">
+        <Link href="/auth/request-reset" className="text-xs font-semibold text-[var(--ds-primary)] hover:text-[var(--ds-cta-fill-2)]">
+          {t("auth.login.forgot_password")}
+        </Link>
+      </div>
+
+      <Button type="submit" className="w-full" disabled={isSubmitting || mutation.isPending || googleMutation.isPending}>
+        {isSubmitting || mutation.isPending ? t("auth.login.submit_loading") : t("auth.login.submit")}
       </Button>
     </form>
   );

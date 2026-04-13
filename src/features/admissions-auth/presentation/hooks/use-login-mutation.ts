@@ -2,10 +2,10 @@
 
 import { useMutation } from "@tanstack/react-query";
 import { loginParent } from "@/features/admissions-auth/application/login-parent";
-import { MockAdmissionsAuthRepository } from "@/features/admissions-auth/infrastructure/mock-admissions-auth-repository";
+import { createAdmissionsAuthRepository } from "@/features/admissions-auth/infrastructure/create-admissions-auth-repository";
 import type { LoginFormValues } from "@/features/admissions-auth/schemas/login-schema";
 
-const repository = new MockAdmissionsAuthRepository();
+const repository = createAdmissionsAuthRepository();
 
 export function useLoginMutation() {
   return useMutation({
