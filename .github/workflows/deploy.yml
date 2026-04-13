@@ -1,0 +1,84 @@
+name: Deploy Frontend
+
+on:
+  push:
+    branches:
+      - dev
+      - main
+      - "release-*"
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set Environment & Image Tag
+        id: vars
+        run: |
+          if [[ "${GITHUB_REF}" == "refs/heads/dev" ]]; then
+            echo "ENV=dev" >> $GITHUB_OUTPUT
+            echo "OVERLAY=dev" >> $GITHUB_OUTPUT
+          elif [[ "${GITHUB_REF}" == refs/heads/release-* ]]; then
+            echo "ENV=staging" >> $GITHUB_OUTPUT
+            echo "OVERLAY=staging" >> $GITHUB_OUTPUT
+          else
+            echo "ENV=production" >> $GITHUB_OUTPUT
+            echo "OVERLAY=production" >> $GITHUB_OUTPUT
+          fi
+          SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
+          echo "IMAGE_TAG=$(echo "${GITHUB_REF##*/}-${SHORT_SHA}")" >> $GITHUB_OUTPUT
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GHCR_TOKEN }}
+
+      - name: Build Docker Image
+        run: |
+          IMAGE_NAME=$(echo "ghcr.io/${{ github.repository_owner }}/digital-school-frontend" | tr '[:upper:]' '[:lower:]')
+          docker build \
+            --build-arg NEXT_PUBLIC_API_GATEWAY_URL="" \
+            -t ${IMAGE_NAME}:${{ steps.vars.outputs.IMAGE_TAG }} .
+
+      - name: Push Docker Image
+        run: |
+          IMAGE_NAME=$(echo "ghcr.io/${{ github.repository_owner }}/digital-school-frontend" | tr '[:upper:]' '[:lower:]')
+          docker push ${IMAGE_NAME}:${{ steps.vars.outputs.IMAGE_TAG }}
+
+      - name: Setup Kustomize
+        uses: imranismail/setup-kustomize@v2
+
+      - name: Update GitOps Repository
+        run: |
+          set -e
+          git config --global user.email "arief.n@cybe.tech"
+          git config --global user.name "arief.n"
+
+          echo "Cloning GitOps repository..."
+          git clone https://x-access-token:${{ secrets.GITOPS_TOKEN }}@github.com/Cybe-Asia/digital-school-gitops.git gitops-repo
+          cd gitops-repo
+          git checkout dev
+
+          OVERLAY="${{ steps.vars.outputs.OVERLAY }}"
+          cd "overlays/${OVERLAY}"
+
+          echo "Updating image tag for digital-school-frontend to ${{ steps.vars.outputs.IMAGE_TAG }} in overlays/${OVERLAY}..."
+          kustomize edit set image ghcr.io/cybe-asia/digital-school-frontend=ghcr.io/cybe-asia/digital-school-frontend:${{ steps.vars.outputs.IMAGE_TAG }}
+
+          if git diff --quiet kustomization.yaml; then
+            echo "No changes detected. Skipping push."
+          else
+            git add kustomization.yaml
+            git commit -m "chore(frontend): update ${OVERLAY} image tag to ${{ steps.vars.outputs.IMAGE_TAG }} [skip ci]"
+            git push origin dev
+          fi
