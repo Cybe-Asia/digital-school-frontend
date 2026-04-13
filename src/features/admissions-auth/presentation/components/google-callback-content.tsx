@@ -34,6 +34,7 @@ export function GoogleCallbackContent({ error, returnTo }: GoogleCallbackContent
         <p className="mt-3 text-sm leading-relaxed text-[var(--ds-text-secondary)]">
           {t("auth.google.success_description")}
         </p>
+        {returnTo ? <p className="mt-2 text-sm text-[var(--ds-text-secondary)]">{t("auth.google.redirecting")}</p> : null}
         <Link href={returnTo || "/dashboard/parent"} className="mt-5 inline-flex text-sm font-semibold text-[var(--ds-primary)]">
           {t("common.actions.continue")}
         </Link>

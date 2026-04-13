@@ -19,14 +19,21 @@ export type EOIInput = {
 };
 
 export type SetupAccountInput = {
-  token: string;
-  password: string;
-  confirmPassword: string;
+  accessToken: string;
+  newPassword: string;
 };
 
 export type SetupOtpInput = {
-  token: string;
+  phoneNumber: string;
   otp: string;
+};
+
+export type AdmissionsStudentProfile = {
+  studentName: string;
+  studentBirthDate?: string;
+  currentSchool: string;
+  targetGrade: string;
+  notes?: string;
 };
 
 export type RequestPasswordResetInput = {
@@ -88,10 +95,73 @@ export type EOILeadSummary = {
   submittedAt: string;
 };
 
-export type LoginResult = AuthSuccessResult | AuthFailureResult<keyof LoginInput>;
+export type AdmissionData = {
+  admissionId: string;
+  email: string;
+  parentName: string;
+  whatsappNumber: string;
+  schoolSelection: string;
+  location: string | null;
+  occupation: string | null;
+  hearAboutSchool: string | null;
+  referralCode: string | null;
+  existingStudents: number | null;
+  isVerified: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type CheckVerificationSuccessResult = {
+  success: true;
+  isVerified: boolean;
+  admission: AdmissionData;
+};
+
+export type VerifyEmailSuccessResult = AuthSuccessResult & {
+  success: true;
+  admission: AdmissionData;
+};
+
+export type LoginSuccessResult = AuthSuccessResult & {
+  success: true;
+  accessToken: string;
+  refreshToken?: string;
+};
+
+export type LoginResult = LoginSuccessResult | AuthFailureResult<keyof LoginInput>;
 export type EOISubmitResult = EOISubmitSuccessResult | AuthFailureResult<keyof EOIInput>;
 export type SetupAccountResult = SetupAccountSuccessResult | AuthFailureResult<keyof SetupAccountInput>;
-export type SendSetupOtpResult = AuthSuccessResult | AuthFailureResult<"token">;
-export type VerifySetupOtpResult = AuthSuccessResult | AuthFailureResult<keyof SetupOtpInput>;
+export type SendSetupOtpSuccessResult = AuthSuccessResult & {
+  success: true;
+  phoneNumber: string;
+  otp: string;
+  expiredIn: number;
+};
+
+export type SendSetupOtpResult = SendSetupOtpSuccessResult | AuthFailureResult<"phoneNumber">;
+export type VerifySetupOtpSuccessResult = AuthSuccessResult & {
+  success: true;
+  accessToken: string;
+  admissionId: string;
+  phoneNumber: string;
+  jwtSessionToken?: string;
+};
+
+export type VerifySetupOtpResult = VerifySetupOtpSuccessResult | AuthFailureResult<keyof SetupOtpInput>;
 export type RequestPasswordResetResult = AuthSuccessResult | AuthFailureResult<keyof RequestPasswordResetInput>;
 export type GoogleLoginResult = GoogleLoginSuccessResult | AuthFailureResult<"returnTo">;
+export type SubmitStudentsInput = {
+  accessToken: string;
+  students: {
+    fullName: string;
+    dateOfBirth: string;
+    currentSchool: string;
+    targetGradeLevel: string;
+    notes: string;
+  }[];
+};
+
+export type SubmitStudentsResult = AuthSuccessResult | AuthFailureResult<"students">;
+
+export type CheckVerificationResult = CheckVerificationSuccessResult | AuthFailureResult<"admissionId">;
+export type VerifyEmailResult = VerifyEmailSuccessResult | AuthFailureResult<"token">;

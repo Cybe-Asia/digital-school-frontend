@@ -1,15 +1,25 @@
 import type { Metadata } from "next";
-import { Suspense } from "react";
 import { AuthShell } from "@/features/admissions-auth/presentation/components/auth-shell";
-import { SetupAccountLoading } from "@/features/admissions-auth/presentation/components/setup-account-loading";
 import { SetupAccountForm } from "@/features/admissions-auth/presentation/components/setup-account-form";
+import {
+  getSetupAdmissionIdFromSearchParams,
+  getSetupTokenFromSearchParams,
+} from "@/features/admissions-auth/presentation/lib/setup-account-routes";
 
 export const metadata: Metadata = {
   title: "Setup Account | Cybe Digital School",
   description: "Set or reset your parent admissions account password.",
 };
 
-export default function SetupAccountPage() {
+type SetupAccountPageProps = {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+};
+
+export default async function SetupAccountPage({ searchParams }: SetupAccountPageProps) {
+  const params = await searchParams;
+  const token = getSetupTokenFromSearchParams(params);
+  const admissionId = getSetupAdmissionIdFromSearchParams(params);
+
   return (
     <AuthShell
       eyebrow="auth.setup.eyebrow"
@@ -19,9 +29,7 @@ export default function SetupAccountPage() {
       footerLinkLabel="auth.setup.footer_link"
       footerHref="/admissions/login"
     >
-      <Suspense fallback={<SetupAccountLoading />}>
-        <SetupAccountForm />
-      </Suspense>
+      <SetupAccountForm token={token} admissionId={admissionId} />
     </AuthShell>
   );
 }

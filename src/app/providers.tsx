@@ -1,16 +1,26 @@
-"use client";
-
 import { QueryProvider } from "@/components/query-provider";
 import { LanguageProvider } from "@/components/language-provider";
 import { ThemeProvider } from "@/components/theme-provider";
+import GlobalPreferenceBar from "@/components/global-preference-bar";
+import type { ThemeId } from "@/components/theme-provider";
+import type { LanguageCode } from "@/components/language-provider";
 import type { ReactNode } from "react";
 
-export default function Providers({ children }: { children: ReactNode }) {
+type ProvidersProps = {
+  children: ReactNode;
+  initialLanguage: LanguageCode;
+  initialThemeId: ThemeId;
+};
+
+export default function Providers({ children, initialLanguage, initialThemeId }: ProvidersProps) {
   return (
-    <QueryProvider>
-      <LanguageProvider>
-        <ThemeProvider>{children}</ThemeProvider>
-      </LanguageProvider>
-    </QueryProvider>
+    <LanguageProvider key={initialLanguage} initialLanguage={initialLanguage}>
+      <ThemeProvider key={initialThemeId} initialThemeId={initialThemeId}>
+        <QueryProvider>
+          <GlobalPreferenceBar />
+          {children}
+        </QueryProvider>
+      </ThemeProvider>
+    </LanguageProvider>
   );
 }

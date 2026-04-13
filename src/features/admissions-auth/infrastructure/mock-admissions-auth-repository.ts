@@ -1,5 +1,6 @@
 import type { AdmissionsAuthRepository } from "@/features/admissions-auth/domain/ports/admissions-auth-repository";
 import type {
+  CheckVerificationResult,
   EOIInput,
   EOILeadSummary,
   EOISubmitResult,
@@ -14,6 +15,9 @@ import type {
   SetupAccountInput,
   SetupAccountResult,
   SetupOtpInput,
+  SubmitStudentsInput,
+  SubmitStudentsResult,
+  VerifyEmailResult,
   VerifySetupOtpResult,
 } from "@/features/admissions-auth/domain/types";
 import { readMockSetupContext, saveMockSetupContext } from "@/features/admissions-auth/infrastructure/mock-setup-context-store";
@@ -37,6 +41,8 @@ export class MockAdmissionsAuthRepository implements AdmissionsAuthRepository {
 
     return {
       success: true,
+      accessToken: "mock-jwt-access-token",
+      refreshToken: "mock-refresh-token",
       redirectTo: "/dashboard/parent",
       message: "response.login.success",
     };
@@ -92,17 +98,17 @@ export class MockAdmissionsAuthRepository implements AdmissionsAuthRepository {
     };
   }
 
-  async getSetupContext(token: string): Promise<SetupContextResult> {
+  async getSetupContext(admissionId: string): Promise<SetupContextResult> {
     await wait();
 
-    if (!token || token === "expired-token") {
+    if (!admissionId || admissionId === "expired-token") {
       return {
         success: false,
         formError: "response.setup.expired",
       };
     }
 
-    const savedContext = readMockSetupContext(token);
+    const savedContext = readMockSetupContext(admissionId);
 
     if (savedContext) {
       return {
@@ -127,29 +133,31 @@ export class MockAdmissionsAuthRepository implements AdmissionsAuthRepository {
     };
   }
 
-  async sendSetupOtp(token: string): Promise<SendSetupOtpResult> {
+  async sendSetupOtp(phoneNumber: string): Promise<SendSetupOtpResult> {
     await wait();
 
-    if (!token || token === "expired-token") {
+    if (!phoneNumber) {
       return {
         success: false,
-        formError: "response.setup.expired",
+        formError: "response.setup.missing_phone",
       };
     }
 
     return {
       success: true,
-      message: "response.setup.otp_sent",
+      phoneNumber,
+      otp: "1234",
+      expiredIn: 300,
     };
   }
 
   async verifySetupOtp(input: SetupOtpInput): Promise<VerifySetupOtpResult> {
     await wait();
 
-    if (!input.token || input.token === "expired-token") {
+    if (!input.phoneNumber) {
       return {
         success: false,
-        formError: "response.setup.expired",
+        formError: "response.setup.missing_phone",
       };
     }
 
@@ -164,26 +172,27 @@ export class MockAdmissionsAuthRepository implements AdmissionsAuthRepository {
 
     return {
       success: true,
-      message: "response.setup.otp_verified",
+      accessToken: "mock-jwt-token",
+      admissionId: "mock-admission-id",
+      phoneNumber: input.phoneNumber,
+      jwtSessionToken: "mock-session-token",
     };
   }
 
   async setupAccount(input: SetupAccountInput): Promise<SetupAccountResult> {
     await wait();
 
-    if (!input.token || input.token === "expired-token") {
+    if (!input.accessToken) {
       return {
         success: false,
         formError: "response.setup.expired",
       };
     }
 
-    if (input.password !== input.confirmPassword) {
+    if (!input.newPassword || input.newPassword.length < 8) {
       return {
         success: false,
-        fieldErrors: {
-          confirmPassword: "validation.setup.password_mismatch",
-        },
+        formError: "validation.setup.password_min",
       };
     }
 
@@ -195,9 +204,93 @@ export class MockAdmissionsAuthRepository implements AdmissionsAuthRepository {
     };
   }
 
+  async submitStudents(input: SubmitStudentsInput): Promise<SubmitStudentsResult> {
+    await wait();
+
+    if (!input.accessToken) {
+      return {
+        success: false,
+        formError: "response.setup.expired",
+      };
+    }
+
+    if (input.students.length === 0) {
+      return {
+        success: false,
+        formError: "validation.additional.students_min",
+      };
+    }
+
+    return {
+      success: true,
+      message: "response.additional.students_submitted",
+    };
+  }
+
   async listEOILeads(): Promise<EOILeadSummary[]> {
     await wait();
 
     return [];
+  }
+
+  async checkVerification(admissionId: string): Promise<CheckVerificationResult> {
+    await wait();
+
+    if (!admissionId) {
+      return {
+        success: false,
+        formError: "response.verification.missing_id",
+      };
+    }
+
+    return {
+      success: true,
+      isVerified: false,
+      admission: {
+        admissionId: "mock-hashed-admission-id",
+        email: "parent@example.com",
+        parentName: "Siti Rahmawati",
+        whatsappNumber: "628123456789",
+        schoolSelection: "IIHS",
+        location: "South Jakarta",
+        occupation: "Entrepreneur",
+        hearAboutSchool: "Social Media",
+        referralCode: null,
+        existingStudents: 0,
+        isVerified: false,
+        createdAt: "2026-04-06T10:30:00Z",
+        updatedAt: "2026-04-06T10:30:00Z",
+      },
+    };
+  }
+
+  async verifyEmail(token: string): Promise<VerifyEmailResult> {
+    await wait();
+
+    if (!token || token === "invalid-token") {
+      return {
+        success: false,
+        formError: "response.verification.invalid_token",
+      };
+    }
+
+    return {
+      success: true,
+      admission: {
+        admissionId: "mock-admission-id",
+        email: "parent@example.com",
+        parentName: "Siti Rahmawati",
+        whatsappNumber: "+628123456789",
+        schoolSelection: "IISS",
+        location: "South Jakarta",
+        occupation: "Engineer",
+        hearAboutSchool: "Social Media",
+        referralCode: null,
+        existingStudents: 0,
+        isVerified: true,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      },
+    };
   }
 }

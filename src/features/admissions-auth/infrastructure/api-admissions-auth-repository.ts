@@ -1,5 +1,7 @@
 import type { AdmissionsAuthRepository } from "@/features/admissions-auth/domain/ports/admissions-auth-repository";
 import type {
+  AdmissionData,
+  CheckVerificationResult,
   EOIInput,
   EOILeadSummary,
   EOISubmitResult,
@@ -16,6 +18,9 @@ import type {
   SetupAccountResult,
   SchoolCode,
   SetupOtpInput,
+  SubmitStudentsInput,
+  SubmitStudentsResult,
+  VerifyEmailResult,
   VerifySetupOtpResult,
 } from "@/features/admissions-auth/domain/types";
 import type {
@@ -23,6 +28,8 @@ import type {
   AdmissionsApiFieldErrors,
   AdmissionsApiResponse,
 } from "@/features/admissions-auth/infrastructure/admissions-api-contract";
+import type { ServiceEndpoints } from "@/features/admissions-auth/infrastructure/service-endpoints";
+import { readCachedSetupContext } from "@/features/admissions-auth/infrastructure/setup-context-cache";
 
 type BaseFailure = {
   success: false;
@@ -36,7 +43,10 @@ type BaseSuccess = {
   redirectTo?: string;
 };
 
-type LoginApiResponse = BaseSuccess | BaseFailure;
+type LoginApiData = {
+  jwtAccessToken: string;
+  refreshToken: string;
+};
 type GoogleLoginApiResponse = (BaseSuccess & { redirectTo: string }) | BaseFailure;
 type RequestPasswordResetApiResponse = BaseSuccess | BaseFailure;
 type SetupContextApiResponse =
@@ -45,13 +55,38 @@ type SetupContextApiResponse =
       context: SetupContext;
     }
   | BaseFailure;
-type SendSetupOtpApiResponse = BaseSuccess | BaseFailure;
-type VerifySetupOtpApiResponse = BaseSuccess | BaseFailure;
-type SetupAccountApiResponse =
+type SendOtpApiData = {
+  phoneNumber: string;
+  otp: string;
+  expiredIn: number;
+};
+
+type VerifyOtpApiData = {
+  status: string;
+  accessToken: string;
+  admissionId: string;
+  phoneNumber: string;
+  jwtSessionToken: string | null;
+};
+type CheckVerificationApiResponse =
   | (BaseSuccess & {
-      accountReady: boolean;
+      isVerified: boolean;
+      admission: AdmissionData;
     })
   | BaseFailure;
+type VerifyEmailApiResponse =
+  | (BaseSuccess & {
+      admission: {
+        admissionId: string;
+        email: string;
+        parentName: string;
+        isVerified: boolean;
+      };
+    })
+  | BaseFailure;
+type CreatePasswordApiData = {
+  passwordCreated: boolean;
+};
 
 type ListEOILeadsApiResponse = {
   leads: EOILeadSummary[];
@@ -71,7 +106,7 @@ type SubmitEOIApiRequest = {
 
 type SubmitEOIApiData = {
   email: string;
-  notificationSent: boolean;
+  notificationSent?: boolean;
 };
 
 type RequestOptions = {
@@ -100,72 +135,200 @@ const HEARD_FROM_LABELS: Record<EOIInput["heardFrom"], string> = {
 };
 
 export class ApiAdmissionsAuthRepository implements AdmissionsAuthRepository {
-  constructor(private readonly baseUrl: string) {}
+  constructor(private readonly endpoints: ServiceEndpoints) {}
 
   async login(input: LoginInput): Promise<LoginResult> {
-    return this.request<LoginApiResponse>("/admissions/auth/login", {
-      method: "POST",
-      body: input,
-    });
+    return this.requestEnvelope<LoginApiData, LoginResult>(
+      `${this.endpoints.auth}/login`,
+      {
+        method: "POST",
+        body: { username: input.email, password: input.password },
+        mapSuccess: (payload) => ({
+          success: true,
+          accessToken: payload.data.jwtAccessToken,
+          refreshToken: payload.data.refreshToken,
+          redirectTo: "/dashboard/parent",
+        }),
+      },
+    );
   }
 
   async startGoogleLogin(input: GoogleLoginInput): Promise<GoogleLoginResult> {
-    return this.request<GoogleLoginApiResponse>("/admissions/auth/google/start", {
+    return this.request<GoogleLoginApiResponse>(`${this.endpoints.auth}/googleLogin`, {
       method: "POST",
       body: input,
     });
   }
 
   async requestPasswordReset(input: RequestPasswordResetInput): Promise<RequestPasswordResetResult> {
-    return this.request<RequestPasswordResetApiResponse>("/admissions/auth/request-password-reset", {
+    return this.request<RequestPasswordResetApiResponse>(`${this.endpoints.auth}/request-password-reset`, {
       method: "POST",
       body: input,
     });
   }
 
   async submitEOI(input: EOIInput): Promise<EOISubmitResult> {
-    return this.requestEnvelope<SubmitEOIApiData, EOISubmitResult>("/admission-service/submitAdmission", {
+    return this.requestEnvelope<SubmitEOIApiData, EOISubmitResult>("/api/v1/submitAdmission", {
       method: "POST",
       body: mapSubmitEOIRequest(input),
       mapSuccess: (payload) => ({
         success: true,
         email: payload.data.email,
-        notificationSent: payload.data.notificationSent,
+        notificationSent: payload.data.notificationSent ?? false,
         message: payload.responseMessage === "success" ? undefined : payload.responseMessage,
       }),
     });
   }
 
-  async getSetupContext(token: string): Promise<SetupContextResult> {
-    const query = new URLSearchParams({ token });
-    return this.request<SetupContextApiResponse>(`/admissions/auth/setup-context?${query.toString()}`);
+  async getSetupContext(admissionId: string): Promise<SetupContextResult> {
+    // Read from sessionStorage cache populated by verifyEmail on the first page.
+    // The backend does not have a dedicated setup-context endpoint.
+    const cached = readCachedSetupContext(admissionId);
+
+    if (cached) {
+      return { success: true, context: cached };
+    }
+
+    return {
+      success: false,
+      formError: "api.error.unable_to_process",
+    };
   }
 
-  async sendSetupOtp(token: string): Promise<SendSetupOtpResult> {
-    return this.request<SendSetupOtpApiResponse>("/admissions/auth/setup/send-otp", {
-      method: "POST",
-      body: { token },
-    });
+  async sendSetupOtp(phoneNumber: string): Promise<SendSetupOtpResult> {
+    return this.requestEnvelope<SendOtpApiData, SendSetupOtpResult>(
+      `${this.endpoints.otp}/sendOTP`,
+      {
+        method: "POST",
+        body: { phoneNumber },
+        mapSuccess: (payload) => ({
+          success: true,
+          phoneNumber: payload.data.phoneNumber,
+          otp: payload.data.otp,
+          expiredIn: payload.data.expiredIn,
+        }),
+      },
+    );
   }
 
   async verifySetupOtp(input: SetupOtpInput): Promise<VerifySetupOtpResult> {
-    return this.request<VerifySetupOtpApiResponse>("/admissions/auth/setup/verify-otp", {
-      method: "POST",
-      body: input,
-    });
+    return this.requestEnvelope<VerifyOtpApiData, VerifySetupOtpResult>(
+      `${this.endpoints.otp}/verifyOTP`,
+      {
+        method: "POST",
+        body: { phoneNumber: input.phoneNumber, otp: input.otp },
+        mapSuccess: (payload) => ({
+          success: true,
+          accessToken: payload.data.accessToken,
+          admissionId: payload.data.admissionId,
+          phoneNumber: payload.data.phoneNumber,
+          jwtSessionToken: payload.data.jwtSessionToken ?? undefined,
+        }),
+      },
+    );
   }
 
   async setupAccount(input: SetupAccountInput): Promise<SetupAccountResult> {
-    return this.request<SetupAccountApiResponse>("/admissions/auth/setup-account", {
-      method: "POST",
-      body: input,
-    });
+    try {
+      const url = `${this.endpoints.auth}/createPassword`;
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${input.accessToken}`,
+        },
+        body: JSON.stringify({ newPassword: input.newPassword }),
+      });
+
+      const parsed = (await response.json()) as Record<string, unknown>;
+
+      if (!response.ok || !isAdmissionsApiResponse<CreatePasswordApiData>(parsed) || !isSuccessfulResponseCode(parsed.responseCode)) {
+        return this.toLegacyFailure(parsed) as SetupAccountResult;
+      }
+
+      const data = parsed.data as CreatePasswordApiData;
+      return {
+        success: true,
+        accountReady: data.passwordCreated,
+      };
+    } catch {
+      return createNetworkFailure() as SetupAccountResult;
+    }
+  }
+
+  async submitStudents(input: SubmitStudentsInput): Promise<SubmitStudentsResult> {
+    try {
+      const url = `${this.endpoints.admission}/students`;
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${input.accessToken}`,
+        },
+        body: JSON.stringify({ students: input.students }),
+      });
+
+      const parsed = (await response.json()) as Record<string, unknown>;
+
+      if (!response.ok) {
+        return this.toLegacyFailure(parsed) as SubmitStudentsResult;
+      }
+
+      return { success: true };
+    } catch {
+      return createNetworkFailure() as SubmitStudentsResult;
+    }
   }
 
   async listEOILeads(): Promise<EOILeadSummary[]> {
-    const response = await this.request<ListEOILeadsApiResponse | BaseFailure>("/admissions/eoi/leads");
+    const response = await this.request<ListEOILeadsApiResponse | BaseFailure>(`${this.endpoints.admission}/leads`);
 
     return isLeadListResponse(response) ? response.leads : [];
+  }
+
+  async checkVerification(admissionId: string): Promise<CheckVerificationResult> {
+    // The backend isVerify endpoint returns { data: boolean }, not AdmissionData.
+    // We combine the boolean with cached admission data from the verifyEmail step.
+    const query = new URLSearchParams({ admissionId });
+    return this.requestEnvelope<boolean, CheckVerificationResult>(
+      `${this.endpoints.admission}/isVerify?${query.toString()}`,
+      {
+        mapSuccess: (payload) => {
+          const cached = readCachedSetupContext(admissionId);
+          return {
+            success: true,
+            isVerified: payload.data,
+            admission: {
+              admissionId,
+              email: cached?.email ?? "",
+              parentName: cached?.parentName ?? "",
+              whatsappNumber: cached?.whatsapp ?? "",
+              schoolSelection: cached?.school?.toUpperCase() ?? "",
+              location: cached?.locationSuburb ?? null,
+              occupation: cached?.occupation ?? null,
+              hearAboutSchool: cached?.heardFrom ?? null,
+              referralCode: cached?.referralCode ?? null,
+              existingStudents: cached?.existingChildrenCount ?? null,
+              isVerified: payload.data,
+              createdAt: "",
+              updatedAt: "",
+            },
+          };
+        },
+      },
+    );
+  }
+
+  async verifyEmail(token: string): Promise<VerifyEmailResult> {
+    return this.requestEnvelope<AdmissionData, VerifyEmailResult>(
+      `${this.endpoints.admission}/verifyEmail/${encodeURIComponent(token)}`,
+      {
+        mapSuccess: (payload) => ({
+          success: true,
+          admission: payload.data,
+        }),
+      },
+    );
   }
 
   private async request<TResponse>(path: string, options: RequestOptions = {}): Promise<TResponse> {
@@ -205,8 +368,8 @@ export class ApiAdmissionsAuthRepository implements AdmissionsAuthRepository {
     }
   }
 
-  private async fetchJson(path: string, options: RequestOptions): Promise<ParsedHttpResponse> {
-    const response = await fetch(this.toAbsoluteUrl(path), {
+  private async fetchJson(url: string, options: RequestOptions): Promise<ParsedHttpResponse> {
+    const response = await fetch(url, {
       method: options.method ?? "GET",
       headers: {
         "Content-Type": "application/json",
@@ -218,14 +381,6 @@ export class ApiAdmissionsAuthRepository implements AdmissionsAuthRepository {
       ok: response.ok,
       body: await this.parseJson(response),
     };
-  }
-
-  private toAbsoluteUrl(path: string): string {
-    if (!this.baseUrl) {
-      return path;
-    }
-
-    return `${this.baseUrl.replace(/\/$/, "")}${path}`;
   }
 
   private toLegacyFailure(parsed: Record<string, unknown>): BaseFailure {

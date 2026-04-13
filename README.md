@@ -6,12 +6,6 @@ First, run the development server:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
@@ -22,8 +16,11 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 Copy `.env.example` to `.env.local` and choose the admissions mode:
 
-- `NEXT_PUBLIC_ADMISSIONS_API_MODE=mock` uses local mock repository behavior.
-- `NEXT_PUBLIC_ADMISSIONS_API_MODE=real` uses fetch calls to `NEXT_PUBLIC_ADMISSIONS_API_BASE_URL`.
+- `NEXT_PUBLIC_ADMISSIONS_API_MODE=mock` uses the local mock repository and should be the default for local development.
+- `NEXT_PUBLIC_ADMISSIONS_API_MODE=real` uses the Next.js app as a same-origin proxy for admissions submission.
+- `ADMISSIONS_API_BASE_URL` is the preferred backend base URL for the proxy route.
+- `NEXT_PUBLIC_ADMISSIONS_API_BASE_URL` can mirror the backend URL when you want the local debug indicator to display it.
+- Preview and production environments should use `real`.
 
 Routes:
 
@@ -36,7 +33,7 @@ Routes:
 
 Expected backend endpoints when `NEXT_PUBLIC_ADMISSIONS_API_MODE=real`:
 
-- `POST /admissions/eoi`
+- `POST /api/v1/submitAdmission` (proxied through the frontend route at the same path)
 - `POST /admissions/auth/login`
 - `POST /admissions/auth/google/start`
 - `POST /admissions/auth/request-password-reset`
@@ -45,6 +42,18 @@ Expected backend endpoints when `NEXT_PUBLIC_ADMISSIONS_API_MODE=real`:
 - `POST /admissions/auth/setup/verify-otp`
 - `POST /admissions/auth/setup-account`
 - `GET /admissions/eoi/leads` (prepared for future admissions admin UI)
+
+## Quality Gate
+
+Before merging, the repository standard is:
+
+```bash
+npm ci
+npm run lint
+npm run typecheck
+npm run test
+npm run build
+```
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 

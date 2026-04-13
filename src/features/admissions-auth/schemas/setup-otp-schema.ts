@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 export const setupOtpSchema = z.object({
-  token: z.string().min(1, "validation.setup.token_required"),
+  phoneNumber: z.string().min(1, "validation.setup.phone_required"),
   otp: z
     .string()
     .min(1, "validation.setup.otp_required")

@@ -1,8 +1,10 @@
 describe("createAdmissionsAuthRepository", () => {
   const originalMode = process.env.NEXT_PUBLIC_ADMISSIONS_API_MODE;
+  const originalBaseUrl = process.env.NEXT_PUBLIC_ADMISSIONS_API_BASE_URL;
 
   afterEach(() => {
     process.env.NEXT_PUBLIC_ADMISSIONS_API_MODE = originalMode;
+    process.env.NEXT_PUBLIC_ADMISSIONS_API_BASE_URL = originalBaseUrl;
   });
 
   it("returns mock repository by default", async () => {
@@ -29,5 +31,27 @@ describe("createAdmissionsAuthRepository", () => {
     const repository = createAdmissionsAuthRepository();
 
     expect(repository.constructor.name).toBe("ApiAdmissionsAuthRepository");
+  });
+
+  it("provides service endpoints for the real repository", async () => {
+    vi.resetModules();
+    process.env.NEXT_PUBLIC_ADMISSIONS_API_MODE = "real";
+    process.env.NEXT_PUBLIC_ADMISSIONS_API_BASE_URL = "http://localhost:8080";
+
+    const { createAdmissionsAuthRepository } = await import(
+      "@/features/admissions-auth/infrastructure/create-admissions-auth-repository"
+    );
+
+    const repository = createAdmissionsAuthRepository();
+
+    expect(repository.constructor.name).toBe("ApiAdmissionsAuthRepository");
+    expect(repository).toMatchObject({
+      endpoints: expect.objectContaining({
+        admission: expect.stringContaining("/api/v1/admission-service"),
+        otp: expect.stringContaining("/api/v1/otp-service"),
+        auth: expect.stringContaining("/api/v1/auth-service"),
+        notification: expect.stringContaining("/api/email/v1"),
+      }),
+    });
   });
 });

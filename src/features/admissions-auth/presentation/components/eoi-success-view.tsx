@@ -1,13 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
 import { useI18n } from "@/i18n";
 
-export function EOISuccessView() {
-  const searchParams = useSearchParams();
+type EOISuccessViewProps = {
+  submittedEmail?: string | null;
+};
+
+export function EOISuccessView({ submittedEmail }: EOISuccessViewProps) {
   const { t } = useI18n();
-  const submittedEmail = searchParams.get("email");
 
   return (
     <div className="rounded-[28px] border border-[var(--ds-border)] bg-[var(--ds-surface)] px-5 py-6 sm:px-6">

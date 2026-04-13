@@ -1,61 +1,29 @@
 "use client";
 
-import { useEffect, type ReactNode } from "react";
-import { create } from "zustand";
-
-export type ThemeMode = "light" | "dark";
-export type ThemePalette = "option1" | "option2" | "option3" | "option4" | "option5";
-export type ThemeId = `${ThemePalette}-${ThemeMode}`;
+import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { type ThemeId, type ThemeMode, type ThemePalette } from "@/components/theme-config";
+import {
+  DEFAULT_THEME_ID,
+  THEME_COOKIE_NAME,
+  parseThemeId,
+  splitThemeId,
+  toThemeId,
+} from "@/shared/lib/ui-preferences";
 
 type ThemeState = {
-  hydrated: boolean;
   palette: ThemePalette;
   mode: ThemeMode;
   themeId: ThemeId;
-  hydrate: () => void;
   setMode: (mode: ThemeMode) => void;
   toggleMode: () => void;
   setPalette: (palette: ThemePalette) => void;
 };
 
-const STORAGE_KEY = "ds-theme-id";
-const DEFAULT_PALETTE: ThemePalette = "option2";
-const DEFAULT_MODE: ThemeMode = "light";
-const DEFAULT_THEME_ID: ThemeId = `${DEFAULT_PALETTE}-${DEFAULT_MODE}`;
+const STORAGE_KEY = THEME_COOKIE_NAME;
+const COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 365;
 
-export const paletteOptions: Array<{ id: ThemePalette; label: string }> = [
-  { id: "option1", label: "Option 1 · Modern Islamic Minimal" },
-  { id: "option2", label: "Option 2 · Contemporary Education Tech" },
-  { id: "option3", label: "Option 3 · Heritage Meets Future" },
-  { id: "option4", label: "Option 4 · Clean Academic White" },
-  { id: "option5", label: "Option 5 · Youth Islamic Contemporary" },
-];
-
-function toThemeId(palette: ThemePalette, mode: ThemeMode): ThemeId {
-  return `${palette}-${mode}`;
-}
-
-function detectSystemMode(): ThemeMode {
-  if (typeof window === "undefined") {
-    return DEFAULT_MODE;
-  }
-
-  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-}
-
-function parseThemeId(value: string | null | undefined): ThemeId | null {
-  if (!value) {
-    return null;
-  }
-
-  const match = /^(option[1-5])-(light|dark)$/.exec(value);
-
-  if (!match) {
-    return null;
-  }
-
-  return `${match[1] as ThemePalette}-${match[2] as ThemeMode}`;
-}
+export type { ThemeId, ThemeMode, ThemePalette } from "@/components/theme-config";
+export { paletteOptions } from "@/components/theme-config";
 
 function applyTheme(themeId: ThemeId): void {
   if (typeof document === "undefined") {
@@ -73,87 +41,74 @@ function readStoredThemeId(): ThemeId | null {
   }
 }
 
-function saveThemeId(themeId: ThemeId): void {
+function saveThemeId(themeId: ThemeId) {
   try {
     localStorage.setItem(STORAGE_KEY, themeId);
   } catch {
     // Ignore blocked storage.
   }
+
+  document.cookie = `${THEME_COOKIE_NAME}=${encodeURIComponent(themeId)}; Path=/; Max-Age=${COOKIE_MAX_AGE_SECONDS}; SameSite=Lax`;
 }
 
-function getInitialThemeId(): ThemeId {
-  if (typeof document === "undefined") {
-    return DEFAULT_THEME_ID;
-  }
+const defaultThemeState = splitThemeId(DEFAULT_THEME_ID);
+const defaultContextValue: ThemeState = {
+  palette: defaultThemeState.palette,
+  mode: defaultThemeState.mode,
+  themeId: DEFAULT_THEME_ID,
+  setMode: () => undefined,
+  toggleMode: () => undefined,
+  setPalette: () => undefined,
+};
 
-  const fromDom = parseThemeId(document.documentElement.dataset.theme);
-  if (fromDom) {
-    return fromDom;
-  }
+const ThemeContext = createContext<ThemeState>(defaultContextValue);
 
-  const fromStorage = readStoredThemeId();
-  if (fromStorage) {
-    return fromStorage;
-  }
-
-  return toThemeId(DEFAULT_PALETTE, detectSystemMode());
+export function useTheme<T>(selector: (state: ThemeState) => T): T {
+  return selector(useContext(ThemeContext));
 }
 
-function splitThemeId(themeId: ThemeId): { palette: ThemePalette; mode: ThemeMode } {
-  const [palette, mode] = themeId.split("-") as [ThemePalette, ThemeMode];
-  return { palette, mode };
-}
+type ThemeProviderProps = {
+  children: ReactNode;
+  initialThemeId?: ThemeId;
+};
 
-export const useTheme = create<ThemeState>((set, get) => {
-  const initialThemeId = getInitialThemeId();
-  const initialState = splitThemeId(initialThemeId);
+export function ThemeProvider({ children, initialThemeId = DEFAULT_THEME_ID }: ThemeProviderProps) {
+  const [themeId, setThemeId] = useState<ThemeId>(() => {
+    if (typeof window === "undefined") {
+      return initialThemeId;
+    }
 
-  return {
-    hydrated: false,
-    palette: initialState.palette,
-    mode: initialState.mode,
-    themeId: initialThemeId,
-    hydrate: () => {
-      const storedThemeId = readStoredThemeId();
-      const themeId = storedThemeId ?? parseThemeId(document.documentElement.dataset.theme) ?? DEFAULT_THEME_ID;
-      const nextState = splitThemeId(themeId);
-
-      applyTheme(themeId);
-
-      set({
-        hydrated: true,
-        palette: nextState.palette,
-        mode: nextState.mode,
-        themeId,
-      });
-    },
-    setMode: (mode) => {
-      const { palette } = get();
-      const themeId = toThemeId(palette, mode);
-      applyTheme(themeId);
-      saveThemeId(themeId);
-      set({ mode, themeId });
-    },
-    toggleMode: () => {
-      const { mode, setMode } = get();
-      setMode(mode === "dark" ? "light" : "dark");
-    },
-    setPalette: (palette) => {
-      const { mode } = get();
-      const themeId = toThemeId(palette, mode);
-      applyTheme(themeId);
-      saveThemeId(themeId);
-      set({ palette, themeId });
-    },
-  };
-});
-
-export function ThemeProvider({ children }: { children: ReactNode }) {
-  const hydrate = useTheme((state) => state.hydrate);
+    return readStoredThemeId() ?? initialThemeId;
+  });
 
   useEffect(() => {
-    hydrate();
-  }, [hydrate]);
+    applyTheme(themeId);
+    saveThemeId(themeId);
+  }, [themeId]);
 
-  return children;
+  const themeState = splitThemeId(themeId);
+  const commitThemeId = (nextThemeId: ThemeId) => {
+    applyTheme(nextThemeId);
+    saveThemeId(nextThemeId);
+    setThemeId(nextThemeId);
+  };
+  const value = useMemo<ThemeState>(
+    () => ({
+      palette: themeState.palette,
+      mode: themeState.mode,
+      themeId,
+      setMode: (mode) => {
+        commitThemeId(toThemeId(themeState.palette, mode));
+      },
+      toggleMode: () => {
+        commitThemeId(toThemeId(themeState.palette, themeState.mode === "dark" ? "light" : "dark"));
+      },
+      setPalette: (palette) => {
+        commitThemeId(toThemeId(palette, themeState.mode));
+      },
+    }),
+    [themeId, themeState.mode, themeState.palette],
+  );
+
+  return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 }

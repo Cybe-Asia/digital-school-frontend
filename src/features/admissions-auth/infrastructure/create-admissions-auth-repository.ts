@@ -1,31 +1,17 @@
 import type { AdmissionsAuthRepository } from "@/features/admissions-auth/domain/ports/admissions-auth-repository";
+import {
+  readAdmissionsAuthRuntimeConfig,
+  type AdmissionsAuthRuntimeConfig,
+} from "@/features/admissions-auth/infrastructure/admissions-auth-runtime-config";
 import { ApiAdmissionsAuthRepository } from "@/features/admissions-auth/infrastructure/api-admissions-auth-repository";
 import { MockAdmissionsAuthRepository } from "@/features/admissions-auth/infrastructure/mock-admissions-auth-repository";
 
-type AdmissionsApiMode = "mock" | "real";
-
-let repository: AdmissionsAuthRepository | null = null;
-
-function getMode(): AdmissionsApiMode {
-  const mode = process.env.NEXT_PUBLIC_ADMISSIONS_API_MODE;
-
-  if (mode === "real") {
-    return "real";
+export function createAdmissionsAuthRepository(
+  config: AdmissionsAuthRuntimeConfig = readAdmissionsAuthRuntimeConfig(),
+): AdmissionsAuthRepository {
+  if (config.mode === "real") {
+    return new ApiAdmissionsAuthRepository(config.endpoints);
   }
 
-  return "mock";
-}
-
-function getBaseUrl(): string {
-  return (process.env.NEXT_PUBLIC_ADMISSIONS_API_BASE_URL ?? "").replace(/\/$/, "");
-}
-
-export function createAdmissionsAuthRepository(): AdmissionsAuthRepository {
-  if (repository) {
-    return repository;
-  }
-
-  repository = getMode() === "real" ? new ApiAdmissionsAuthRepository(getBaseUrl()) : new MockAdmissionsAuthRepository();
-
-  return repository;
+  return new MockAdmissionsAuthRepository();
 }
