@@ -36,7 +36,7 @@ export type ServiceEndpoints = {
 };
 
 const SERVICE_PREFIXES = {
-  admission: "/api/v1/admission-service",
+  admission: "/api/leads/v1",
   otp: "/api/v1/otp-service",
   auth: "/api/v1/auth-service",
   notification: "/api/email/v1",

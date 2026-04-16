@@ -2,8 +2,10 @@ node_modules
 .next
 .git
 .github
-*.md
 .env*
+*.md
 output
 vitest.config.ts
 eslint.config.mjs
+.vscode
+.idea

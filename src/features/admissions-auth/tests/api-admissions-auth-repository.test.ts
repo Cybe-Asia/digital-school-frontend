@@ -2,7 +2,7 @@ import { ApiAdmissionsAuthRepository } from "@/features/admissions-auth/infrastr
 import type { ServiceEndpoints } from "@/features/admissions-auth/infrastructure/service-endpoints";
 
 const TEST_ENDPOINTS: ServiceEndpoints = {
-  admission: "https://api.school.test/api/v1/admission-service",
+  admission: "https://api.school.test/api/leads/v1",
   otp: "https://api.school.test/api/v1/otp-service",
   auth: "https://api.school.test/api/v1/auth-service",
   notification: "https://api.school.test/api/email/v1",
@@ -58,7 +58,7 @@ describe("ApiAdmissionsAuthRepository", () => {
     const result = await repository.getSetupContext("valid-token");
 
     expect(fetchMock).toHaveBeenCalledWith(
-      "https://api.school.test/api/v1/admission-service/setup-context?admissionId=valid-token",
+      "https://api.school.test/api/leads/v1/setup-context?admissionId=valid-token",
       expect.objectContaining({
         method: "GET",
       }),
@@ -189,8 +189,8 @@ describe("ApiAdmissionsAuthRepository", () => {
         responseMessage: "success",
         responseError: null,
         data: {
+          lead_id: "lead-123",
           email: "parent@example.com",
-          notificationSent: true,
         },
       }),
     });
@@ -205,21 +205,20 @@ describe("ApiAdmissionsAuthRepository", () => {
       expect.objectContaining({
         method: "POST",
         body: JSON.stringify({
-          parentName: "Siti Rahmawati",
+          parent_name: "Siti Rahmawati",
           email: "parent@example.com",
-          whatsappNumber: "+62 812 3456 7890",
-          location: "South Jakarta",
+          whatsapp: "+62 812 3456 7890",
+          target_school_preference: "IIHS",
+          location_suburb: "South Jakarta",
           occupation: "Entrepreneur",
-          existingStudents: 0,
-          hearAboutSchool: "Social Media",
-          schoolSelection: "IIHS",
+          hear_about_school: "Social Media",
         }),
       }),
     );
     expect(result.success).toBe(true);
     if (result.success) {
       expect(result.email).toBe("parent@example.com");
-      expect(result.notificationSent).toBe(true);
+      expect(result.notificationSent).toBe(false);
     }
   });
 
@@ -231,8 +230,8 @@ describe("ApiAdmissionsAuthRepository", () => {
         responseMessage: "submitted",
         responseError: null,
         data: {
+          lead_id: "lead-456",
           email: "arief@example.com",
-          notificationSent: false,
         },
       }),
     });
@@ -247,15 +246,15 @@ describe("ApiAdmissionsAuthRepository", () => {
       expect.objectContaining({
         method: "POST",
         body: JSON.stringify({
-          parentName: "Arief Pratama",
+          parent_name: "Arief Pratama",
           email: "arief@example.com",
-          whatsappNumber: "+62 811 1111 1111",
-          location: "Bekasi",
+          whatsapp: "+62 811 1111 1111",
+          target_school_preference: "IISS",
+          location_suburb: "Bekasi",
           occupation: "Engineer",
-          existingStudents: 2,
-          referralCode: "REF123",
-          hearAboutSchool: "Friend / Family",
-          schoolSelection: "IISS",
+          hear_about_school: "Friend / Family",
+          referral_code: "REF123",
+          existing_students: 2,
         }),
       }),
     );
@@ -275,8 +274,8 @@ describe("ApiAdmissionsAuthRepository", () => {
         responseMessage: "success",
         responseError: null,
         data: {
+          lead_id: "lead-abc",
           email: "parent@example.com",
-          notificationSent: true,
         },
       }),
     });
@@ -303,7 +302,7 @@ describe("ApiAdmissionsAuthRepository", () => {
         responseMessage: "success",
         responseError: null,
         data: {
-          admissionId: "abc-123",
+          lead_id: "lead-789",
           email: "parent@example.com",
         },
       }),

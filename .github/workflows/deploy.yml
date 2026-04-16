@@ -47,7 +47,7 @@ jobs:
         run: |
           IMAGE_NAME=$(echo "ghcr.io/${{ github.repository_owner }}/digital-school-frontend" | tr '[:upper:]' '[:lower:]')
           docker build \
-            --build-arg NEXT_PUBLIC_API_GATEWAY_URL="" \
+            --build-arg NEXT_PUBLIC_ADMISSIONS_API_MODE=real \
             -t ${IMAGE_NAME}:${{ steps.vars.outputs.IMAGE_TAG }} .
 
       - name: Push Docker Image
