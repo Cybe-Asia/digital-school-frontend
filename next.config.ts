@@ -9,7 +9,12 @@ const nextConfig: NextConfig = {
   output: "standalone",
   async rewrites() {
     return [
-      // Admission service proxy
+      // Leads service proxy (admission)
+      {
+        source: "/api/leads/v1/:path*",
+        destination: `${GATEWAY_URL}/api/leads/v1/:path*`,
+      },
+      // Legacy admission service proxy (health checks)
       {
         source: "/api/v1/admission-service/:path*",
         destination: `${GATEWAY_URL}/api/v1/admission-service/:path*`,

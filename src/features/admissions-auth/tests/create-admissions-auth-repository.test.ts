@@ -47,7 +47,7 @@ describe("createAdmissionsAuthRepository", () => {
     expect(repository.constructor.name).toBe("ApiAdmissionsAuthRepository");
     expect(repository).toMatchObject({
       endpoints: expect.objectContaining({
-        admission: expect.stringContaining("/api/v1/admission-service"),
+        admission: expect.stringContaining("/api/leads/v1"),
         otp: expect.stringContaining("/api/v1/otp-service"),
         auth: expect.stringContaining("/api/v1/auth-service"),
         notification: expect.stringContaining("/api/email/v1"),

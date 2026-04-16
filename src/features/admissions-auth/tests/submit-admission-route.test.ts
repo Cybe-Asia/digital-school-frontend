@@ -55,7 +55,7 @@ describe("submitAdmission route", () => {
     const response = await POST(request);
 
     expect(fetchMock).toHaveBeenCalledWith(
-      "http://localhost:8080/api/v1/admission-service/submitForm",
+      "http://localhost:8080/api/leads/v1/submitForm",
       expect.objectContaining({
         method: "POST",
         body: JSON.stringify(submitAdmissionPayload),
@@ -96,7 +96,7 @@ describe("submitAdmission route", () => {
     );
 
     expect(fetchMock).toHaveBeenCalledWith(
-      "http://localhost:8080/api/v1/admission-service/submitForm",
+      "http://localhost:8080/api/leads/v1/submitForm",
       expect.any(Object),
     );
   });
@@ -131,7 +131,7 @@ describe("submitAdmission route", () => {
     );
 
     expect(fetchMock).toHaveBeenCalledWith(
-      "http://localhost:8080/api/v1/admission-service/submitForm",
+      "http://localhost:8080/api/leads/v1/submitForm",
       expect.objectContaining({
         method: "POST",
         body: JSON.stringify(submitAdmissionPayload),

@@ -93,20 +93,20 @@ type ListEOILeadsApiResponse = {
 };
 
 type SubmitEOIApiRequest = {
-  parentName: string;
+  parent_name: string;
   email: string;
-  whatsappNumber: string;
-  location: string;
-  occupation: string;
-  existingStudents: number;
-  referralCode?: string;
-  hearAboutSchool: string;
-  schoolSelection: Uppercase<EOIInput["school"]>;
+  whatsapp: string;
+  target_school_preference: string;
+  location_suburb?: string;
+  occupation?: string;
+  hear_about_school?: string;
+  referral_code?: string;
+  existing_students?: number;
 };
 
 type SubmitEOIApiData = {
+  lead_id: string;
   email: string;
-  notificationSent?: boolean;
 };
 
 type RequestOptions = {
@@ -174,7 +174,7 @@ export class ApiAdmissionsAuthRepository implements AdmissionsAuthRepository {
       mapSuccess: (payload) => ({
         success: true,
         email: payload.data.email,
-        notificationSent: payload.data.notificationSent ?? false,
+        notificationSent: false,
         message: payload.responseMessage === "success" ? undefined : payload.responseMessage,
       }),
     });
@@ -289,7 +289,7 @@ export class ApiAdmissionsAuthRepository implements AdmissionsAuthRepository {
   async checkVerification(admissionId: string): Promise<CheckVerificationResult> {
     // The backend isVerify endpoint returns { data: boolean }, not AdmissionData.
     // We combine the boolean with cached admission data from the verifyEmail step.
-    const query = new URLSearchParams({ admissionId });
+    const query = new URLSearchParams({ lead_id: admissionId });
     return this.requestEnvelope<boolean, CheckVerificationResult>(
       `${this.endpoints.admission}/isVerify?${query.toString()}`,
       {
@@ -426,15 +426,15 @@ function mapSubmitEOIRequest(input: EOIInput): SubmitEOIApiRequest {
   const referralCode = input.referralCode?.trim();
 
   return {
-    parentName: input.parentName,
+    parent_name: input.parentName,
     email: input.email,
-    whatsappNumber: input.whatsapp,
-    location: input.locationSuburb,
-    occupation: input.occupation,
-    existingStudents: toExistingStudentsCount(input),
-    referralCode: referralCode ? referralCode : undefined,
-    hearAboutSchool: toHeardAboutSchool(input.heardFrom),
-    schoolSelection: toSchoolSelection(input.school),
+    whatsapp: input.whatsapp,
+    target_school_preference: toSchoolSelection(input.school),
+    location_suburb: input.locationSuburb || undefined,
+    occupation: input.occupation || undefined,
+    hear_about_school: toHeardAboutSchool(input.heardFrom) || undefined,
+    referral_code: referralCode ? referralCode : undefined,
+    existing_students: toExistingStudentsCount(input) || undefined,
   };
 }
 

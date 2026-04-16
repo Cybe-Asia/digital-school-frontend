@@ -1,0 +1,86 @@
+name: Deploy Frontend
+
+on:
+  push:
+    branches:
+      - dev
+      - main
+      - "release-*"
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set Environment & Image Tag
+        id: vars
+        run: |
+          if [[ "${GITHUB_REF}" == "refs/heads/dev" ]]; then
+            echo "ENV=dev" >> $GITHUB_OUTPUT
+          elif [[ "${GITHUB_REF}" == refs/heads/release-* ]]; then
+            echo "ENV=staging" >> $GITHUB_OUTPUT
+          else
+            echo "ENV=prod" >> $GITHUB_OUTPUT
+          fi
+          SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
+          echo "IMAGE_TAG=$(echo "${GITHUB_REF##*/}-${SHORT_SHA}")" >> $GITHUB_OUTPUT
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GHCR_TOKEN }}
+
+      - name: Build Docker Image
+        run: |
+          IMAGE_NAME=$(echo "ghcr.io/${{ github.repository_owner }}/digital-school-frontend" | tr '[:upper:]' '[:lower:]')
+          docker build \
+            --build-arg NEXT_PUBLIC_ADMISSIONS_API_MODE=real \
+            -t ${IMAGE_NAME}:${{ steps.vars.outputs.IMAGE_TAG }} .
+
+      - name: Push Docker Image
+        run: |
+          IMAGE_NAME=$(echo "ghcr.io/${{ github.repository_owner }}/digital-school-frontend" | tr '[:upper:]' '[:lower:]')
+          docker push ${IMAGE_NAME}:${{ steps.vars.outputs.IMAGE_TAG }}
+
+      - name: Setup Kustomize
+        if: steps.vars.outputs.ENV == 'dev'
+        uses: imranismail/setup-kustomize@v2
+
+      - name: Update GitOps Repository
+        if: steps.vars.outputs.ENV == 'dev'
+        run: |
+          set -e
+          git config --global user.email "ci-bot@cybe-asia.github"
+          git config --global user.name "CI Bot"
+
+          echo "Cloning GitOps repository..."
+          git clone https://x-access-token:${{ secrets.GITOPS_TOKEN }}@github.com/Cybe-Asia/digital-school-gitops.git gitops-repo
+          cd gitops-repo
+          git checkout dev
+          cd overlays/dev
+
+          echo "Current image tag in kustomization.yaml before update:"
+          grep "newTag:" kustomization.yaml || echo "No newTag found"
+
+          echo "Updating image tag for digital-school-frontend to ${{ steps.vars.outputs.IMAGE_TAG }}..."
+          kustomize edit set image ghcr.io/cybe-asia/digital-school-frontend=ghcr.io/cybe-asia/digital-school-frontend:${{ steps.vars.outputs.IMAGE_TAG }}
+
+          echo "Checking for changes..."
+          if git diff --quiet kustomization.yaml; then
+            echo "No changes detected in kustomization.yaml. Skipping push."
+          else
+            echo "Changes detected. Committing and pushing..."
+            git add kustomization.yaml
+            git commit -m "chore(frontend): update image tag to ${{ steps.vars.outputs.IMAGE_TAG }} [skip ci]"
+            git push origin dev
+          fi
