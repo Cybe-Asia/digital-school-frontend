@@ -1,4 +1,8 @@
-name: Deploy Frontend
+name: Build & Deploy
+
+# Inlined from Cybe-Asia/digital-school-gitops/.github/workflows/build-scan-push.yml
+# Canonical spec: docs/ci-golden-path.md in that repo.
+# Phase 1 doc coverage: L4-S1/S2/S3, L5-S1, L7-S1.
 
 on:
   push:
@@ -8,33 +12,37 @@ on:
       - "release-*"
   workflow_dispatch:
 
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
+env:
+  SERVICE_NAME: digital-school-frontend
+  KUSTOMIZE_IMAGE_KEY: ghcr.io/cybe-asia/digital-school-frontend
 
+jobs:
+  build-scan-push:
+    runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set Environment & Image Tag
+      - name: Compute tag + overlay
         id: vars
         run: |
-          if [[ "${GITHUB_REF}" == "refs/heads/dev" ]]; then
-            echo "ENV=dev" >> $GITHUB_OUTPUT
-            echo "OVERLAY=dev" >> $GITHUB_OUTPUT
-          elif [[ "${GITHUB_REF}" == refs/heads/release-* ]]; then
-            echo "ENV=staging" >> $GITHUB_OUTPUT
-            echo "OVERLAY=staging" >> $GITHUB_OUTPUT
-          else
-            echo "ENV=production" >> $GITHUB_OUTPUT
-            echo "OVERLAY=production" >> $GITHUB_OUTPUT
-          fi
-          SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
-          echo "IMAGE_TAG=$(echo "${GITHUB_REF##*/}-${SHORT_SHA}")" >> $GITHUB_OUTPUT
+          SHORT_SHA=$(echo "${GITHUB_SHA}" | cut -c1-7)
+          IMAGE_TAG="sha-${SHORT_SHA}"
+          IMAGE_NAME=$(echo "ghcr.io/${{ github.repository_owner }}/${SERVICE_NAME}" | tr '[:upper:]' '[:lower:]')
+          echo "image_tag=${IMAGE_TAG}" >> "$GITHUB_OUTPUT"
+          echo "image_name=${IMAGE_NAME}" >> "$GITHUB_OUTPUT"
+          echo "image_ref=${IMAGE_NAME}:${IMAGE_TAG}" >> "$GITHUB_OUTPUT"
+
+          case "${GITHUB_REF}" in
+            refs/heads/dev)          OVERLAY="overlays/dev" ;;
+            refs/heads/release-*)    OVERLAY="overlays/staging" ;;
+            refs/heads/main)         OVERLAY="overlays/production" ;;
+            *)                       OVERLAY="" ;;
+          esac
+          echo "overlay_path=${OVERLAY}" >> "$GITHUB_OUTPUT"
 
       - name: Login to GHCR
         uses: docker/login-action@v3
@@ -43,42 +51,51 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GHCR_TOKEN }}
 
-      - name: Build Docker Image
-        run: |
-          IMAGE_NAME=$(echo "ghcr.io/${{ github.repository_owner }}/digital-school-frontend" | tr '[:upper:]' '[:lower:]')
-          docker build \
-            --build-arg NEXT_PUBLIC_ADMISSIONS_API_MODE=real \
-            -t ${IMAGE_NAME}:${{ steps.vars.outputs.IMAGE_TAG }} .
+      - name: Build image
+        run: docker build -t "${{ steps.vars.outputs.image_ref }}" .
 
-      - name: Push Docker Image
-        run: |
-          IMAGE_NAME=$(echo "ghcr.io/${{ github.repository_owner }}/digital-school-frontend" | tr '[:upper:]' '[:lower:]')
-          docker push ${IMAGE_NAME}:${{ steps.vars.outputs.IMAGE_TAG }}
+      - name: Trivy vulnerability scan (L4-S2)
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ steps.vars.outputs.image_ref }}
+          format: table
+          severity: CRITICAL,HIGH
+          exit-code: "1"
+          ignore-unfixed: true
+          vuln-type: os,library
 
-      - name: Setup Kustomize
+      - name: Generate SBOM (L4-S3)
+        uses: anchore/sbom-action@v0.17.4
+        with:
+          image: ${{ steps.vars.outputs.image_ref }}
+          format: spdx-json
+          artifact-name: ${{ env.SERVICE_NAME }}-sbom-${{ steps.vars.outputs.image_tag }}.spdx.json
+          output-file: sbom.spdx.json
+          upload-artifact: true
+          upload-artifact-retention: 90
+
+      - name: Push image
+        run: docker push "${{ steps.vars.outputs.image_ref }}"
+
+      - name: Setup kustomize
+        if: steps.vars.outputs.overlay_path != ''
         uses: imranismail/setup-kustomize@v2
 
-      - name: Update GitOps Repository
+      - name: Auto-bump gitops overlay
+        if: steps.vars.outputs.overlay_path != ''
         run: |
           set -e
-          git config --global user.email "arief.n@cybe.tech"
-          git config --global user.name "arief.n"
-
-          echo "Cloning GitOps repository..."
-          git clone https://x-access-token:${{ secrets.GITOPS_TOKEN }}@github.com/Cybe-Asia/digital-school-gitops.git gitops-repo
+          git config --global user.email "ci-bot@cybe-asia.github"
+          git config --global user.name "CI Bot"
+          git clone "https://x-access-token:${{ secrets.GITOPS_TOKEN }}@github.com/Cybe-Asia/digital-school-gitops.git" gitops-repo
           cd gitops-repo
           git checkout dev
-
-          OVERLAY="${{ steps.vars.outputs.OVERLAY }}"
-          cd "overlays/${OVERLAY}"
-
-          echo "Updating image tag for digital-school-frontend to ${{ steps.vars.outputs.IMAGE_TAG }} in overlays/${OVERLAY}..."
-          kustomize edit set image ghcr.io/cybe-asia/digital-school-frontend=ghcr.io/cybe-asia/digital-school-frontend:${{ steps.vars.outputs.IMAGE_TAG }}
-
+          cd "${{ steps.vars.outputs.overlay_path }}"
+          kustomize edit set image "${{ env.KUSTOMIZE_IMAGE_KEY }}=${{ steps.vars.outputs.image_ref }}"
           if git diff --quiet kustomization.yaml; then
-            echo "No changes detected. Skipping push."
-          else
-            git add kustomization.yaml
-            git commit -m "chore(frontend): update ${OVERLAY} image tag to ${{ steps.vars.outputs.IMAGE_TAG }} [skip ci]"
-            git push origin dev
+            echo "no changes to ${{ steps.vars.outputs.overlay_path }}/kustomization.yaml"
+            exit 0
           fi
+          git add kustomization.yaml
+          git commit -m "chore(${{ env.SERVICE_NAME }}): bump ${{ steps.vars.outputs.overlay_path }} to ${{ steps.vars.outputs.image_tag }} [skip ci]"
+          git push origin dev
