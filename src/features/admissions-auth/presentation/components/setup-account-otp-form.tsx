@@ -25,7 +25,15 @@ type SetupAccountOtpFormProps = {
 export function SetupAccountOtpForm({ admissionId, phoneNumber }: SetupAccountOtpFormProps) {
   const router = useRouter();
   const { t } = useI18n();
-  const [resendCooldown, setResendCooldown] = useState(0);
+  // Read the "already-sent" flag synchronously during state init so we
+  // don't need to setState inside the mount effect (the linter rule
+  // react-hooks/set-state-in-effect flags that pattern). The effect
+  // below is then purely a side-effect cleanup of the localStorage
+  // flag + fallback OTP send when the flag was absent.
+  const [resendCooldown, setResendCooldown] = useState(() => {
+    if (typeof window === "undefined") return 0;
+    return wasOtpAlreadySent(admissionId) ? RESEND_COOLDOWN_SECONDS : 0;
+  });
   const hasAutoSentRef = useRef(false);
 
   const sendOtpMutation = useSendSetupOtpMutation();
@@ -53,15 +61,18 @@ export function SetupAccountOtpForm({ admissionId, phoneNumber }: SetupAccountOt
 
     hasAutoSentRef.current = true;
 
-    // OTP was already sent before navigating here — just start the cooldown
     if (wasOtpAlreadySent(admissionId)) {
+      // Cooldown was already seeded by useState initializer above; just
+      // consume the localStorage flag so a subsequent refresh doesn't
+      // repeat the initial cooldown.
       clearOtpAlreadySent(admissionId);
-      setResendCooldown(RESEND_COOLDOWN_SECONDS);
       return;
     }
 
     void sendOtpMutation.mutateAsync(phoneNumber).then((result) => {
       if (result.success) {
+        // setState inside an async callback is fine — not synchronous
+        // in the effect body.
         setResendCooldown(RESEND_COOLDOWN_SECONDS);
       }
     });
