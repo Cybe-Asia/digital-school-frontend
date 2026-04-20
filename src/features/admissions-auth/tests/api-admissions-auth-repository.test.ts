@@ -38,32 +38,47 @@ describe("ApiAdmissionsAuthRepository", () => {
     vi.unstubAllGlobals();
   });
 
-  it("gets setup context by token", async () => {
-    const fetchMock = vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({
-        success: true,
-        context: {
-          parentName: "Siti Rahmawati",
-          email: "parent@example.com",
-          whatsapp: "+62 812 3456 7890",
-          school: "iihs",
-        },
-      }),
-    });
+  it("gets setup context from sessionStorage cache (no backend call)", async () => {
+    // getSetupContext reads from sessionStorage (populated by an
+    // earlier verifyEmail call) — the backend does not expose a
+    // dedicated setup-context endpoint. This test ensures we hit the
+    // cache path and do NOT make a network request.
+    const admissionId = "valid-token";
+    const cachedContext = {
+      parentName: "Siti Rahmawati",
+      email: "parent@example.com",
+      whatsapp: "+62 812 3456 7890",
+      school: "iihs" as const,
+    };
+    sessionStorage.setItem(
+      "admissions-setup-context-cache",
+      JSON.stringify({ [admissionId]: cachedContext }),
+    );
 
+    const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
 
     const repository = new ApiAdmissionsAuthRepository(TEST_ENDPOINTS);
-    const result = await repository.getSetupContext("valid-token");
+    const result = await repository.getSetupContext(admissionId);
 
-    expect(fetchMock).toHaveBeenCalledWith(
-      "https://api.school.test/api/leads/v1/setup-context?admissionId=valid-token",
-      expect.objectContaining({
-        method: "GET",
-      }),
-    );
+    expect(fetchMock).not.toHaveBeenCalled();
     expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.context).toEqual(cachedContext);
+    }
+
+    sessionStorage.clear();
+  });
+
+  it("returns a failure result when no cached setup context exists", async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+
+    const repository = new ApiAdmissionsAuthRepository(TEST_ENDPOINTS);
+    const result = await repository.getSetupContext("unknown-token");
+
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(result.success).toBe(false);
   });
 
   it("posts send OTP request", async () => {

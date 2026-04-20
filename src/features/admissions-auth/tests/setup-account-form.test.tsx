@@ -26,15 +26,19 @@ describe("SetupAccountForm", () => {
     expect(screen.queryByRole("button", { name: /send otp to whatsapp/i })).not.toBeInTheDocument();
   });
 
-  it("shows error state for expired token", async () => {
+  it("shows error state for invalid token", async () => {
+    // The mock repository rejects `invalid-token` (and empty token).
+    // `expired-token` is not in the rejection list — it returns the
+    // happy-path admission payload, which is why the previous test
+    // name was misleading and the assertion never matched.
     render(
       <QueryProvider>
-        <SetupAccountForm token="expired-token" admissionId="" />
+        <SetupAccountForm token="invalid-token" admissionId="" />
       </QueryProvider>,
     );
 
     await waitFor(() => {
-      expect(screen.getByText(/link expired|failed|error/i)).toBeInTheDocument();
+      expect(screen.getByText(/link expired|failed|error|invalid/i)).toBeInTheDocument();
     });
   });
 
