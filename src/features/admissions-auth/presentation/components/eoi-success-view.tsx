@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { useI18n } from "@/i18n";
+import { useFlag } from "@/components/feature-flags-provider";
+import { FLAGS } from "@/shared/feature-flags/flags";
 
 type EOISuccessViewProps = {
   submittedEmail?: string | null;
@@ -9,6 +11,16 @@ type EOISuccessViewProps = {
 
 export function EOISuccessView({ submittedEmail }: EOISuccessViewProps) {
   const { t } = useI18n();
+
+  // Feature flag: when enabled in Unleash, hide both "back to form" and
+  // "back to login" CTAs so parents focus solely on the check-your-inbox
+  // instruction. Default OFF → current behavior (both buttons visible).
+  //
+  // To flip: https://unleash.cybe.tech:8443/ → toggle `eoi-success-hide-actions`.
+  const hideActions = useFlag(
+    FLAGS.EoiSuccessHideActions.name,
+    FLAGS.EoiSuccessHideActions.default,
+  );
 
   return (
     <div className="rounded-[28px] border border-[var(--ds-border)] bg-[var(--ds-surface)] px-5 py-6 sm:px-6">
@@ -44,20 +56,22 @@ export function EOISuccessView({ submittedEmail }: EOISuccessViewProps) {
         </p>
       </div>
 
-      <div className="mt-6 grid gap-3 sm:grid-cols-2">
-        <Link
-          href="/admissions/register"
-          className="inline-flex items-center justify-center rounded-2xl border border-[var(--ds-border)] bg-[var(--ds-surface)] px-4 py-3 text-sm font-semibold text-[var(--ds-text-primary)] transition hover:border-[var(--ds-primary)] hover:bg-[var(--ds-soft)]"
-        >
-          {t("auth.eoi.back_to_form")}
-        </Link>
-        <Link
-          href="/admissions/login"
-          className="cta-primary inline-flex items-center justify-center rounded-2xl px-4 py-3 text-sm font-semibold"
-        >
-          {t("auth.eoi.back_to_login")}
-        </Link>
-      </div>
+      {!hideActions ? (
+        <div className="mt-6 grid gap-3 sm:grid-cols-2" data-testid="eoi-success-actions">
+          <Link
+            href="/admissions/register"
+            className="inline-flex items-center justify-center rounded-2xl border border-[var(--ds-border)] bg-[var(--ds-surface)] px-4 py-3 text-sm font-semibold text-[var(--ds-text-primary)] transition hover:border-[var(--ds-primary)] hover:bg-[var(--ds-soft)]"
+          >
+            {t("auth.eoi.back_to_form")}
+          </Link>
+          <Link
+            href="/admissions/login"
+            className="cta-primary inline-flex items-center justify-center rounded-2xl px-4 py-3 text-sm font-semibold"
+          >
+            {t("auth.eoi.back_to_login")}
+          </Link>
+        </div>
+      ) : null}
     </div>
   );
 }

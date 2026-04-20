@@ -11,6 +11,7 @@ import {
   parseLanguage,
   parseThemeId,
 } from "@/shared/lib/ui-preferences";
+import { resolveUnleashConfig } from "@/shared/feature-flags/runtime-config";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -27,10 +28,20 @@ export default async function RootLayout({
   const initialLanguage = (parseLanguage(cookieStore.get(LANGUAGE_COOKIE_NAME)?.value) ?? DEFAULT_LANGUAGE) as LanguageCode;
   const initialThemeId = (parseThemeId(cookieStore.get(THEME_COOKIE_NAME)?.value) ?? DEFAULT_THEME_ID) as ThemeId;
 
+  // Resolve feature-flag runtime config on the server. This reads
+  // k8s-injected env vars (UNLEASH_URL, UNLEASH_FRONTEND_TOKEN,
+  // UNLEASH_ENVIRONMENT) so the same image can point at different
+  // Unleash environments per deploy target.
+  const featureFlagsConfig = resolveUnleashConfig();
+
   return (
     <html lang={initialLanguage} data-theme={initialThemeId} suppressHydrationWarning>
       <body className="antialiased">
-        <Providers initialLanguage={initialLanguage} initialThemeId={initialThemeId}>
+        <Providers
+          initialLanguage={initialLanguage}
+          initialThemeId={initialThemeId}
+          featureFlagsConfig={featureFlagsConfig}
+        >
           {children}
         </Providers>
       </body>
