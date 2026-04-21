@@ -22,26 +22,28 @@ type AuthContinueLandingProps = {
 export function AuthContinueLanding({ token, admissionId }: AuthContinueLandingProps) {
   const router = useRouter();
   const { t } = useI18n();
-  const [error, setError] = useState<string | null>(null);
+  // Missing-params is a synchronous derived state — don't setState in
+  // effect for it (that triggers a cascading render and lint-errors in CI).
+  const missingParams = !token || !admissionId;
+  const [asyncError, setAsyncError] = useState<string | null>(null);
   const firedRef = useRef(false);
 
   useEffect(() => {
     if (firedRef.current) return;
-    if (!token || !admissionId) {
-      setError(t("auth.continue.missing_params"));
-      return;
-    }
+    if (missingParams) return;
     firedRef.current = true;
 
     (async () => {
       const ok = await setSession(token);
       if (!ok) {
-        setError(t("auth.continue.session_failed"));
+        setAsyncError(t("auth.continue.session_failed"));
         return;
       }
       router.replace(getSetupAdditionalFormHref(admissionId));
     })();
-  }, [token, admissionId, router, t]);
+  }, [token, admissionId, router, t, missingParams]);
+
+  const error = missingParams ? t("auth.continue.missing_params") : asyncError;
 
   if (error) {
     return (
