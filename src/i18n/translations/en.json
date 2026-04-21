@@ -846,6 +846,8 @@
   "auth.payment.description": "This one-time registration fee secures your admission. You will be redirected to our secure payment partner Xendit to complete the payment.",
   "auth.payment.loading_fee": "Loading registration fee...",
   "auth.payment.fee_label": "Registration fee",
+  "auth.payment.student_singular": "student",
+  "auth.payment.student_plural": "students",
   "auth.payment.school_label": "School",
   "auth.payment.pay_button": "Pay registration fee",
   "auth.payment.pay_loading": "Redirecting to payment page...",

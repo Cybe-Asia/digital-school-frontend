@@ -43,6 +43,39 @@ export function useFeeQuery(schoolCode: string | undefined, enabled = true) {
   });
 }
 
+// ---- Invoice preview (shows the real total before the parent clicks pay) ----
+export type InvoicePreviewDto = {
+  schoolCode: string;
+  paymentType: string;
+  /** Fee per student, from the school's active FeeStructure. */
+  unitAmount: number;
+  currency: string;
+  studentCount: number;
+  /** unitAmount × studentCount. Exactly what will be charged. */
+  total: number;
+};
+
+export function useInvoicePreviewQuery(
+  admissionId: string | undefined,
+  paymentType: string = "application_fee",
+  enabled = true,
+) {
+  return useQuery({
+    queryKey: ["payment-preview", admissionId, paymentType],
+    enabled: Boolean(admissionId) && enabled,
+    retry: false,
+    queryFn: async () => {
+      const { payment } = getServiceEndpoints();
+      const params = new URLSearchParams({
+        admissionId: admissionId!,
+        paymentType,
+      });
+      const res = await fetch(`${payment}/preview?${params.toString()}`);
+      return envelopeJson<InvoicePreviewDto>(res);
+    },
+  });
+}
+
 // ---- Invoice create ---------------------------------------------------------
 export type CreateInvoiceInput = {
   admissionId: string;

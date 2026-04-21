@@ -2,7 +2,10 @@
 
 import { useState } from "react";
 import { useSetupContextQuery } from "@/features/admissions-auth/presentation/hooks/use-setup-context-query";
-import { useCreateInvoiceMutation, useFeeQuery } from "@/features/admissions-auth/presentation/hooks/use-payment";
+import {
+  useCreateInvoiceMutation,
+  useInvoicePreviewQuery,
+} from "@/features/admissions-auth/presentation/hooks/use-payment";
 import { useI18n } from "@/i18n";
 import { Button } from "@/shared/ui/button";
 import { SetupContextSummary } from "./setup-context-summary";
@@ -23,10 +26,10 @@ export function SetupAccountPaymentForm({ admissionId }: SetupAccountPaymentForm
 
   const setupContextQuery = useSetupContextQuery(admissionId, Boolean(admissionId));
   const contextSuccess = setupContextQuery.data?.success ? setupContextQuery.data : null;
-  const school = contextSuccess?.context.school; // "iihs" | "iiss"
-  const schoolCode = school ? school.toUpperCase() : undefined;
 
-  const feeQuery = useFeeQuery(schoolCode, Boolean(contextSuccess));
+  // Preview computes the scaled total (unit fee × students) directly from
+  // the backend, so the UI can never disagree with what Xendit charges.
+  const previewQuery = useInvoicePreviewQuery(admissionId, "application_fee", Boolean(contextSuccess));
   const createInvoice = useCreateInvoiceMutation();
 
   if (!admissionId) {
@@ -68,29 +71,38 @@ export function SetupAccountPaymentForm({ admissionId }: SetupAccountPaymentForm
 
       {contextSuccess ? <SetupContextSummary context={contextSuccess.context} /> : null}
 
-      {feeQuery.isLoading ? (
+      {previewQuery.isLoading ? (
         <p className="text-sm text-[var(--ds-text-secondary)]">{t("auth.payment.loading_fee")}</p>
       ) : null}
 
-      {feeQuery.isError ? (
+      {previewQuery.isError ? (
         <div className="rounded-2xl border border-[#b42318]/15 bg-[#fee9e9] px-4 py-3 text-sm text-[#8b1f1f]">
           {t("auth.payment.fee_error")}
         </div>
       ) : null}
 
-      {feeQuery.data ? (
+      {previewQuery.data ? (
         <div className="rounded-2xl border border-[var(--ds-border)] bg-[var(--ds-surface)] px-4 py-4">
           <div className="flex items-center justify-between gap-3">
             <div>
               <p className="text-sm text-[var(--ds-text-secondary)]">{t("auth.payment.school_label")}</p>
               <p className="text-sm font-semibold text-[var(--ds-text-primary)]">
-                {feeQuery.data.schoolCode}
+                {previewQuery.data.schoolCode}
               </p>
             </div>
             <div className="text-right">
               <p className="text-sm text-[var(--ds-text-secondary)]">{t("auth.payment.fee_label")}</p>
-              <p className="text-lg font-semibold text-[var(--ds-text-primary)]">
-                {formatAmount(feeQuery.data.amount, feeQuery.data.currency)}
+              <p className="text-sm text-[var(--ds-text-secondary)]">
+                {formatAmount(previewQuery.data.unitAmount, previewQuery.data.currency)}
+                {" × "}
+                {previewQuery.data.studentCount}
+                {" "}
+                {previewQuery.data.studentCount === 1
+                  ? t("auth.payment.student_singular")
+                  : t("auth.payment.student_plural")}
+              </p>
+              <p className="mt-1 text-lg font-semibold text-[var(--ds-text-primary)]">
+                {formatAmount(previewQuery.data.total, previewQuery.data.currency)}
               </p>
             </div>
           </div>
@@ -106,7 +118,7 @@ export function SetupAccountPaymentForm({ admissionId }: SetupAccountPaymentForm
       <Button
         type="button"
         className="w-full"
-        disabled={!feeQuery.data || createInvoice.isPending}
+        disabled={!previewQuery.data || previewQuery.data.studentCount === 0 || createInvoice.isPending}
         onClick={onPay}
       >
         {createInvoice.isPending ? t("auth.payment.pay_loading") : t("auth.payment.pay_button")}

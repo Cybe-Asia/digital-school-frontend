@@ -846,6 +846,8 @@
   "auth.payment.description": "Biaya pendaftaran satu kali ini akan mengamankan penerimaan Anda. Anda akan diarahkan ke mitra pembayaran aman kami, Xendit, untuk menyelesaikan pembayaran.",
   "auth.payment.loading_fee": "Memuat biaya pendaftaran...",
   "auth.payment.fee_label": "Biaya pendaftaran",
+  "auth.payment.student_singular": "siswa",
+  "auth.payment.student_plural": "siswa",
   "auth.payment.school_label": "Sekolah",
   "auth.payment.pay_button": "Bayar biaya pendaftaran",
   "auth.payment.pay_loading": "Mengarahkan ke halaman pembayaran...",
