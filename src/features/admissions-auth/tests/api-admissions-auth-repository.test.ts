@@ -6,6 +6,7 @@ const TEST_ENDPOINTS: ServiceEndpoints = {
   otp: "https://api.school.test/api/v1/otp-service",
   auth: "https://api.school.test/api/v1/auth-service",
   notification: "https://api.school.test/api/email/v1",
+  payment: "https://api.school.test/api/v1/payments",
 };
 
 const submitEOIPayload = {
@@ -99,7 +100,7 @@ describe("ApiAdmissionsAuthRepository", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     const repository = new ApiAdmissionsAuthRepository(TEST_ENDPOINTS);
-    const result = await repository.sendSetupOtp("628123456789");
+    const result = await repository.sendSetupOtp({ phoneNumber: "628123456789" });
 
     expect(fetchMock).toHaveBeenCalledWith(
       `${TEST_ENDPOINTS.otp}/sendOTP`,
@@ -297,7 +298,7 @@ describe("ApiAdmissionsAuthRepository", () => {
 
     vi.stubGlobal("fetch", fetchMock);
 
-    const emptyEndpoints: ServiceEndpoints = { admission: "", otp: "", auth: "", notification: "" };
+    const emptyEndpoints: ServiceEndpoints = { admission: "", otp: "", auth: "", notification: "", payment: "" };
     const repository = new ApiAdmissionsAuthRepository(emptyEndpoints);
     await repository.submitEOI(submitEOIPayload);
 
