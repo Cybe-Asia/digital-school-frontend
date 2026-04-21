@@ -69,7 +69,7 @@ export function SetupAccountOtpForm({ admissionId, phoneNumber }: SetupAccountOt
       return;
     }
 
-    void sendOtpMutation.mutateAsync(phoneNumber).then((result) => {
+    void sendOtpMutation.mutateAsync({ admissionId, phoneNumber }).then((result) => {
       if (result.success) {
         // setState inside an async callback is fine — not synchronous
         // in the effect body.
@@ -96,7 +96,7 @@ export function SetupAccountOtpForm({ admissionId, phoneNumber }: SetupAccountOt
     }
 
     clearDevOtpCode(admissionId);
-    const result = await sendOtpMutation.mutateAsync(phoneNumber);
+    const result = await sendOtpMutation.mutateAsync({ admissionId, phoneNumber });
 
     if (result.success) {
       setResendCooldown(RESEND_COOLDOWN_SECONDS);
@@ -107,7 +107,7 @@ export function SetupAccountOtpForm({ admissionId, phoneNumber }: SetupAccountOt
   };
 
   const onVerifyOtp = handleSubmit(async (values) => {
-    const result = await verifyOtpMutation.mutateAsync(values);
+    const result = await verifyOtpMutation.mutateAsync({ ...values, admissionId });
 
     if (!result.success) {
       if (result.fieldErrors?.otp) {

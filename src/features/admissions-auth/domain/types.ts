@@ -24,8 +24,14 @@ export type SetupAccountInput = {
 };
 
 export type SetupOtpInput = {
+  admissionId?: string;
   phoneNumber: string;
   otp: string;
+};
+
+export type SendSetupOtpInput = {
+  admissionId?: string;
+  phoneNumber: string;
 };
 
 export type AdmissionsStudentProfile = {

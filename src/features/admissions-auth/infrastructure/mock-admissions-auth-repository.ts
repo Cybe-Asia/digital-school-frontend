@@ -138,7 +138,8 @@ export class MockAdmissionsAuthRepository implements AdmissionsAuthRepository {
     };
   }
 
-  async sendSetupOtp(phoneNumber: string): Promise<SendSetupOtpResult> {
+  async sendSetupOtp(input: { admissionId?: string; phoneNumber: string }): Promise<SendSetupOtpResult> {
+    const phoneNumber = input.phoneNumber;
     await wait();
 
     if (!phoneNumber) {

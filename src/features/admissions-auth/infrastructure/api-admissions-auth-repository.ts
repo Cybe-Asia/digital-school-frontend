@@ -11,6 +11,7 @@ import type {
   LoginResult,
   RequestPasswordResetInput,
   RequestPasswordResetResult,
+  SendSetupOtpInput,
   SendSetupOtpResult,
   SetupContext,
   SetupContextResult,
@@ -209,12 +210,12 @@ export class ApiAdmissionsAuthRepository implements AdmissionsAuthRepository {
     };
   }
 
-  async sendSetupOtp(phoneNumber: string): Promise<SendSetupOtpResult> {
+  async sendSetupOtp(input: SendSetupOtpInput): Promise<SendSetupOtpResult> {
     return this.requestEnvelope<SendOtpApiData, SendSetupOtpResult>(
       `${this.endpoints.otp}/sendOTP`,
       {
         method: "POST",
-        body: { phoneNumber },
+        body: { admissionId: input.admissionId, phoneNumber: input.phoneNumber },
         mapSuccess: (payload) => ({
           success: true,
           phoneNumber: payload.data.phoneNumber,
@@ -230,7 +231,7 @@ export class ApiAdmissionsAuthRepository implements AdmissionsAuthRepository {
       `${this.endpoints.otp}/verifyOTP`,
       {
         method: "POST",
-        body: { phoneNumber: input.phoneNumber, otp: input.otp },
+        body: { admissionId: input.admissionId, phoneNumber: input.phoneNumber, otp: input.otp },
         mapSuccess: (payload) => ({
           success: true,
           accessToken: payload.data.accessToken,

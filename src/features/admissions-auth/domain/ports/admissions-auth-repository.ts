@@ -9,6 +9,7 @@ import type {
   LoginResult,
   RequestPasswordResetInput,
   RequestPasswordResetResult,
+  SendSetupOtpInput,
   SendSetupOtpResult,
   SetupContextResult,
   SetupAccountInput,
@@ -31,7 +32,7 @@ export interface AdmissionsAuthRepository {
   requestPasswordReset(input: RequestPasswordResetInput): Promise<RequestPasswordResetResult>;
   submitEOI(input: EOIInput): Promise<EOISubmitResult>;
   getSetupContext(admissionId: string): Promise<SetupContextResult>;
-  sendSetupOtp(phoneNumber: string): Promise<SendSetupOtpResult>;
+  sendSetupOtp(input: SendSetupOtpInput): Promise<SendSetupOtpResult>;
   verifySetupOtp(input: SetupOtpInput): Promise<VerifySetupOtpResult>;
   setupAccount(input: SetupAccountInput): Promise<SetupAccountResult>;
   submitStudents(input: SubmitStudentsInput): Promise<SubmitStudentsResult>;

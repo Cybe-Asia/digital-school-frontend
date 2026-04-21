@@ -100,7 +100,7 @@ export function SetupAccountForm({ token, admissionId }: SetupAccountFormProps) 
         return;
       }
 
-      const otpResult = await sendSetupOtp(repo, phone);
+      const otpResult = await sendSetupOtp(repo, { admissionId: resolvedAdmissionId, phoneNumber: phone });
 
       if (!otpResult.success) {
         setSendOtpState("error");
