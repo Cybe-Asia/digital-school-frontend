@@ -137,6 +137,20 @@ const HEARD_FROM_LABELS: Record<EOIInput["heardFrom"], string> = {
 export class ApiAdmissionsAuthRepository implements AdmissionsAuthRepository {
   constructor(private readonly endpoints: ServiceEndpoints) {}
 
+  async accountStatus(email: string): Promise<import("@/features/admissions-auth/domain/ports/admissions-auth-repository").AccountStatusResult> {
+    try {
+      const url = `${this.endpoints.auth}/accountStatus?email=${encodeURIComponent(email)}`;
+      const response = await fetch(url, { method: "GET", headers: { "Content-Type": "application/json" } });
+      const parsed = (await response.json()) as Record<string, unknown>;
+      if (!response.ok || !isAdmissionsApiResponse<{ exists: boolean; hasPassword: boolean }>(parsed) || !isSuccessfulResponseCode(parsed.responseCode)) {
+        return { success: false, formError: "api.error.unable_to_process" };
+      }
+      return { success: true, exists: Boolean(parsed.data.exists), hasPassword: Boolean(parsed.data.hasPassword) };
+    } catch {
+      return { success: false, formError: "api.error.network" };
+    }
+  }
+
   async login(input: LoginInput): Promise<LoginResult> {
     return this.requestEnvelope<LoginApiData, LoginResult>(
       `${this.endpoints.auth}/login`,

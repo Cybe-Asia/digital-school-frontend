@@ -29,6 +29,11 @@ function wait() {
 }
 
 export class MockAdmissionsAuthRepository implements AdmissionsAuthRepository {
+  async accountStatus(_email: string) {
+    await wait();
+    return { success: true as const, exists: false, hasPassword: false };
+  }
+
   async login(input: LoginInput): Promise<LoginResult> {
     await wait();
 

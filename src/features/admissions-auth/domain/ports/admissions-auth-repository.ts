@@ -20,7 +20,12 @@ import type {
   VerifySetupOtpResult,
 } from "@/features/admissions-auth/domain/types";
 
+export type AccountStatusResult =
+  | { success: true; exists: boolean; hasPassword: boolean }
+  | { success: false; formError?: string };
+
 export interface AdmissionsAuthRepository {
+  accountStatus(email: string): Promise<AccountStatusResult>;
   login(input: LoginInput): Promise<LoginResult>;
   startGoogleLogin(input: GoogleLoginInput): Promise<GoogleLoginResult>;
   requestPasswordReset(input: RequestPasswordResetInput): Promise<RequestPasswordResetResult>;
