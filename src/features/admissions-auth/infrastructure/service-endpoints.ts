@@ -33,6 +33,7 @@ export type ServiceEndpoints = {
   otp: string;
   auth: string;
   notification: string;
+  payment: string;
 };
 
 const SERVICE_PREFIXES = {
@@ -40,6 +41,7 @@ const SERVICE_PREFIXES = {
   otp: "/api/v1/otp-service",
   auth: "/api/v1/auth-service",
   notification: "/api/email/v1",
+  payment: "/api/v1/payments",
 } as const;
 
 export function getServiceEndpoints(): ServiceEndpoints {
@@ -59,6 +61,9 @@ export function getServiceEndpoints(): ServiceEndpoints {
     notification:
       normalize(process.env.NEXT_PUBLIC_NOTIFICATION_SERVICE_URL) ||
       SERVICE_PREFIXES.notification,
+    payment:
+      normalize(process.env.NEXT_PUBLIC_PAYMENT_SERVICE_URL) ||
+      SERVICE_PREFIXES.payment,
   };
 }
 
@@ -85,5 +90,8 @@ export function getServerServiceEndpoints(): ServiceEndpoints {
     notification:
       normalize(process.env.NOTIFICATION_SERVICE_URL) ||
       `${gateway}${SERVICE_PREFIXES.notification}`,
+    payment:
+      normalize(process.env.PAYMENT_SERVICE_URL) ||
+      `${gateway}${SERVICE_PREFIXES.payment}`,
   };
 }

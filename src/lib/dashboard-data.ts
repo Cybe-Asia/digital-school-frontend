@@ -341,6 +341,80 @@ export function getDashboardConfig(role: string, admissionsContext?: ParentAdmis
   return null;
 }
 
+/**
+ * Shape we expect from GET /api/me (admission-service wrapped in Next
+ * proxy). Keep narrow — we only read fields we actually use on the
+ * dashboard. Any extra fields from the backend are ignored.
+ */
+export type ParentMePayload = {
+  lead: {
+    admissionId: string;
+    email: string;
+    parentName: string;
+    whatsappNumber: string;
+    schoolSelection: string; // "iihs" | "iiss" (lowercase from admission-services)
+    location?: string | null;
+    occupation?: string | null;
+    isVerified: boolean;
+    existingStudents?: number | null;
+  };
+  students: Array<{
+    studentId: string;
+    fullName: string;
+    dateOfBirth: string;
+    currentSchool: string;
+    targetGradeLevel: string;
+    notes?: string;
+  }>;
+  latestPayment?: {
+    status: "pending" | "paid" | "expired" | "failed" | string;
+    hostedInvoiceUrl?: string | null;
+  } | null;
+};
+
+/**
+ * Build a ParentAdmissionsContext from the backend /me payload. Returns null
+ * if the payload is missing fields we need to render the parent dashboard
+ * (e.g. at least one student, a known school, etc.) — the caller should
+ * fall back to URL params in that case.
+ */
+export function getParentAdmissionsContextFromMePayload(payload: ParentMePayload | null): ParentAdmissionsContext | null {
+  if (!payload) return null;
+
+  const { lead, students } = payload;
+  const school = lead.schoolSelection?.toLowerCase();
+  if (school !== "iihs" && school !== "iiss") return null;
+  if (!students || students.length === 0) return null;
+
+  const mapped: AdmissionsStudentProfile[] = students.map((s) => ({
+    studentName: s.fullName,
+    studentBirthDate: s.dateOfBirth,
+    currentSchool: s.currentSchool,
+    targetGrade: s.targetGradeLevel,
+    notes: s.notes,
+  }));
+  const primary = mapped[0];
+
+  // The admission-service doesn't record a "did you already have kids
+  // enrolled" flag in the lead beyond `existingStudents` (a count). We
+  // infer the yes/no field from whether that count is > 0.
+  const existingChildrenCount = lead.existingStudents ?? 0;
+  const hasExistingStudents: "yes" | "no" = existingChildrenCount > 0 ? "yes" : "no";
+
+  return {
+    parentName: lead.parentName,
+    email: lead.email,
+    school,
+    students: mapped,
+    studentName: primary.studentName,
+    currentSchool: primary.currentSchool,
+    targetGrade: primary.targetGrade,
+    hasExistingStudents,
+    existingChildrenCount: hasExistingStudents === "yes" ? existingChildrenCount : undefined,
+    locationSuburb: lead.location ?? "",
+  };
+}
+
 export function getParentAdmissionsContextFromSearchParams(searchParams: DashboardSearchParams): ParentAdmissionsContext | null {
   const parentName = getSingleSearchParam(searchParams.parentName);
   const email = getSingleSearchParam(searchParams.email);

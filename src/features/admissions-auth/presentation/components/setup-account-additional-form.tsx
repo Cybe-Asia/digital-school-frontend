@@ -7,7 +7,7 @@ import { useState } from "react";
 import { useFieldArray, useForm, useWatch } from "react-hook-form";
 import { useSetupContextQuery } from "@/features/admissions-auth/presentation/hooks/use-setup-context-query";
 import { useSubmitStudentsMutation } from "@/features/admissions-auth/presentation/hooks/use-submit-students-mutation";
-import { getParentDashboardHref, getSetupMethodHref } from "@/features/admissions-auth/presentation/lib/setup-account-routes";
+import { getSetupMethodHref, getSetupPaymentHref } from "@/features/admissions-auth/presentation/lib/setup-account-routes";
 import { getSetupAccessToken } from "@/features/admissions-auth/presentation/lib/setup-otp-session";
 import {
   additionalDetailsSchema,
@@ -91,17 +91,11 @@ export function SetupAccountAdditionalForm({ admissionId }: SetupAccountAddition
         return;
       }
 
-      router.push(
-        getParentDashboardHref({
-          parentName: contextSuccess.context.parentName,
-          email: contextSuccess.context.email,
-          school: contextSuccess.context.school,
-          students: values.students,
-          hasExistingStudents: contextSuccess.context.hasExistingStudents,
-          existingChildrenCount: contextSuccess.context.existingChildrenCount,
-          locationSuburb: contextSuccess.context.locationSuburb,
-        }),
-      );
+      // After students are saved, the parent must pay the registration fee
+      // before reaching the dashboard. Real parent data is loaded on the
+      // dashboard from the backend /me endpoint, so we no longer need to
+      // pass profile fields through the URL.
+      router.push(getSetupPaymentHref(admissionId));
     },
     (invalidErrors) => {
       if (!Array.isArray(invalidErrors.students)) {

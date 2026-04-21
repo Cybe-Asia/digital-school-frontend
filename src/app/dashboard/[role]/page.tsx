@@ -1,8 +1,45 @@
 import type { Metadata } from "next";
+import { cookies } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import DashboardShell from "@/components/dashboard-shell";
-import { getDashboardConfig, getParentAdmissionsContextFromSearchParams } from "@/lib/dashboard-data";
+import { getServerServiceEndpoints } from "@/features/admissions-auth/infrastructure/service-endpoints";
+import {
+  getDashboardConfig,
+  getParentAdmissionsContextFromMePayload,
+  getParentAdmissionsContextFromSearchParams,
+  type ParentMePayload,
+} from "@/lib/dashboard-data";
 import en from "@/i18n/translations/en.json";
+
+const SESSION_COOKIE_NAME = "ds-session";
+
+/**
+ * Fetch the authenticated parent's profile + students + latest payment from
+ * the admission-service. Returns null if the call fails — the dashboard then
+ * falls back to the legacy URL-param path so existing deep-links keep
+ * working while we roll this out.
+ */
+async function loadParentMe(): Promise<ParentMePayload | null> {
+  const cookieStore = await cookies();
+  const token = cookieStore.get(SESSION_COOKIE_NAME)?.value;
+  if (!token) return null;
+
+  const { admission } = getServerServiceEndpoints();
+  try {
+    const res = await fetch(`${admission}/me`, {
+      method: "GET",
+      headers: { Authorization: `Bearer ${token}` },
+      cache: "no-store",
+    });
+    if (!res.ok) return null;
+    const body = (await res.json().catch(() => null)) as
+      | { responseCode?: number; data?: ParentMePayload }
+      | null;
+    return body?.data ?? null;
+  } catch {
+    return null;
+  }
+}
 
 type DashboardPageProps = {
   params: Promise<{ role: string }>;
@@ -44,7 +81,16 @@ export default async function DashboardPage({ params, searchParams }: DashboardP
   }
 
   const query = await searchParams;
-  const parentAdmissionsContext = role === "parent" ? getParentAdmissionsContextFromSearchParams(query) : null;
+  // Prefer the authoritative profile from /me (cookie-authenticated) over
+  // URL params. Falls back to the legacy URL path if the /me call fails or
+  // returns partial data.
+  let parentAdmissionsContext = null;
+  if (role === "parent") {
+    const mePayload = await loadParentMe();
+    parentAdmissionsContext =
+      getParentAdmissionsContextFromMePayload(mePayload) ??
+      getParentAdmissionsContextFromSearchParams(query);
+  }
   const config = getDashboardConfig(role, parentAdmissionsContext);
 
   if (!config) {

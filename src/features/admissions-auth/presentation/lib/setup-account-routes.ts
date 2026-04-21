@@ -25,6 +25,16 @@ export function getSetupAdditionalFormHref(admissionId: string) {
   return `/auth/setup-account/additional?admissionId=${encodeURIComponent(admissionId)}`;
 }
 
+export function getSetupPaymentHref(admissionId: string) {
+  return `/auth/setup-account/payment?admissionId=${encodeURIComponent(admissionId)}`;
+}
+
+export function getSetupPaymentReturnHref(paymentId: string, status?: string) {
+  const params = new URLSearchParams({ paymentId });
+  if (status) params.set("status", status);
+  return `/auth/setup-account/payment/return?${params.toString()}`;
+}
+
 export type ParentDashboardNavigationPayload = {
   parentName: string;
   email: string;

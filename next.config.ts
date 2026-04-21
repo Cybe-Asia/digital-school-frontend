@@ -34,6 +34,11 @@ const nextConfig: NextConfig = {
         source: "/api/email/v1/:path*",
         destination: `${GATEWAY_URL}/api/email/v1/:path*`,
       },
+      // Payment service proxy (Xendit hosted invoice + polling)
+      {
+        source: "/api/v1/payments/:path*",
+        destination: `${GATEWAY_URL}/api/v1/payments/:path*`,
+      },
     ];
   },
 };
