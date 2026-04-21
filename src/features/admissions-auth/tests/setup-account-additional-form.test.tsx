@@ -2,7 +2,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryProvider } from "@/components/query-provider";
 import { SetupAccountAdditionalForm } from "@/features/admissions-auth/presentation/components/setup-account-additional-form";
-import { getParentDashboardHref } from "@/features/admissions-auth/presentation/lib/setup-account-routes";
+import { getSetupPaymentHref } from "@/features/admissions-auth/presentation/lib/setup-account-routes";
 
 const routerPush = vi.fn();
 
@@ -74,32 +74,11 @@ describe("SetupAccountAdditionalForm", () => {
     await user.selectOptions(screen.getByLabelText(/target grade level/i, { selector: "select#students\\.1\\.targetGrade" }), "year8");
     await user.click(screen.getByRole("button", { name: /save and continue/i }));
 
+    // After submitting the students form, parents now go to the payment
+     // step (not the dashboard). Real profile data is loaded on the
+     // dashboard from the backend /me endpoint, so no params are passed.
     await waitFor(() => {
-      expect(routerPush).toHaveBeenCalledWith(
-        getParentDashboardHref({
-          parentName: "Siti Rahmawati",
-          email: "parent@example.com",
-          school: "iihs",
-          students: [
-            {
-              studentName: "Aisha Rahma",
-              studentBirthDate: "2014-08-17",
-              currentSchool: "Little Caliphs School",
-              targetGrade: "year7",
-              notes: "",
-            },
-            {
-              studentName: "Rayyan Rahma",
-              studentBirthDate: "2016-01-08",
-              currentSchool: "Little Caliphs School",
-              targetGrade: "year8",
-              notes: "",
-            },
-          ],
-          hasExistingStudents: "no",
-          locationSuburb: "South Jakarta",
-        }),
-      );
+      expect(routerPush).toHaveBeenCalledWith(getSetupPaymentHref("valid-token"));
     });
   });
 
