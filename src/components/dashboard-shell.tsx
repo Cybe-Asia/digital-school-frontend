@@ -6,6 +6,7 @@ import {
 } from "@/features/admissions-portal/presentation/lib/admissions-portal-routes";
 import ParentPortalScrollNav from "@/features/admissions-portal/presentation/components/parent-portal-scroll-nav";
 import ParentPortalStickyHeader from "@/features/admissions-portal/presentation/components/parent-portal-sticky-header";
+import { AddAnotherChildButton } from "@/features/admissions-auth/presentation/components/add-another-child-button";
 import { getServerI18n } from "@/i18n/server";
 import {
   type DashboardConfig,
@@ -385,9 +386,12 @@ export default async function DashboardShell({ config }: DashboardShellProps) {
                             {t("dashboard.parent.portal.students.heading")}
                           </h3>
                         </div>
-                        <span className="rounded-full bg-[var(--ds-soft)] px-3 py-1 text-xs font-semibold text-[var(--ds-text-primary)]">
-                          {t("dashboard.parent.portal.students.count_chip", { count: admissionsContext.students.length })}
-                        </span>
+                        <div className="flex items-center gap-3">
+                          <span className="rounded-full bg-[var(--ds-soft)] px-3 py-1 text-xs font-semibold text-[var(--ds-text-primary)]">
+                            {t("dashboard.parent.portal.students.count_chip", { count: admissionsContext.students.length })}
+                          </span>
+                          <AddAnotherChildButton />
+                        </div>
                       </div>
                       <div className="mt-5 grid gap-4">
                         {parentPortal.studentCards.map((studentCard, index) => (

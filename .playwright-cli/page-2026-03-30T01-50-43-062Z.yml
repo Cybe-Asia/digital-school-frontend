@@ -1,0 +1,80 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - group "Toggle language" [ref=e3]:
+      - button "EN" [ref=e4]:
+        - img [ref=e5]
+        - text: EN
+      - button "ID" [ref=e11]:
+        - img [ref=e12]
+        - text: ID
+    - button "Toggle theme mode" [ref=e16]: Dark Mode
+  - main [ref=e18]:
+    - generic [ref=e19]:
+      - paragraph [ref=e20]: TWSI Digital School
+      - heading "Unified Dashboard Suite for Student, Parent, and Staff Portals" [level=1] [ref=e21]
+      - paragraph [ref=e22]: Built from the Contemporary Education Tech palette and the product roadmap's persona-query model. Each portal surfaces learning, attendance, communication, and finance signals in one role-specific interface.
+      - generic [ref=e23]:
+        - link "Register Your Child's Interest" [ref=e24] [cursor=pointer]:
+          - /url: /admissions/register
+        - link "Open Student Dashboard" [ref=e25] [cursor=pointer]:
+          - /url: /dashboard/student
+        - link "Open Parent Dashboard" [ref=e26] [cursor=pointer]:
+          - /url: /dashboard/parent
+        - link "Open Staff Dashboard" [ref=e27] [cursor=pointer]:
+          - /url: /admin/admissions
+    - generic [ref=e28]:
+      - article [ref=e29]:
+        - paragraph [ref=e30]: Student Portal
+        - heading "Learning Command Center" [level=2] [ref=e31]
+        - paragraph [ref=e32]: Track assignments, grades, attendance, and upcoming live classes from one dashboard.
+        - generic [ref=e33]:
+          - generic [ref=e34]:
+            - generic [ref=e35]: Active Courses
+            - generic [ref=e36]: "6"
+          - generic [ref=e37]:
+            - generic [ref=e38]: Assignments Due
+            - generic [ref=e39]: "3"
+          - generic [ref=e40]:
+            - generic [ref=e41]: Attendance
+            - generic [ref=e42]: 94%
+        - link "View Student Portal" [ref=e43] [cursor=pointer]:
+          - /url: /dashboard/student
+      - article [ref=e44]:
+        - paragraph [ref=e45]: Parent Portal
+        - heading "Family Learning Overview" [level=2] [ref=e46]
+        - paragraph [ref=e47]: Monitor child progress, assignments, tuition, and school communications in one place.
+        - generic [ref=e48]:
+          - generic [ref=e49]:
+            - generic [ref=e50]: Linked Students
+            - generic [ref=e51]: "2"
+          - generic [ref=e52]:
+            - generic [ref=e53]: Average Attendance
+            - generic [ref=e54]: 92%
+          - generic [ref=e55]:
+            - generic [ref=e56]: Upcoming Assignments
+            - generic [ref=e57]: "5"
+        - link "View Parent Portal" [ref=e58] [cursor=pointer]:
+          - /url: /dashboard/parent
+      - article [ref=e59]:
+        - paragraph [ref=e60]: Staff/Admin Portal
+        - heading "Operations & Academic Control" [level=2] [ref=e61]
+        - paragraph [ref=e62]: Oversee student lifecycle, academic operations, attendance, finance, and communication performance.
+        - generic [ref=e63]:
+          - generic [ref=e64]:
+            - generic [ref=e65]: Active Students
+            - generic [ref=e66]: 1,248
+          - generic [ref=e67]:
+            - generic [ref=e68]: Classes Today
+            - generic [ref=e69]: "46"
+          - generic [ref=e70]:
+            - generic [ref=e71]: Attendance Violations
+            - generic [ref=e72]: "18"
+        - link "View Staff/Admin Portal" [ref=e73] [cursor=pointer]:
+          - /url: /admin/admissions
+  - generic [ref=e74]:
+    - img [ref=e76]
+    - button "Open Tanstack query devtools" [ref=e124] [cursor=pointer]:
+      - img [ref=e125]
+  - button "Open Next.js Dev Tools" [ref=e178] [cursor=pointer]:
+    - img [ref=e179]
+  - alert [ref=e182]

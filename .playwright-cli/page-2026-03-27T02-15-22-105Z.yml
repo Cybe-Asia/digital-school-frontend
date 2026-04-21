@@ -1,0 +1,26 @@
+- generic [active] [ref=e1]:
+  - main [ref=e3]:
+    - generic [ref=e4]:
+      - generic [ref=e5]:
+        - paragraph [ref=e7]: Cybe Digital School
+        - generic [ref=e8]:
+          - group "Ubah bahasa" [ref=e9]:
+            - button "EN" [ref=e10]:
+              - img [ref=e11]
+              - text: EN
+            - button "ID" [ref=e17]:
+              - img [ref=e18]
+              - text: ID
+          - button "Ubah mode tema" [ref=e21]:
+            - generic:
+              - img
+            - generic:
+              - img
+      - paragraph [ref=e22]: Detail Penerimaan Tambahan
+      - heading "Lengkapi sisa informasi siswa." [level=2] [ref=e23]
+      - paragraph [ref=e24]: Akses akun Anda sudah siap. Tinjau data EOI di bawah, lalu lengkapi field penerimaan tambahan untuk setiap siswa.
+      - generic [ref=e27]: API MOCK
+      - paragraph [ref=e30]: Memuat detail pendaftaran...
+  - button "Open Next.js Dev Tools" [ref=e36] [cursor=pointer]:
+    - img [ref=e37]
+  - alert [ref=e40]

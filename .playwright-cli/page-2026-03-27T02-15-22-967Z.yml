@@ -1,0 +1,113 @@
+- generic [active] [ref=e1]:
+  - main [ref=e3]:
+    - generic [ref=e4]:
+      - generic [ref=e5]:
+        - paragraph [ref=e7]: Cybe Digital School
+        - generic [ref=e8]:
+          - group "Ubah bahasa" [ref=e9]:
+            - button "EN" [ref=e10]:
+              - img [ref=e11]
+              - text: EN
+            - button "ID" [ref=e17]:
+              - img [ref=e18]
+              - text: ID
+          - button "Ubah mode tema" [ref=e21]:
+            - generic:
+              - img
+            - generic:
+              - img
+      - paragraph [ref=e22]: Detail Penerimaan Tambahan
+      - heading "Lengkapi sisa informasi siswa." [level=2] [ref=e23]
+      - paragraph [ref=e24]: Akses akun Anda sudah siap. Tinjau data EOI di bawah, lalu lengkapi field penerimaan tambahan untuk setiap siswa.
+      - generic [ref=e27]: API MOCK
+      - generic [ref=e29]:
+        - generic [ref=e41]:
+          - paragraph [ref=e42]: Data EOI diterima
+          - paragraph [ref=e43]: Detail ini berasal dari tahap EOI dan otomatis dibawa ke langkah berikutnya.
+        - generic [ref=e44]:
+          - paragraph [ref=e45]: Detail pendaftaran
+          - generic [ref=e46]:
+            - paragraph [ref=e47]:
+              - generic [ref=e48]: "Nama orang tua:"
+              - text: Siti Rahmawati
+            - paragraph [ref=e49]:
+              - generic [ref=e50]: "Alamat email:"
+              - text: parent@example.com
+            - paragraph [ref=e51]:
+              - generic [ref=e52]: "Nomor WhatsApp:"
+              - text: +62 812 3456 7890
+            - paragraph [ref=e53]:
+              - generic [ref=e54]: "Lokasi / area:"
+              - text: South Jakarta
+            - paragraph [ref=e55]:
+              - generic [ref=e56]: "Pekerjaan:"
+              - text: Entrepreneur
+            - paragraph [ref=e57]:
+              - generic [ref=e58]: "Sudah ada siswa yang terdaftar?:"
+              - text: Tidak
+            - paragraph [ref=e59]:
+              - generic [ref=e60]: "Kode referal (opsional):"
+              - text: Belum diisi
+            - paragraph [ref=e61]:
+              - generic [ref=e62]: "Dari mana Anda mengetahui sekolah ini:"
+              - text: Media sosial
+            - paragraph [ref=e63]:
+              - generic [ref=e64]: "Pilihan sekolah:"
+              - text: IIHS · International Islamic High School
+        - generic [ref=e65]:
+          - generic [ref=e66]:
+            - paragraph [ref=e67]: Detail siswa tambahan
+            - paragraph [ref=e68]: Tambahkan informasi penerimaan yang belum dikumpulkan di formulir EOI untuk setiap siswa.
+          - generic [ref=e69]:
+            - button "Tutup detail siswa Siswa 1" [expanded] [ref=e71]:
+              - generic [ref=e72]:
+                - paragraph [ref=e73]: Siswa 1
+                - paragraph [ref=e74]: Detail belum dilengkapi.
+              - img [ref=e76]
+            - generic [ref=e78]:
+              - generic [ref=e79]:
+                - generic [ref=e80]: Nama lengkap siswa
+                - textbox "Nama lengkap siswa" [ref=e81]:
+                  - /placeholder: Aisha Rahma
+                - generic [ref=e82]:
+                  - paragraph
+              - generic [ref=e83]:
+                - generic [ref=e84]: Tanggal lahir siswa
+                - textbox "Tanggal lahir siswa" [ref=e85]
+                - generic [ref=e86]:
+                  - paragraph
+              - generic [ref=e87]:
+                - generic [ref=e88]: Sekolah saat ini
+                - textbox "Sekolah saat ini" [ref=e89]:
+                  - /placeholder: Nama sekolah atau taman kanak-kanak saat ini
+                - generic [ref=e90]:
+                  - paragraph
+              - generic [ref=e91]:
+                - generic [ref=e92]: Jenjang kelas tujuan
+                - combobox "Jenjang kelas tujuan" [ref=e93]:
+                  - option "Pilih kelas yang dituju" [disabled] [selected]
+                  - option "Kelas 7"
+                  - option "Kelas 8"
+                  - option "Kelas 9"
+                  - option "Kelas 10"
+                  - option "Kelas 11"
+                  - option "Kelas 12"
+                - generic [ref=e94]:
+                  - paragraph
+          - button "Tambah siswa lain" [ref=e95]
+          - generic [ref=e96]:
+            - generic [ref=e97]: Catatan untuk tim penerimaan
+            - textbox "Catatan untuk tim penerimaan" [ref=e98]:
+              - /placeholder: Catatan medis, pembelajaran, atau jadwal bila diperlukan.
+            - generic [ref=e99]:
+              - paragraph
+          - button "Simpan dan lanjutkan" [ref=e100]
+        - link "Kembali ke metode akses" [ref=e101] [cursor=pointer]:
+          - /url: /auth/setup-account/method?token=valid-token
+  - generic [ref=e102]:
+    - img [ref=e104]
+    - button "Open Tanstack query devtools" [ref=e152] [cursor=pointer]:
+      - img [ref=e153]
+  - button "Open Next.js Dev Tools" [ref=e36] [cursor=pointer]:
+    - img [ref=e37]
+  - alert [ref=e40]

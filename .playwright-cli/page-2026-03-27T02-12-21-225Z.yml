@@ -1,0 +1,113 @@
+- generic [active] [ref=e1]:
+  - main [ref=e3]:
+    - generic [ref=e4]:
+      - generic [ref=e5]:
+        - paragraph [ref=e7]: Cybe Digital School
+        - generic [ref=e8]:
+          - group "Toggle language" [ref=e9]:
+            - button "EN" [ref=e10]:
+              - img [ref=e11]
+              - text: EN
+            - button "ID" [ref=e17]:
+              - img [ref=e18]
+              - text: ID
+          - button "Toggle theme mode" [ref=e21]:
+            - generic:
+              - img
+            - generic:
+              - img
+      - paragraph [ref=e22]: Additional Admissions Details
+      - heading "Complete the remaining student information." [level=2] [ref=e23]
+      - paragraph [ref=e24]: Your account access is ready. Review the EOI details below, then complete the extra admissions fields for each student.
+      - generic [ref=e27]: API MOCK
+      - generic [ref=e29]:
+        - generic [ref=e41]:
+          - paragraph [ref=e42]: EOI details received
+          - paragraph [ref=e43]: These details came from the EOI step and are carried forward automatically.
+        - generic [ref=e44]:
+          - paragraph [ref=e45]: Registration Details
+          - generic [ref=e46]:
+            - paragraph [ref=e47]:
+              - generic [ref=e48]: "Parent name:"
+              - text: Siti Rahmawati
+            - paragraph [ref=e49]:
+              - generic [ref=e50]: "Email address:"
+              - text: parent@example.com
+            - paragraph [ref=e51]:
+              - generic [ref=e52]: "WhatsApp number:"
+              - text: +62 812 3456 7890
+            - paragraph [ref=e53]:
+              - generic [ref=e54]: "Location / suburb:"
+              - text: South Jakarta
+            - paragraph [ref=e55]:
+              - generic [ref=e56]: "Occupation:"
+              - text: Entrepreneur
+            - paragraph [ref=e57]:
+              - generic [ref=e58]: "Existing students enrolled?:"
+              - text: "No"
+            - paragraph [ref=e59]:
+              - generic [ref=e60]: "Referral code (optional):"
+              - text: Not provided
+            - paragraph [ref=e61]:
+              - generic [ref=e62]: "How did you hear about the school:"
+              - text: Social media
+            - paragraph [ref=e63]:
+              - generic [ref=e64]: "School selection:"
+              - text: IIHS · International Islamic High School
+        - generic [ref=e65]:
+          - generic [ref=e66]:
+            - paragraph [ref=e67]: Additional student details
+            - paragraph [ref=e68]: Add the remaining admissions information for each student that was not collected in the EOI form.
+          - generic [ref=e69]:
+            - button "Collapse student details Student 1" [expanded] [ref=e71]:
+              - generic [ref=e72]:
+                - paragraph [ref=e73]: Student 1
+                - paragraph [ref=e74]: Details not completed yet.
+              - img [ref=e76]
+            - generic [ref=e78]:
+              - generic [ref=e79]:
+                - generic [ref=e80]: Student full name
+                - textbox "Student full name" [ref=e81]:
+                  - /placeholder: Aisha Rahma
+                - generic [ref=e82]:
+                  - paragraph
+              - generic [ref=e83]:
+                - generic [ref=e84]: Student date of birth
+                - textbox "Student date of birth" [ref=e85]
+                - generic [ref=e86]:
+                  - paragraph
+              - generic [ref=e87]:
+                - generic [ref=e88]: Current school
+                - textbox "Current school" [ref=e89]:
+                  - /placeholder: Current school or kindergarten name
+                - generic [ref=e90]:
+                  - paragraph
+              - generic [ref=e91]:
+                - generic [ref=e92]: Target grade level
+                - combobox "Target grade level" [ref=e93]:
+                  - option "Select the intended grade" [disabled] [selected]
+                  - option "Year 7"
+                  - option "Year 8"
+                  - option "Year 9"
+                  - option "Year 10"
+                  - option "Year 11"
+                  - option "Year 12"
+                - generic [ref=e94]:
+                  - paragraph
+          - button "Add another student" [ref=e95]
+          - generic [ref=e96]:
+            - generic [ref=e97]: Notes for admissions team
+            - textbox "Notes for admissions team" [ref=e98]:
+              - /placeholder: Optional medical, learning, or scheduling notes.
+            - generic [ref=e99]:
+              - paragraph
+          - button "Save and continue" [ref=e100]
+        - link "Back to access method" [ref=e101] [cursor=pointer]:
+          - /url: /auth/setup-account/method?token=valid-token
+  - generic [ref=e102]:
+    - img [ref=e104]
+    - button "Open Tanstack query devtools" [ref=e152] [cursor=pointer]:
+      - img [ref=e153]
+  - button "Open Next.js Dev Tools" [ref=e36] [cursor=pointer]:
+    - img [ref=e37]
+  - alert [ref=e40]

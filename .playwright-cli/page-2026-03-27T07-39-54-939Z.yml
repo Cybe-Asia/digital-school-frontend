@@ -1,0 +1,146 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e3]:
+    - generic [ref=e4]:
+      - generic [ref=e5]:
+        - link "Back to parent portal" [ref=e6] [cursor=pointer]:
+          - /url: /dashboard/parent?parentName=Siti+Rahmawati&email=parent%40example.com&school=iihs&hasExistingStudents=yes&locationSuburb=South+Jakarta&students=%5B%7B%22studentName%22%3A%22Aisha+Rahma%22%2C%22studentBirthDate%22%3A%222014-08-17%22%2C%22currentSchool%22%3A%22Little+Caliphs+School%22%2C%22targetGrade%22%3A%22year7%22%7D%2C%7B%22studentName%22%3A%22Rayyan+Rahma%22%2C%22studentBirthDate%22%3A%222016-01-08%22%2C%22currentSchool%22%3A%22Bright+Scholars+Academy%22%2C%22targetGrade%22%3A%22year8%22%7D%2C%7B%22studentName%22%3A%22Naila+Rahma%22%2C%22studentBirthDate%22%3A%222015-06-12%22%2C%22currentSchool%22%3A%22Mentari+School%22%2C%22targetGrade%22%3A%22year9%22%7D%5D&studentName=Aisha+Rahma&currentSchool=Little+Caliphs+School&targetGrade=year7&existingChildrenCount=1&notes=Needs+transport+info
+        - generic [ref=e7]: Admissions application
+        - generic [ref=e8]: Payment review
+      - generic [ref=e9]:
+        - generic [ref=e10]:
+          - heading "Aisha Rahma" [level=1] [ref=e11]
+          - generic [ref=e12]:
+            - generic [ref=e13]: Year 7
+            - generic [ref=e14]: ·
+            - generic [ref=e15]: Little Caliphs School
+            - generic [ref=e16]: ·
+            - generic [ref=e17]: student-1-aisha-rahma
+        - generic [ref=e18]:
+          - paragraph [ref=e19]: Next action
+          - paragraph [ref=e20]: Pay now
+          - paragraph [ref=e21]: Admissions review
+          - link "Pay now" [ref=e22] [cursor=pointer]:
+            - /url: /dashboard/parent/applications/student-1-aisha-rahma/payment?parentName=Siti+Rahmawati&email=parent%40example.com&school=iihs&hasExistingStudents=yes&locationSuburb=South+Jakarta&students=%5B%7B%22studentName%22%3A%22Aisha+Rahma%22%2C%22studentBirthDate%22%3A%222014-08-17%22%2C%22currentSchool%22%3A%22Little+Caliphs+School%22%2C%22targetGrade%22%3A%22year7%22%7D%2C%7B%22studentName%22%3A%22Rayyan+Rahma%22%2C%22studentBirthDate%22%3A%222016-01-08%22%2C%22currentSchool%22%3A%22Bright+Scholars+Academy%22%2C%22targetGrade%22%3A%22year8%22%7D%2C%7B%22studentName%22%3A%22Naila+Rahma%22%2C%22studentBirthDate%22%3A%222015-06-12%22%2C%22currentSchool%22%3A%22Mentari+School%22%2C%22targetGrade%22%3A%22year9%22%7D%5D&existingChildrenCount=1&notes=Needs+transport+info
+      - generic [ref=e23]:
+        - paragraph [ref=e25]: Lead captured
+        - paragraph [ref=e27]: Parent portal activated
+        - paragraph [ref=e29]: Student details completed
+        - paragraph [ref=e31]: Admissions review
+        - paragraph [ref=e33]: Offer preparation
+        - paragraph [ref=e35]: Final confirmation
+    - generic [ref=e36]:
+      - complementary [ref=e37]:
+        - generic [ref=e39]:
+          - link "Overview" [ref=e40] [cursor=pointer]:
+            - /url: /dashboard/parent/applications/student-1-aisha-rahma?parentName=Siti+Rahmawati&email=parent%40example.com&school=iihs&hasExistingStudents=yes&locationSuburb=South+Jakarta&students=%5B%7B%22studentName%22%3A%22Aisha+Rahma%22%2C%22studentBirthDate%22%3A%222014-08-17%22%2C%22currentSchool%22%3A%22Little+Caliphs+School%22%2C%22targetGrade%22%3A%22year7%22%7D%2C%7B%22studentName%22%3A%22Rayyan+Rahma%22%2C%22studentBirthDate%22%3A%222016-01-08%22%2C%22currentSchool%22%3A%22Bright+Scholars+Academy%22%2C%22targetGrade%22%3A%22year8%22%7D%2C%7B%22studentName%22%3A%22Naila+Rahma%22%2C%22studentBirthDate%22%3A%222015-06-12%22%2C%22currentSchool%22%3A%22Mentari+School%22%2C%22targetGrade%22%3A%22year9%22%7D%5D&existingChildrenCount=1&notes=Needs+transport+info
+          - link "Payment" [ref=e41] [cursor=pointer]:
+            - /url: /dashboard/parent/applications/student-1-aisha-rahma/payment?parentName=Siti+Rahmawati&email=parent%40example.com&school=iihs&hasExistingStudents=yes&locationSuburb=South+Jakarta&students=%5B%7B%22studentName%22%3A%22Aisha+Rahma%22%2C%22studentBirthDate%22%3A%222014-08-17%22%2C%22currentSchool%22%3A%22Little+Caliphs+School%22%2C%22targetGrade%22%3A%22year7%22%7D%2C%7B%22studentName%22%3A%22Rayyan+Rahma%22%2C%22studentBirthDate%22%3A%222016-01-08%22%2C%22currentSchool%22%3A%22Bright+Scholars+Academy%22%2C%22targetGrade%22%3A%22year8%22%7D%2C%7B%22studentName%22%3A%22Naila+Rahma%22%2C%22studentBirthDate%22%3A%222015-06-12%22%2C%22currentSchool%22%3A%22Mentari+School%22%2C%22targetGrade%22%3A%22year9%22%7D%5D&existingChildrenCount=1&notes=Needs+transport+info
+          - link "Documents" [ref=e42] [cursor=pointer]:
+            - /url: /dashboard/parent/applications/student-1-aisha-rahma/documents?parentName=Siti+Rahmawati&email=parent%40example.com&school=iihs&hasExistingStudents=yes&locationSuburb=South+Jakarta&students=%5B%7B%22studentName%22%3A%22Aisha+Rahma%22%2C%22studentBirthDate%22%3A%222014-08-17%22%2C%22currentSchool%22%3A%22Little+Caliphs+School%22%2C%22targetGrade%22%3A%22year7%22%7D%2C%7B%22studentName%22%3A%22Rayyan+Rahma%22%2C%22studentBirthDate%22%3A%222016-01-08%22%2C%22currentSchool%22%3A%22Bright+Scholars+Academy%22%2C%22targetGrade%22%3A%22year8%22%7D%2C%7B%22studentName%22%3A%22Naila+Rahma%22%2C%22studentBirthDate%22%3A%222015-06-12%22%2C%22currentSchool%22%3A%22Mentari+School%22%2C%22targetGrade%22%3A%22year9%22%7D%5D&existingChildrenCount=1&notes=Needs+transport+info
+          - link "Schedule" [ref=e43] [cursor=pointer]:
+            - /url: /dashboard/parent/applications/student-1-aisha-rahma/schedule?parentName=Siti+Rahmawati&email=parent%40example.com&school=iihs&hasExistingStudents=yes&locationSuburb=South+Jakarta&students=%5B%7B%22studentName%22%3A%22Aisha+Rahma%22%2C%22studentBirthDate%22%3A%222014-08-17%22%2C%22currentSchool%22%3A%22Little+Caliphs+School%22%2C%22targetGrade%22%3A%22year7%22%7D%2C%7B%22studentName%22%3A%22Rayyan+Rahma%22%2C%22studentBirthDate%22%3A%222016-01-08%22%2C%22currentSchool%22%3A%22Bright+Scholars+Academy%22%2C%22targetGrade%22%3A%22year8%22%7D%2C%7B%22studentName%22%3A%22Naila+Rahma%22%2C%22studentBirthDate%22%3A%222015-06-12%22%2C%22currentSchool%22%3A%22Mentari+School%22%2C%22targetGrade%22%3A%22year9%22%7D%5D&existingChildrenCount=1&notes=Needs+transport+info
+          - link "Decision" [ref=e44] [cursor=pointer]:
+            - /url: /dashboard/parent/applications/student-1-aisha-rahma/decision?parentName=Siti+Rahmawati&email=parent%40example.com&school=iihs&hasExistingStudents=yes&locationSuburb=South+Jakarta&students=%5B%7B%22studentName%22%3A%22Aisha+Rahma%22%2C%22studentBirthDate%22%3A%222014-08-17%22%2C%22currentSchool%22%3A%22Little+Caliphs+School%22%2C%22targetGrade%22%3A%22year7%22%7D%2C%7B%22studentName%22%3A%22Rayyan+Rahma%22%2C%22studentBirthDate%22%3A%222016-01-08%22%2C%22currentSchool%22%3A%22Bright+Scholars+Academy%22%2C%22targetGrade%22%3A%22year8%22%7D%2C%7B%22studentName%22%3A%22Naila+Rahma%22%2C%22studentBirthDate%22%3A%222015-06-12%22%2C%22currentSchool%22%3A%22Mentari+School%22%2C%22targetGrade%22%3A%22year9%22%7D%5D&existingChildrenCount=1&notes=Needs+transport+info
+        - generic [ref=e46]:
+          - generic [ref=e47]:
+            - paragraph [ref=e48]: Parent owner
+            - paragraph [ref=e49]: Siti Rahmawati
+          - generic [ref=e50]:
+            - generic [ref=e51]:
+              - paragraph [ref=e52]: School
+              - paragraph [ref=e53]: IIHS
+            - generic [ref=e54]:
+              - paragraph [ref=e55]: Registered students
+              - paragraph [ref=e56]: 3 active applications, including 2 additional siblings
+        - generic [ref=e57]:
+          - paragraph [ref=e58]: Registered student files
+          - generic [ref=e59]:
+            - link "Aisha Rahma Payment review" [ref=e60] [cursor=pointer]:
+              - /url: /dashboard/parent/applications/student-1-aisha-rahma?parentName=Siti+Rahmawati&email=parent%40example.com&school=iihs&hasExistingStudents=yes&locationSuburb=South+Jakarta&students=%5B%7B%22studentName%22%3A%22Aisha+Rahma%22%2C%22studentBirthDate%22%3A%222014-08-17%22%2C%22currentSchool%22%3A%22Little+Caliphs+School%22%2C%22targetGrade%22%3A%22year7%22%7D%2C%7B%22studentName%22%3A%22Rayyan+Rahma%22%2C%22studentBirthDate%22%3A%222016-01-08%22%2C%22currentSchool%22%3A%22Bright+Scholars+Academy%22%2C%22targetGrade%22%3A%22year8%22%7D%2C%7B%22studentName%22%3A%22Naila+Rahma%22%2C%22studentBirthDate%22%3A%222015-06-12%22%2C%22currentSchool%22%3A%22Mentari+School%22%2C%22targetGrade%22%3A%22year9%22%7D%5D&existingChildrenCount=1&notes=Needs+transport+info
+              - generic [ref=e61]:
+                - paragraph [ref=e62]: Aisha Rahma
+                - generic [ref=e63]: Payment review
+            - link "Rayyan Rahma Awaiting documents" [ref=e64] [cursor=pointer]:
+              - /url: /dashboard/parent/applications/student-2-rayyan-rahma?parentName=Siti+Rahmawati&email=parent%40example.com&school=iihs&hasExistingStudents=yes&locationSuburb=South+Jakarta&students=%5B%7B%22studentName%22%3A%22Aisha+Rahma%22%2C%22studentBirthDate%22%3A%222014-08-17%22%2C%22currentSchool%22%3A%22Little+Caliphs+School%22%2C%22targetGrade%22%3A%22year7%22%7D%2C%7B%22studentName%22%3A%22Rayyan+Rahma%22%2C%22studentBirthDate%22%3A%222016-01-08%22%2C%22currentSchool%22%3A%22Bright+Scholars+Academy%22%2C%22targetGrade%22%3A%22year8%22%7D%2C%7B%22studentName%22%3A%22Naila+Rahma%22%2C%22studentBirthDate%22%3A%222015-06-12%22%2C%22currentSchool%22%3A%22Mentari+School%22%2C%22targetGrade%22%3A%22year9%22%7D%5D&existingChildrenCount=1&notes=Needs+transport+info
+              - generic [ref=e65]:
+                - paragraph [ref=e66]: Rayyan Rahma
+                - generic [ref=e67]: Awaiting documents
+            - link "Naila Rahma Under review" [ref=e68] [cursor=pointer]:
+              - /url: /dashboard/parent/applications/student-3-naila-rahma?parentName=Siti+Rahmawati&email=parent%40example.com&school=iihs&hasExistingStudents=yes&locationSuburb=South+Jakarta&students=%5B%7B%22studentName%22%3A%22Aisha+Rahma%22%2C%22studentBirthDate%22%3A%222014-08-17%22%2C%22currentSchool%22%3A%22Little+Caliphs+School%22%2C%22targetGrade%22%3A%22year7%22%7D%2C%7B%22studentName%22%3A%22Rayyan+Rahma%22%2C%22studentBirthDate%22%3A%222016-01-08%22%2C%22currentSchool%22%3A%22Bright+Scholars+Academy%22%2C%22targetGrade%22%3A%22year8%22%7D%2C%7B%22studentName%22%3A%22Naila+Rahma%22%2C%22studentBirthDate%22%3A%222015-06-12%22%2C%22currentSchool%22%3A%22Mentari+School%22%2C%22targetGrade%22%3A%22year9%22%7D%5D&existingChildrenCount=1&notes=Needs+transport+info
+              - generic [ref=e69]:
+                - paragraph [ref=e70]: Naila Rahma
+                - generic [ref=e71]: Under review
+      - main [ref=e72]:
+        - generic [ref=e73]:
+          - article [ref=e74]:
+            - paragraph [ref=e75]: Payment status
+            - paragraph [ref=e76]: Unpaid
+            - paragraph [ref=e77]: Complete payment soon so the application can move into the next admissions step.
+          - article [ref=e78]:
+            - paragraph [ref=e79]: Document status
+            - paragraph [ref=e80]: 0 of 4 files ready
+            - paragraph [ref=e81]: 0%
+          - article [ref=e82]:
+            - paragraph [ref=e83]: Assessment status
+            - paragraph [ref=e84]: Not booked
+            - paragraph [ref=e85]: Choose the first available assessment or interview slot to continue the application.
+          - article [ref=e86]:
+            - paragraph [ref=e87]: Current decision
+            - paragraph [ref=e88]: Pending review
+            - paragraph [ref=e89]: Admissions is still reviewing the full application and no final outcome has been released yet.
+        - generic [ref=e90]:
+          - generic [ref=e92]:
+            - generic [ref=e93]:
+              - generic [ref=e94]: Uploads locked
+              - heading "Documents unlock only after the assessment is passed" [level=2] [ref=e95]
+              - paragraph [ref=e96]: Complete the assessment payment first. The document upload step stays locked until the test fee is paid for Aisha Rahma.
+            - link "Pay now" [ref=e97] [cursor=pointer]:
+              - /url: /dashboard/parent/applications/student-1-aisha-rahma/payment?parentName=Siti+Rahmawati&email=parent%40example.com&school=iihs&hasExistingStudents=yes&locationSuburb=South+Jakarta&students=%5B%7B%22studentName%22%3A%22Aisha+Rahma%22%2C%22studentBirthDate%22%3A%222014-08-17%22%2C%22currentSchool%22%3A%22Little+Caliphs+School%22%2C%22targetGrade%22%3A%22year7%22%7D%2C%7B%22studentName%22%3A%22Rayyan+Rahma%22%2C%22studentBirthDate%22%3A%222016-01-08%22%2C%22currentSchool%22%3A%22Bright+Scholars+Academy%22%2C%22targetGrade%22%3A%22year8%22%7D%2C%7B%22studentName%22%3A%22Naila+Rahma%22%2C%22studentBirthDate%22%3A%222015-06-12%22%2C%22currentSchool%22%3A%22Mentari+School%22%2C%22targetGrade%22%3A%22year9%22%7D%5D&existingChildrenCount=1&notes=Needs+transport+info
+          - generic [ref=e100]:
+            - paragraph [ref=e101]: Checklist progress
+            - heading "0 of 4 files ready" [level=2] [ref=e102]
+            - generic [ref=e105]: 0%
+          - generic [ref=e107]:
+            - article [ref=e108]:
+              - generic [ref=e109]:
+                - generic [ref=e110]:
+                  - generic [ref=e111]:
+                    - heading "Birth certificate" [level=3] [ref=e112]
+                    - generic [ref=e113]: Missing
+                  - paragraph [ref=e114]: Used to confirm student identity and age eligibility.
+                - button "Locked" [disabled] [ref=e116]
+            - article [ref=e117]:
+              - generic [ref=e118]:
+                - generic [ref=e119]:
+                  - generic [ref=e120]:
+                    - heading "Parent ID / passport" [level=3] [ref=e121]
+                    - generic [ref=e122]: Missing
+                  - paragraph [ref=e123]: Used to verify the primary admissions contact for the family.
+                - button "Locked" [disabled] [ref=e125]
+            - article [ref=e126]:
+              - generic [ref=e127]:
+                - generic [ref=e128]:
+                  - generic [ref=e129]:
+                    - heading "Latest report card" [level=3] [ref=e130]
+                    - generic [ref=e131]: Missing
+                  - paragraph [ref=e132]: Helps the school understand recent academic readiness and placement context.
+                - button "Locked" [disabled] [ref=e134]
+            - article [ref=e135]:
+              - generic [ref=e136]:
+                - generic [ref=e137]:
+                  - generic [ref=e138]:
+                    - heading "Student photo" [level=3] [ref=e139]
+                    - generic [ref=e140]: Missing
+                  - paragraph [ref=e141]: Needed for student profile creation and campus/security records.
+                - button "Locked" [disabled] [ref=e143]
+          - group [ref=e144]:
+            - generic "Need help?" [ref=e145] [cursor=pointer]:
+              - text: Need help?
+              - img [ref=e147]
+  - generic [ref=e149]:
+    - img [ref=e151]
+    - button "Open Tanstack query devtools" [ref=e199] [cursor=pointer]:
+      - img [ref=e200]
+  - button "Open Next.js Dev Tools" [ref=e253] [cursor=pointer]:
+    - img [ref=e254]
+  - alert [ref=e257]

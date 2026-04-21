@@ -1,0 +1,40 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - button "Show controls" [ref=e3]:
+      - img [ref=e4]
+      - generic [ref=e6]: Show controls
+    - group [ref=e7]:
+      - button [ref=e8]:
+        - img [ref=e9]
+        - text: EN
+      - button [ref=e15]:
+        - img [ref=e16]
+        - text: ID
+    - button [ref=e19]: Dark Mode
+  - main [ref=e184]:
+    - generic [ref=e185]:
+      - paragraph [ref=e188]: Cybe Digital School
+      - paragraph [ref=e189]: Admissions Enquiry
+      - heading "Interest registered." [level=2] [ref=e190]
+      - paragraph [ref=e191]: Your enquiry has been received. We have prepared the next step for your admissions setup.
+      - generic [ref=e192]:
+        - generic [ref=e194]: API REAL
+        - generic [ref=e195]: http://localhost:8080
+      - generic [ref=e197]:
+        - img [ref=e199]
+        - generic [ref=e202]:
+          - heading "Check your email for the next step." [level=3] [ref=e203]
+          - paragraph [ref=e204]: We sent a follow-up email with the next instructions to continue your admissions journey.
+          - paragraph [ref=e205]: We sent the message to pw-admissions-20260401-1501@example.com. If it is not in your inbox, check spam or promotions.
+        - generic [ref=e206]:
+          - link "Back to form" [ref=e207] [cursor=pointer]:
+            - /url: /admissions/register
+          - link "Go to login" [ref=e208] [cursor=pointer]:
+            - /url: /admissions/login
+  - generic [ref=e75]:
+    - img [ref=e77]
+    - button "Open Tanstack query devtools" [ref=e125] [cursor=pointer]:
+      - img [ref=e126]
+  - button "Open Next.js Dev Tools" [ref=e179] [cursor=pointer]:
+    - img [ref=e180]
+  - alert [ref=e74]: Interest Registered | Cybe Digital School

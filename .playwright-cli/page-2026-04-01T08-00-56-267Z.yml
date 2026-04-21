@@ -1,0 +1,89 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - button "Show controls" [ref=e3]:
+      - img [ref=e4]
+      - generic [ref=e6]: Show controls
+    - group [ref=e7]:
+      - button [ref=e8]:
+        - img [ref=e9]
+        - text: EN
+      - button [ref=e15]:
+        - img [ref=e16]
+        - text: ID
+    - button [ref=e19]: Dark Mode
+  - main [ref=e21]:
+    - generic [ref=e22]:
+      - paragraph [ref=e25]: Cybe Digital School
+      - paragraph [ref=e26]: Admissions Enquiry
+      - heading "Register your child's interest." [level=2] [ref=e27]
+      - paragraph [ref=e28]: Share your initial details for admissions. We will email a secure setup link so you can continue the parent portal journey.
+      - generic [ref=e29]:
+        - generic [ref=e31]: API REAL
+        - generic [ref=e32]: http://localhost:8080
+      - generic [ref=e34]:
+        - generic [ref=e35]:
+          - generic [ref=e36]: Parent name
+          - textbox "Parent name" [ref=e37]:
+            - /placeholder: Siti Rahmawati
+          - generic [ref=e38]:
+            - paragraph
+        - generic [ref=e39]:
+          - generic [ref=e40]: Email address
+          - textbox "Email address" [ref=e41]:
+            - /placeholder: parent@example.com
+          - generic [ref=e42]:
+            - paragraph
+        - generic [ref=e43]:
+          - generic [ref=e44]: WhatsApp number
+          - textbox "WhatsApp number" [ref=e45]:
+            - /placeholder: +62 812 3456 7890
+          - generic [ref=e46]:
+            - paragraph
+        - generic [ref=e47]:
+          - generic [ref=e48]: Location / suburb
+          - textbox "Location / suburb" [ref=e49]:
+            - /placeholder: South Jakarta
+          - generic [ref=e50]:
+            - paragraph
+        - generic [ref=e51]:
+          - generic [ref=e52]: Occupation
+          - textbox "Occupation" [ref=e53]:
+            - /placeholder: Entrepreneur
+          - generic [ref=e54]:
+            - paragraph
+        - generic [ref=e55]:
+          - generic [ref=e56]: Existing students enrolled?
+          - combobox "Existing students enrolled?" [ref=e57]:
+            - option "No" [selected]
+            - option "Yes"
+          - generic [ref=e58]:
+            - paragraph
+        - generic [ref=e59]:
+          - generic [ref=e60]: Referral code (optional)
+          - textbox "Referral code (optional)" [ref=e61]:
+            - /placeholder: REF-2026
+          - generic [ref=e62]:
+            - paragraph
+        - generic [ref=e63]:
+          - generic [ref=e64]: How did you hear about the school
+          - combobox "How did you hear about the school" [ref=e65]:
+            - option "Social media" [selected]
+            - option "Friend or family referral"
+            - option "Search engine"
+            - option "School event"
+            - option "Other"
+          - generic [ref=e66]:
+            - paragraph
+        - generic [ref=e67]:
+          - generic [ref=e68]: School selection
+          - combobox "School selection" [ref=e69]:
+            - option "IIHS · International Islamic High School" [selected]
+            - option "IISS · International Islamic Secondary School"
+          - generic [ref=e70]:
+            - paragraph
+        - button "Register your child's interest" [ref=e71]
+      - paragraph [ref=e72]:
+        - text: Already have a password?
+        - link "Go to login" [ref=e73] [cursor=pointer]:
+          - /url: /admissions/login
+  - alert [ref=e74]
