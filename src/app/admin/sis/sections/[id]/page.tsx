@@ -5,6 +5,7 @@ import { getServerServiceEndpoints } from "@/features/admissions-auth/infrastruc
 import { StatusBadge } from "@/features/admissions-common/status-badge";
 import { AssignStudentsPanel } from "./assign-panel";
 import { HomeroomPanel } from "./homeroom-panel";
+import { AttendancePanel } from "./attendance-panel";
 
 export const metadata: Metadata = { title: "Section Detail | Admin" };
 
@@ -138,6 +139,10 @@ export default async function AdminSectionDetailPage({
           sectionId={section.sectionId}
           unassigned={unassigned}
         />
+      </div>
+
+      <div className="mt-6">
+        <AttendancePanel sectionId={section.sectionId} />
       </div>
 
       <section className="mt-6 rounded-2xl border border-[var(--ds-border)] bg-[var(--ds-surface)] p-5">
