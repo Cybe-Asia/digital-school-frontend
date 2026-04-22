@@ -86,7 +86,10 @@ describe("dashboardData admissions context", () => {
     expect(config?.metrics[0]?.value).toBe("3");
     expect(config?.metrics[0]?.trendKey).toContain("Aisha Rahma");
     expect(config?.tableRows[0]?.columnA).toBe("Aisha Rahma");
-    expect(config?.tableRows[0]?.columnC).toBe("Additional form complete");
+    // Row content changed when we moved off hardcoded mocks — pre-SIS
+    // fallback now shows the admissions stage (applicantStatus) here.
+    // The concrete default is "submitted" for a freshly-built context.
+    expect(config?.tableRows[0]?.columnB).toBe("Admissions stage");
     expect(config?.parentPortal?.studentCards).toHaveLength(2);
     expect(config?.parentPortal?.summaryCards[0]?.value).toBe("2");
     expect(config?.parentPortal?.actions[0]?.titleKey).toBe("dashboard.parent.portal.student.action.book_assessment");
