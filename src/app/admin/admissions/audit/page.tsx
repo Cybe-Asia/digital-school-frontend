@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { cookies } from "next/headers";
 import { getServerServiceEndpoints } from "@/features/admissions-auth/infrastructure/service-endpoints";
 import { AuditFilterBar } from "./audit-filter-bar";
+import { EmptyState } from "@/app/admin/_components/empty-state";
 
 export const metadata: Metadata = {
   title: "Audit Log | Admin",
@@ -83,42 +85,86 @@ export default async function AdminAuditPage({ searchParams }: { searchParams: P
       <AuditFilterBar initial={{ actorEmail, action, targetType, targetId }} />
 
       {events.length === 0 ? (
-        <div className="mt-5 rounded-2xl border border-[var(--ds-border)] bg-[var(--ds-surface)] px-5 py-10 text-center text-sm text-[var(--ds-text-secondary)]">
-          No events match. Audit capture is wired into the highest-signal mutations
-          (lead status override, settings upsert, offer issue/cancel); more will
-          be added incrementally.
+        <div className="mt-5">
+          <EmptyState
+            icon="📜"
+            title="No events match"
+            description="Audit capture covers every admin mutation in the codebase. If the list is empty, the filter is narrowing it out — try clearing a field."
+          />
         </div>
       ) : (
         <ol className="mt-5 space-y-2">
-          {events.map((e) => (
-            <li
-              key={e.eventId}
-              className="rounded-xl border border-[var(--ds-border)] bg-[var(--ds-surface)] p-3 text-sm"
-            >
-              <div className="flex flex-wrap items-start justify-between gap-2">
-                <div>
-                  <p className="font-semibold text-[var(--ds-text-primary)]">
-                    <span className="font-mono text-xs">{e.action}</span>
-                    {" → "}
-                    <span className="text-[var(--ds-text-secondary)]">{e.targetType}:</span>
-                    <span className="ml-0.5 font-mono text-xs text-[var(--ds-text-primary)]">{e.targetId}</span>
-                  </p>
-                  <p className="mt-0.5 text-xs text-[var(--ds-text-secondary)]">
-                    by {e.actorEmail ?? e.actorLeadId} · {formatDate(e.createdAt)}
-                  </p>
+          {events.map((e) => {
+            const targetHref = hrefForTarget(e.targetType, e.targetId);
+            return (
+              <li
+                key={e.eventId}
+                className="rounded-xl border border-[var(--ds-border)] bg-[var(--ds-surface)] p-3 text-sm"
+              >
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <div>
+                    <p className="font-semibold text-[var(--ds-text-primary)]">
+                      <span className="font-mono text-xs">{e.action}</span>
+                      {" → "}
+                      <span className="text-[var(--ds-text-secondary)]">{e.targetType}:</span>
+                      {targetHref ? (
+                        <Link href={targetHref} className="ml-0.5 font-mono text-xs text-[var(--ds-primary)] hover:underline">
+                          {e.targetId}
+                        </Link>
+                      ) : (
+                        <span className="ml-0.5 font-mono text-xs text-[var(--ds-text-primary)]">{e.targetId}</span>
+                      )}
+                    </p>
+                    <p className="mt-0.5 text-xs text-[var(--ds-text-secondary)]">
+                      by {e.actorEmail ?? e.actorLeadId} · {formatDate(e.createdAt)}
+                    </p>
+                  </div>
                 </div>
-              </div>
-              {e.diff ? (
-                <pre className="mt-2 overflow-x-auto rounded-lg bg-[var(--ds-soft)] p-2 text-[11px] leading-snug text-[var(--ds-text-primary)]">
-                  {prettyJson(e.diff)}
-                </pre>
-              ) : null}
-            </li>
-          ))}
+                {e.diff ? (
+                  <pre className="mt-2 overflow-x-auto rounded-lg bg-[var(--ds-soft)] p-2 text-[11px] leading-snug text-[var(--ds-text-primary)]">
+                    {prettyJson(e.diff)}
+                  </pre>
+                ) : null}
+              </li>
+            );
+          })}
         </ol>
       )}
     </div>
   );
+}
+
+/**
+ * Pick a sensible detail page for each target_type so admins can jump
+ * from an audit row straight into the record. `settings` and `schedule`
+ * land on their list/detail pages; bespoke ids (e.g. offer_id) return
+ * null so we render them as plain text.
+ */
+function hrefForTarget(targetType: string, targetId: string): string | null {
+  if (!targetId) return null;
+  switch (targetType) {
+    case "lead":
+      return `/admin/admissions/leads/${encodeURIComponent(targetId)}`;
+    case "student":
+      return `/admin/admissions/students/${encodeURIComponent(targetId)}`;
+    case "application":
+      // application_id maps to a Lead; leaving as plain text for now.
+      return null;
+    case "offer":
+      return `/admin/admissions/offers?search=${encodeURIComponent(targetId)}`;
+    case "schedule":
+      return `/admin/tests/schedules/${encodeURIComponent(targetId)}`;
+    case "section":
+      return `/admin/sis/sections/${encodeURIComponent(targetId)}`;
+    case "settings":
+      return `/admin/admissions/settings`;
+    case "document_artifact":
+      // Artifact detail lives under a request; we don't resolve the
+      // owning request here cheaply, so link to the global queue.
+      return `/admin/admissions/documents`;
+    default:
+      return null;
+  }
 }
 
 function formatDate(iso: string): string {
