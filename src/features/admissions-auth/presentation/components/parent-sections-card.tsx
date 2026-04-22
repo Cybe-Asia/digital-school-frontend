@@ -13,6 +13,8 @@ type Row = {
   yearGroup: string;
   academicYear: string;
   schoolId: string;
+  homeroomTeacherName?: string | null;
+  homeroomTeacherEmail?: string | null;
 };
 
 /**
@@ -82,6 +84,22 @@ export function ParentSectionsCard() {
               {r.sectionName} · {r.yearGroup}
               <span className="ml-2 font-mono text-xs text-[#166534]/80">#{r.studentNumber}</span>
             </p>
+            {r.homeroomTeacherName ? (
+              <p className="mt-1 text-xs text-[#166534]/90">
+                Homeroom teacher: <span className="font-semibold">{r.homeroomTeacherName}</span>
+                {r.homeroomTeacherEmail ? (
+                  <>
+                    {" · "}
+                    <a
+                      href={`mailto:${r.homeroomTeacherEmail}`}
+                      className="underline hover:text-[#166534]"
+                    >
+                      {r.homeroomTeacherEmail}
+                    </a>
+                  </>
+                ) : null}
+              </p>
+            ) : null}
             <p className="mt-2 text-xs text-[#166534]/80">
               Attendance and grades will appear here once the school&apos;s term starts.
             </p>

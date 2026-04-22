@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 import { getServerServiceEndpoints } from "@/features/admissions-auth/infrastructure/service-endpoints";
 import { StatusBadge } from "@/features/admissions-common/status-badge";
 import { AssignStudentsPanel } from "./assign-panel";
+import { HomeroomPanel } from "./homeroom-panel";
 
 export const metadata: Metadata = { title: "Section Detail | Admin" };
 
@@ -19,6 +20,8 @@ type Detail = {
     academicYear: string;
     status: string;
     enrolledCount: number;
+    homeroomTeacherName?: string | null;
+    homeroomTeacherEmail?: string | null;
   };
   members: Array<{
     applicantStudentId: string;
@@ -124,10 +127,18 @@ export default async function AdminSectionDetailPage({
         </div>
       </header>
 
-      <AssignStudentsPanel
+      <HomeroomPanel
         sectionId={section.sectionId}
-        unassigned={unassigned}
+        initialName={section.homeroomTeacherName}
+        initialEmail={section.homeroomTeacherEmail}
       />
+
+      <div className="mt-6">
+        <AssignStudentsPanel
+          sectionId={section.sectionId}
+          unassigned={unassigned}
+        />
+      </div>
 
       <section className="mt-6 rounded-2xl border border-[var(--ds-border)] bg-[var(--ds-surface)] p-5">
         <h2 className="text-sm font-semibold uppercase tracking-wider text-[var(--ds-text-secondary)]">
