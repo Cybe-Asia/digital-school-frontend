@@ -4,6 +4,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
 
+import { ToastProvider } from "./toast";
+
 type NavItem = { label: string; href: string; exact?: boolean };
 type NavGroup = { label: string; items: NavItem[] };
 
@@ -68,6 +70,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   }, []);
 
   return (
+    <ToastProvider>
     <div className="min-h-screen bg-[var(--ds-soft)]/30">
       {/* Top bar — mobile hamburger + breadcrumbs */}
       <header className="sticky top-0 z-30 border-b border-[var(--ds-border)] bg-[var(--ds-surface)]/95 backdrop-blur supports-[backdrop-filter]:bg-[var(--ds-surface)]/75">
@@ -148,6 +151,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
       {/* Main content slot */}
       <main className="lg:pl-56">{children}</main>
     </div>
+    </ToastProvider>
   );
 }
 

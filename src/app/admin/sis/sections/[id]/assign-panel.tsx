@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
+import { useToast } from "@/app/admin/toast";
 
 type Candidate = {
   applicantStudentId: string;
@@ -19,11 +20,10 @@ export function AssignStudentsPanel({
   unassigned: Candidate[];
 }) {
   const router = useRouter();
+  const toast = useToast();
   const [isPending, startTransition] = useTransition();
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [err, setErr] = useState<string | null>(null);
-  const [ok, setOk] = useState<string | null>(null);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -44,9 +44,8 @@ export function AssignStudentsPanel({
   };
 
   const submit = async () => {
-    setErr(null); setOk(null);
     if (selected.size === 0) {
-      setErr("Select at least one student");
+      toast.error("Select at least one student");
       return;
     }
     try {
@@ -62,14 +61,14 @@ export function AssignStudentsPanel({
         | { responseCode?: number; responseMessage?: string; data?: { requested: number; assigned: number } }
         | null;
       if (!res.ok || (body?.responseCode ?? res.status) >= 400) {
-        setErr(body?.responseMessage || `HTTP ${res.status}`);
+        toast.error(body?.responseMessage || `HTTP ${res.status}`);
         return;
       }
-      setOk(`Assigned ${body?.data?.assigned ?? "?"} / ${body?.data?.requested ?? "?"} students`);
+      toast.success(`Assigned ${body?.data?.assigned ?? "?"} / ${body?.data?.requested ?? "?"} students`);
       setSelected(new Set());
       startTransition(() => router.refresh());
     } catch (e) {
-      setErr(e instanceof Error ? e.message : String(e));
+      toast.error(e instanceof Error ? e.message : String(e));
     }
   };
 
@@ -151,8 +150,6 @@ export function AssignStudentsPanel({
         </>
       )}
 
-      {err ? <p className="mt-2 text-xs text-[#8b1f1f]">{err}</p> : null}
-      {ok ? <p className="mt-2 text-xs text-[#166534]">{ok}</p> : null}
     </section>
   );
 }

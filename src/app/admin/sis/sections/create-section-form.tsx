@@ -2,14 +2,15 @@
 
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
+import { useToast } from "@/app/admin/toast";
 
 const INPUT_CLS =
   "w-full rounded-lg border border-[var(--ds-border)] bg-[var(--ds-surface)] px-2.5 py-1.5 text-sm text-[var(--ds-text-primary)]";
 
 export function CreateSectionForm() {
   const router = useRouter();
+  const toast = useToast();
   const [isPending, startTransition] = useTransition();
-  const [err, setErr] = useState<string | null>(null);
   const [state, setState] = useState({
     school_id: "SCH-IISS",
     name: "",
@@ -19,7 +20,6 @@ export function CreateSectionForm() {
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setErr(null);
     try {
       const res = await fetch(`/api/admin/sis/sections`, {
         method: "POST",
@@ -30,13 +30,14 @@ export function CreateSectionForm() {
         | { responseCode?: number; responseMessage?: string }
         | null;
       if (!res.ok || (body?.responseCode ?? res.status) >= 400) {
-        setErr(body?.responseMessage || `HTTP ${res.status}`);
+        toast.error(body?.responseMessage || `HTTP ${res.status}`);
         return;
       }
+      toast.success(`Section "${state.name}" created`);
       setState({ ...state, name: "", year_group: "" });
       startTransition(() => router.refresh());
     } catch (e) {
-      setErr(e instanceof Error ? e.message : String(e));
+      toast.error(e instanceof Error ? e.message : String(e));
     }
   };
 
@@ -94,7 +95,6 @@ export function CreateSectionForm() {
           + Create section
         </button>
       </div>
-      {err ? <p className="text-xs text-[#8b1f1f] sm:col-span-5">{err}</p> : null}
     </form>
   );
 }

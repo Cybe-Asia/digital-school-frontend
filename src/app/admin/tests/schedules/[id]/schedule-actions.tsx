@@ -1,7 +1,8 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useTransition } from "react";
+import { useToast } from "@/app/admin/toast";
 
 export function ScheduleActions({
   scheduleId,
@@ -11,13 +12,11 @@ export function ScheduleActions({
   scheduleStatus: string;
 }) {
   const router = useRouter();
+  const toast = useToast();
   const [isPending, startTransition] = useTransition();
-  const [err, setErr] = useState<string | null>(null);
-  const [ok, setOk] = useState<string | null>(null);
 
   const cancel = async () => {
     if (!window.confirm("Cancel this schedule? All active bookings will be cancelled too.")) return;
-    setErr(null); setOk(null);
     try {
       const res = await fetch(
         `/api/admin/tests/schedules/${encodeURIComponent(scheduleId)}/cancel`,
@@ -27,13 +26,13 @@ export function ScheduleActions({
         | { responseCode?: number; responseMessage?: string }
         | null;
       if (!res.ok || (body?.responseCode ?? res.status) >= 400) {
-        setErr(body?.responseMessage || `HTTP ${res.status}`);
+        toast.error(body?.responseMessage || `HTTP ${res.status}`);
         return;
       }
-      setOk("Schedule cancelled");
+      toast.success("Schedule cancelled");
       startTransition(() => router.refresh());
     } catch (e) {
-      setErr(e instanceof Error ? e.message : String(e));
+      toast.error(e instanceof Error ? e.message : String(e));
     }
   };
 
@@ -62,8 +61,6 @@ export function ScheduleActions({
           Cancel schedule
         </button>
       </div>
-      {err ? <p className="text-xs text-[#8b1f1f]">{err}</p> : null}
-      {ok ? <p className="text-xs text-[#166534]">{ok}</p> : null}
     </div>
   );
 }

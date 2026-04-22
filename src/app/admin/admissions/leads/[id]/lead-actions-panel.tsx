@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
+import { useToast } from "@/app/admin/toast";
 
 /**
  * Admin-side action buttons for a single lead. Each action POSTs to the
@@ -17,19 +18,12 @@ export function LeadActionsPanel({
   leadStatus: string;
 }) {
   const router = useRouter();
+  const toast = useToast();
   const [isPending, startTransition] = useTransition();
-  const [error, setError] = useState<string | null>(null);
-  const [ok, setOk] = useState<string | null>(null);
   const [note, setNote] = useState("");
   const [statusOverride, setStatusOverride] = useState(leadStatus);
 
-  const clearMessages = () => {
-    setError(null);
-    setOk(null);
-  };
-
   const resend = async () => {
-    clearMessages();
     try {
       const res = await fetch(
         `/api/admin/leads/${encodeURIComponent(leadId)}/resend-verification`,
@@ -39,17 +33,16 @@ export function LeadActionsPanel({
         | { responseCode?: number; responseMessage?: string }
         | null;
       if (!res.ok || (body?.responseCode ?? res.status) >= 400) {
-        setError(body?.responseMessage || `HTTP ${res.status}`);
+        toast.error(body?.responseMessage || `HTTP ${res.status}`);
         return;
       }
-      setOk("Verification email queued");
+      toast.success("Verification email queued");
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
+      toast.error(err instanceof Error ? err.message : String(err));
     }
   };
 
   const addNote = async () => {
-    clearMessages();
     const body = note.trim();
     if (!body) return;
     try {
@@ -65,19 +58,18 @@ export function LeadActionsPanel({
         | { responseCode?: number; responseMessage?: string }
         | null;
       if (!res.ok || (payload?.responseCode ?? res.status) >= 400) {
-        setError(payload?.responseMessage || `HTTP ${res.status}`);
+        toast.error(payload?.responseMessage || `HTTP ${res.status}`);
         return;
       }
       setNote("");
-      setOk("Note added");
+      toast.success("Note added");
       startTransition(() => router.refresh());
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
+      toast.error(err instanceof Error ? err.message : String(err));
     }
   };
 
   const saveStatus = async () => {
-    clearMessages();
     if (statusOverride === leadStatus) return;
     try {
       const res = await fetch(
@@ -92,21 +84,19 @@ export function LeadActionsPanel({
         | { responseCode?: number; responseMessage?: string }
         | null;
       if (!res.ok || (payload?.responseCode ?? res.status) >= 400) {
-        setError(payload?.responseMessage || `HTTP ${res.status}`);
+        toast.error(payload?.responseMessage || `HTTP ${res.status}`);
         return;
       }
-      setOk("Lead status updated");
+      toast.success(`Lead status set to ${statusOverride}`);
       startTransition(() => router.refresh());
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
+      toast.error(err instanceof Error ? err.message : String(err));
     }
   };
 
   const markDropped = async () => {
     if (!window.confirm("Mark this lead as dropped? They'll still be visible in filtered lists.")) return;
     setStatusOverride("dropped");
-    // Fire immediately — don't wait for the state update
-    clearMessages();
     try {
       const res = await fetch(
         `/api/admin/leads/${encodeURIComponent(leadId)}/status`,
@@ -120,29 +110,18 @@ export function LeadActionsPanel({
         | { responseCode?: number; responseMessage?: string }
         | null;
       if (!res.ok || (payload?.responseCode ?? res.status) >= 400) {
-        setError(payload?.responseMessage || `HTTP ${res.status}`);
+        toast.error(payload?.responseMessage || `HTTP ${res.status}`);
         return;
       }
-      setOk("Lead marked dropped");
+      toast.success("Lead marked dropped");
       startTransition(() => router.refresh());
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
+      toast.error(err instanceof Error ? err.message : String(err));
     }
   };
 
   return (
     <div className="mt-3 space-y-4">
-      {error ? (
-        <p className="rounded-lg border border-[#b42318]/20 bg-[#fee9e9] px-3 py-2 text-xs text-[#8b1f1f]">
-          {error}
-        </p>
-      ) : null}
-      {ok ? (
-        <p className="rounded-lg border border-[#166534]/20 bg-[#e3fcef] px-3 py-2 text-xs text-[#166534]">
-          {ok}
-        </p>
-      ) : null}
-
       <div>
         <p className="text-xs font-semibold uppercase tracking-wider text-[var(--ds-text-secondary)]">
           Verification

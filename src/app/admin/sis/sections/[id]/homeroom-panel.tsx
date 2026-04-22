@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
+import { useToast } from "@/app/admin/toast";
 
 const INPUT_CLS =
   "w-full rounded-lg border border-[var(--ds-border)] bg-[var(--ds-surface)] px-2.5 py-1.5 text-sm text-[var(--ds-text-primary)]";
@@ -16,15 +17,13 @@ export function HomeroomPanel({
   initialEmail: string | null | undefined;
 }) {
   const router = useRouter();
+  const toast = useToast();
   const [isPending, startTransition] = useTransition();
   const [name, setName] = useState(initialName ?? "");
   const [email, setEmail] = useState(initialEmail ?? "");
-  const [err, setErr] = useState<string | null>(null);
-  const [ok, setOk] = useState<string | null>(null);
 
   const save = async (e: React.FormEvent) => {
     e.preventDefault();
-    setErr(null); setOk(null);
     try {
       const res = await fetch(
         `/api/admin/sis/sections/${encodeURIComponent(sectionId)}/homeroom`,
@@ -38,13 +37,13 @@ export function HomeroomPanel({
         | { responseCode?: number; responseMessage?: string }
         | null;
       if (!res.ok || (body?.responseCode ?? res.status) >= 400) {
-        setErr(body?.responseMessage || `HTTP ${res.status}`);
+        toast.error(body?.responseMessage || `HTTP ${res.status}`);
         return;
       }
-      setOk("Homeroom teacher updated");
+      toast.success("Homeroom teacher updated");
       startTransition(() => router.refresh());
     } catch (e) {
-      setErr(e instanceof Error ? e.message : String(e));
+      toast.error(e instanceof Error ? e.message : String(e));
     }
   };
 
@@ -83,8 +82,6 @@ export function HomeroomPanel({
       >
         Save
       </button>
-      {err ? <p className="text-xs text-[#8b1f1f] sm:col-span-3">{err}</p> : null}
-      {ok ? <p className="text-xs text-[#166534] sm:col-span-3">{ok}</p> : null}
     </form>
   );
 }
