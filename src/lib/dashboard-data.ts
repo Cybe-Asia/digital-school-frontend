@@ -85,6 +85,8 @@ export type ParentPortalStudentCard = {
    *  stepper + status badge rendered on each student card. Falls back
    *  to "submitted" when unavailable (pre-/me deep links, mock data). */
   applicantStatus?: string;
+  /** Neo4j Student node id — used to build the "Book test" deep link. */
+  studentId?: string;
 };
 
 export type ParentPortalAction = {
@@ -398,6 +400,7 @@ export function getParentAdmissionsContextFromMePayload(payload: ParentMePayload
     targetGrade: s.targetGradeLevel,
     notes: s.notes,
     applicantStatus: s.applicantStatus,
+    studentId: s.studentId,
   }));
   const primary = mapped[0];
 
@@ -634,6 +637,7 @@ function buildParentPortalExperience(
       nextActionDetailValues: { student: student.studentName, school: schoolShortName },
       actionLabelKey: template.actionLabelKey,
       applicantStatus: student.applicantStatus,
+      studentId: student.studentId,
     };
   });
 

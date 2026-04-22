@@ -46,6 +46,9 @@ export type AdmissionsStudentProfile = {
    *  Older deep-linked dashboards that don't come via /me leave this
    *  undefined and fall back to "submitted" rendering. */
   applicantStatus?: string;
+  /** Neo4j Student node id. Needed for per-student actions
+   *  (booking a test, uploading a document for one child, etc.). */
+  studentId?: string;
 };
 
 export type RequestPasswordResetInput = {

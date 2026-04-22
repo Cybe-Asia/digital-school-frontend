@@ -422,6 +422,34 @@ export default async function DashboardShell({ config }: DashboardShellProps) {
                               </div>
                             ) : null}
 
+                            {studentCard.applicantStatus === "test_pending" && studentCard.studentId ? (
+                              <div className="mt-4 rounded-2xl border border-[var(--ds-primary)]/30 bg-[var(--ds-primary)]/5 p-4">
+                                <p className="text-sm font-semibold text-[var(--ds-text-primary)]">
+                                  {t("dashboard.parent.tests.book_ready_title", { student: studentCard.studentName })}
+                                </p>
+                                <p className="mt-1 text-sm text-[var(--ds-text-secondary)]">
+                                  {t("dashboard.parent.tests.book_ready_description")}
+                                </p>
+                                <Link
+                                  href={`/auth/setup-account/tests?studentId=${encodeURIComponent(studentCard.studentId)}&schoolId=SCH-${(admissionsContext.school ?? "iiss").toUpperCase()}`}
+                                  className="mt-3 inline-flex items-center rounded-lg bg-[var(--ds-primary)] px-4 py-2 text-sm font-semibold text-white"
+                                >
+                                  {t("dashboard.parent.tests.book_cta")}
+                                </Link>
+                              </div>
+                            ) : null}
+
+                            {studentCard.applicantStatus === "test_scheduled" ? (
+                              <div className="mt-4 rounded-2xl border border-[var(--ds-border)] bg-[var(--ds-soft)]/60 p-4">
+                                <p className="text-sm font-semibold text-[var(--ds-text-primary)]">
+                                  {t("dashboard.parent.tests.booked_title")}
+                                </p>
+                                <p className="mt-1 text-sm text-[var(--ds-text-secondary)]">
+                                  {t("dashboard.parent.tests.booked_description", { student: studentCard.studentName })}
+                                </p>
+                              </div>
+                            ) : null}
+
                             <div className="mt-5 grid grid-cols-2 gap-x-4 gap-y-6 sm:gap-x-8">
                               <div>
                                 <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--ds-text-secondary)]">
