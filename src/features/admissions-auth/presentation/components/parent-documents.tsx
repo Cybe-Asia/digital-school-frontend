@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useI18n } from "@/i18n";
 import { Button } from "@/shared/ui/button";
 import { StatusBadge } from "@/features/admissions-common/status-badge";
@@ -43,23 +43,26 @@ export function ParentDocumentsClient() {
   const { t } = useI18n();
   const [rows, setRows] = useState<RequestWithArtifacts[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+  // Strict-mode double-mount guard so we don't double-fetch in dev.
+  const firedRef = useRef(false);
 
   const refresh = useCallback(async () => {
-    try {
-      const res = await fetch("/api/me/document-requests", { cache: "no-store" });
-      const body = (await res.json().catch(() => null)) as Envelope<RequestWithArtifacts[]> | null;
-      if (!res.ok || !body?.data) {
-        setLoadError(body?.responseMessage || `HTTP ${res.status}`);
-        return;
-      }
-      setRows(body.data);
-    } catch (err) {
-      setLoadError(err instanceof Error ? err.message : String(err));
+    const res = await fetch("/api/me/document-requests", { cache: "no-store" });
+    const body = (await res.json().catch(() => null)) as Envelope<RequestWithArtifacts[]> | null;
+    if (!res.ok || !body?.data) {
+      setLoadError(body?.responseMessage || `HTTP ${res.status}`);
+      return;
     }
+    setRows(body.data);
   }, []);
 
   useEffect(() => {
-    refresh();
+    if (firedRef.current) return;
+    firedRef.current = true;
+    // Fire-and-forget on mount. `refresh` does its own setState
+    // inside an awaited branch (never synchronously), so this effect
+    // body itself never calls setState.
+    void refresh();
   }, [refresh]);
 
   if (loadError) {
