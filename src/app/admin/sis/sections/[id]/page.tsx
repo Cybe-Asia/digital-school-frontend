@@ -6,6 +6,7 @@ import { StatusBadge } from "@/features/admissions-common/status-badge";
 import { AssignStudentsPanel } from "./assign-panel";
 import { HomeroomPanel } from "./homeroom-panel";
 import { AttendancePanel } from "./attendance-panel";
+import { GradesPanel } from "./grades-panel";
 
 export const metadata: Metadata = { title: "Section Detail | Admin" };
 
@@ -143,6 +144,10 @@ export default async function AdminSectionDetailPage({
 
       <div className="mt-6">
         <AttendancePanel sectionId={section.sectionId} />
+      </div>
+
+      <div className="mt-6">
+        <GradesPanel sectionId={section.sectionId} />
       </div>
 
       <section className="mt-6 rounded-2xl border border-[var(--ds-border)] bg-[var(--ds-surface)] p-5">

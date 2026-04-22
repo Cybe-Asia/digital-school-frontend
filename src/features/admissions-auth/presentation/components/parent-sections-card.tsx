@@ -33,6 +33,17 @@ type AttendanceSummary = {
   total: number;
 };
 
+type GradeEntry = {
+  applicantStudentId: string;
+  studentName: string;
+  sectionName: string;
+  subject: string;
+  term: string;
+  score: number;
+  maxScore: number;
+  recordedAt: string;
+};
+
 /**
  * Parent dashboard card — "My child at school". Only renders when at
  * least one of the parent's kids has been assigned to a Section by
@@ -42,27 +53,28 @@ type AttendanceSummary = {
 export function ParentSectionsCard() {
   const [rows, setRows] = useState<Row[] | null>(null);
   const [attendance, setAttendance] = useState<AttendanceEntry[]>([]);
+  const [grades, setGrades] = useState<GradeEntry[]>([]);
   const [error, setError] = useState<string | null>(null);
   const firedRef = useRef(false);
 
   const refresh = useCallback(async () => {
-    const [sectionsRes, attendanceRes] = await Promise.all([
+    const [sectionsRes, attendanceRes, gradesRes] = await Promise.all([
       fetch("/api/me/sections", { cache: "no-store" }),
       fetch("/api/me/attendance", { cache: "no-store" }),
+      fetch("/api/me/grades", { cache: "no-store" }),
     ]);
     const secBody = (await sectionsRes.json().catch(() => null)) as Envelope<Row[]> | null;
     const attBody = (await attendanceRes.json().catch(() => null)) as Envelope<AttendanceEntry[]> | null;
+    const gradeBody = (await gradesRes.json().catch(() => null)) as Envelope<GradeEntry[]> | null;
     queueMicrotask(() => {
       if (!sectionsRes.ok || !secBody?.data) {
         setError(secBody?.responseMessage || `HTTP ${sectionsRes.status}`);
       } else {
         setRows(secBody.data);
       }
-      // Attendance failure downgrades gracefully — section card still
-      // renders its basic layout if the attendance call fails.
-      if (attendanceRes.ok && attBody?.data) {
-        setAttendance(attBody.data);
-      }
+      // Downgrade gracefully — section card renders even if sub-calls fail.
+      if (attendanceRes.ok && attBody?.data) setAttendance(attBody.data);
+      if (gradesRes.ok && gradeBody?.data) setGrades(gradeBody.data);
     });
   }, []);
 
@@ -85,6 +97,12 @@ export function ParentSectionsCard() {
       else if (a.status === "absent") s.absent++;
     }
     return s;
+  };
+
+  const gradesFor = (studentId: string): GradeEntry[] => {
+    // Take the 3 most recent grade rows; backend already ordered by
+    // recorded_at DESC so slicing from the top keeps ordering correct.
+    return grades.filter((g) => g.applicantStudentId === studentId).slice(0, 3);
   };
 
   return (
@@ -137,6 +155,7 @@ export function ParentSectionsCard() {
               </p>
             ) : null}
             <AttendanceSummaryRow summary={summaryFor(r.applicantStudentId)} />
+            <GradesRow grades={gradesFor(r.applicantStudentId)} />
           </div>
         ))}
       </div>
@@ -149,6 +168,28 @@ export function ParentSectionsCard() {
  * in the last 14 days" style. Falls back to a placeholder line when no
  * attendance has been recorded yet so parents know to expect it.
  */
+function GradesRow({ grades }: { grades: GradeEntry[] }) {
+  if (grades.length === 0) return null;
+  return (
+    <div className="mt-1">
+      <p className="text-xs font-semibold text-[#166534]/90">Latest grades</p>
+      <ul className="mt-0.5 space-y-0.5">
+        {grades.map((g, i) => {
+          const pct = g.maxScore > 0 ? Math.round((g.score / g.maxScore) * 100) : 0;
+          return (
+            <li key={`${g.subject}-${g.term}-${i}`} className="text-xs text-[#166534]">
+              <span className="font-semibold">{g.subject}</span>{" "}
+              <span className="text-[#166534]/80">· {g.term}:</span>{" "}
+              {g.score} / {g.maxScore}
+              <span className="ml-1 text-[#166534]/80">({pct}%)</span>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
+
 function AttendanceSummaryRow({ summary }: { summary: AttendanceSummary }) {
   if (summary.total === 0) {
     return (
