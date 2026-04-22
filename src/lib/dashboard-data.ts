@@ -583,15 +583,17 @@ function createParentAdmissionsDashboard(
   };
 
   const progress = context.students.flatMap((student) => {
-    const gradeAvg = perKidGradeAverage(student.studentId);
-    const attPct = perKidAttendancePct(student.studentId);
+    const sid = student.studentId ?? "";
+    if (!sid) return [];
+    const gradeAvg = perKidGradeAverage(sid);
+    const attPct = perKidAttendancePct(sid);
     const rows: { labelKey: string; value: number; max: number; helperKey: string }[] = [];
     if (gradeAvg != null) {
       rows.push({
         labelKey: `${student.studentName} academic average`,
         value: gradeAvg,
         max: 100,
-        helperKey: `Across ${grades.filter((g) => g.applicantStudentId === student.studentId).length} graded subject(s)`,
+        helperKey: `Across ${grades.filter((g) => g.applicantStudentId === sid).length} graded subject(s)`,
       });
     }
     if (attPct != null) {
@@ -599,7 +601,7 @@ function createParentAdmissionsDashboard(
         labelKey: `${student.studentName} attendance`,
         value: attPct,
         max: 100,
-        helperKey: `Last ${attendance.filter((a) => a.applicantStudentId === student.studentId).length} days`,
+        helperKey: `Last ${attendance.filter((a) => a.applicantStudentId === sid).length} days`,
       });
     }
     return rows;
@@ -673,7 +675,9 @@ function createParentAdmissionsDashboard(
   // --- Table: per-kid per-subject grade rows + an attendance row.
   const tableRows = [
     ...context.students.flatMap((student) => {
-      const kidGrades = grades.filter((g) => g.applicantStudentId === student.studentId);
+      const sid = student.studentId ?? "";
+      if (!sid) return [];
+      const kidGrades = grades.filter((g) => g.applicantStudentId === sid);
       const gradeRows = kidGrades.slice(0, 3).map((g) => ({
         columnA: student.studentName,
         columnB: `${g.subject} · ${g.term}`,
@@ -684,7 +688,7 @@ function createParentAdmissionsDashboard(
             ? "improving"
             : "attention_needed") as "excellent" | "improving" | "attention_needed",
       }));
-      const attPct = perKidAttendancePct(student.studentId);
+      const attPct = perKidAttendancePct(sid);
       const attendanceRow = attPct != null
         ? [{
             columnA: student.studentName,
