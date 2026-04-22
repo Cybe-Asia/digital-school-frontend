@@ -30,6 +30,11 @@ type AdminApplication = {
     currency: string;
     paidAt?: string | null;
   } | null;
+  application?: {
+    applicationId: string;
+    applicationCode: string;
+    status: string;
+  } | null;
 };
 
 /**
@@ -108,7 +113,7 @@ export default async function AdminApplicationsPage() {
                 <th className="px-4 py-3">Parent</th>
                 <th className="px-4 py-3">School</th>
                 <th className="px-4 py-3">Students</th>
-                <th className="px-4 py-3">Status</th>
+                <th className="px-4 py-3">Application</th>
                 <th className="px-4 py-3">Fee</th>
                 <th className="px-4 py-3">Submitted</th>
               </tr>
@@ -140,7 +145,16 @@ export default async function AdminApplicationsPage() {
                     )}
                   </td>
                   <td className="px-4 py-3">
-                    <StatusPill status={app.lead.isVerified ? "verified" : "pending"} />
+                    {app.application ? (
+                      <div>
+                        <StatusPill status={app.application.status} />
+                        <div className="mt-0.5 text-xs text-[var(--ds-text-secondary)]">
+                          {app.application.applicationCode}
+                        </div>
+                      </div>
+                    ) : (
+                      <StatusPill status={app.lead.isVerified ? "EOI only" : "pending"} />
+                    )}
                   </td>
                   <td className="px-4 py-3">
                     {app.latestPayment ? (
@@ -170,11 +184,17 @@ export default async function AdminApplicationsPage() {
 function StatusPill({ status }: { status: string }) {
   const s = status.toLowerCase();
   const colorClass =
-    s === "paid" || s === "verified"
+    s === "paid" || s === "application_fee_paid" || s === "completed"
       ? "bg-[#e3fcef] text-[#166534]"
-      : s === "pending"
+      : s === "submitted" || s === "verified" || s === "offer_stage"
+      ? "bg-[#dbeafe] text-[#1e40af]"
+      : s === "payment_pending" ||
+        s === "pending" ||
+        s === "under_review" ||
+        s === "testing_in_progress" ||
+        s === "documents_pending"
       ? "bg-[#fef3c7] text-[#92400e]"
-      : s === "expired" || s === "failed"
+      : s === "expired" || s === "failed" || s === "rejected" || s === "withdrawn"
       ? "bg-[#fee9e9] text-[#8b1f1f]"
       : "bg-[var(--ds-soft)] text-[var(--ds-text-primary)]";
   return (

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 import { getServerServiceEndpoints } from "@/features/admissions-auth/infrastructure/service-endpoints";
+import { ApplicationStatusForm } from "./application-status-form";
 
 export const metadata: Metadata = {
   title: "Application detail | Admin",
@@ -44,6 +45,14 @@ type AdminApplication = {
     paymentMethod?: string | null;
     hostedInvoiceUrl?: string | null;
     paidAt?: string | null;
+  } | null;
+  application?: {
+    applicationId: string;
+    applicationCode: string;
+    status: string;
+    applicationChannel: string;
+    submittedAt: string;
+    updatedAt: string;
   } | null;
 };
 
@@ -124,8 +133,8 @@ export default async function AdminApplicationDetailPage({ params }: PageProps) 
         <div className="mt-4 grid grid-cols-2 gap-x-8 gap-y-3 text-sm sm:grid-cols-4">
           <KV label="School" value={app.lead.schoolSelection} />
           <KV
-            label="Status"
-            value={app.lead.isVerified ? "verified" : "pending"}
+            label="Email verified"
+            value={app.lead.isVerified ? "yes" : "no"}
           />
           <KV label="Submitted" value={formatDate(app.lead.createdAt)} />
           <KV label="Referral" value={app.lead.referralCode ?? "—"} />
@@ -138,6 +147,44 @@ export default async function AdminApplicationDetailPage({ params }: PageProps) 
           />
         </div>
       </header>
+
+      {app.application ? (
+        <section className="rounded-2xl border border-[var(--ds-border)] bg-[var(--ds-surface)] p-6">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h2 className="text-lg font-semibold text-[var(--ds-text-primary)]">
+                Application lifecycle
+              </h2>
+              <p className="mt-1 text-sm text-[var(--ds-text-secondary)]">
+                {app.application.applicationCode} &middot; {app.application.applicationChannel}
+              </p>
+            </div>
+            <StatusPill status={app.application.status} />
+          </div>
+          <div className="mt-4 grid grid-cols-2 gap-x-8 gap-y-3 text-sm sm:grid-cols-3">
+            <KV label="Submitted" value={formatDate(app.application.submittedAt)} />
+            <KV label="Last touched" value={formatDate(app.application.updatedAt)} />
+            <KV label="Application id" value={app.application.applicationId} />
+          </div>
+          <div className="mt-5 border-t border-[var(--ds-border)] pt-5">
+            <ApplicationStatusForm
+              leadId={app.lead.admissionId}
+              currentStatus={app.application.status}
+            />
+          </div>
+        </section>
+      ) : (
+        <section className="rounded-2xl border border-dashed border-[var(--ds-border)] bg-[var(--ds-surface)] p-6">
+          <h2 className="text-lg font-semibold text-[var(--ds-text-primary)]">
+            No application yet
+          </h2>
+          <p className="mt-1 text-sm text-[var(--ds-text-secondary)]">
+            The parent hasn&apos;t submitted the students form yet, so no Application
+            lifecycle has started. The EOI Lead still exists and they can resume
+            from their email link.
+          </p>
+        </section>
+      )}
 
       <section className="rounded-2xl border border-[var(--ds-border)] bg-[var(--ds-surface)] p-6">
         <h2 className="text-lg font-semibold text-[var(--ds-text-primary)]">
@@ -203,6 +250,29 @@ export default async function AdminApplicationDetailPage({ params }: PageProps) 
         )}
       </section>
     </div>
+  );
+}
+
+function StatusPill({ status }: { status: string }) {
+  const s = status.toLowerCase();
+  const colorClass =
+    s === "paid" || s === "application_fee_paid" || s === "completed"
+      ? "bg-[#e3fcef] text-[#166534]"
+      : s === "submitted" || s === "verified" || s === "offer_stage"
+      ? "bg-[#dbeafe] text-[#1e40af]"
+      : s === "payment_pending" ||
+        s === "pending" ||
+        s === "under_review" ||
+        s === "testing_in_progress" ||
+        s === "documents_pending"
+      ? "bg-[#fef3c7] text-[#92400e]"
+      : s === "expired" || s === "failed" || s === "rejected" || s === "withdrawn"
+      ? "bg-[#fee9e9] text-[#8b1f1f]"
+      : "bg-[var(--ds-soft)] text-[var(--ds-text-primary)]";
+  return (
+    <span className={`inline-block rounded-full px-3 py-1 text-xs font-semibold ${colorClass}`}>
+      {status}
+    </span>
   );
 }
 
