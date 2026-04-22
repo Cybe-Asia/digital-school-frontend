@@ -16,7 +16,11 @@ import { getServerServiceEndpoints } from "@/features/admissions-auth/infrastruc
 
 const SESSION_COOKIE_NAME = "ds-session";
 
-type Ctx = { params?: Promise<Record<string, string>> };
+/**
+ * Context shape for dynamic routes. Non-dynamic routes pass `undefined`;
+ * both branches are supported.
+ */
+type Ctx = { params?: Promise<Record<string, string>> } | undefined;
 type Method = "GET" | "POST" | "PUT" | "DELETE";
 
 /**
@@ -43,7 +47,7 @@ export async function proxyToAdmission(
     return NextResponse.json({ error: "Unauthenticated" }, { status: 401 });
   }
 
-  const params = (await ctx.params) ?? {};
+  const params = ctx?.params ? await ctx.params : {};
   let path = pathTemplate;
   for (const [k, v] of Object.entries(params)) {
     path = path.replace(`{${k}}`, encodeURIComponent(v));

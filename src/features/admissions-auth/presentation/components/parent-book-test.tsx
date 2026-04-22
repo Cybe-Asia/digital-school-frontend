@@ -39,17 +39,18 @@ export function ParentBookTestClient({ studentId, schoolId }: Props) {
   const router = useRouter();
   const { t } = useI18n();
   const [schedules, setSchedules] = useState<Schedule[] | null>(null);
-  const [loadError, setLoadError] = useState<string | null>(null);
+  // Missing-school is a synchronous derived error (not from an async
+  // load) — deriving from props avoids the "setState-in-effect"
+  // cascading-render lint that the auth-continue page hit earlier.
+  const missingSchool = !schoolId;
+  const [asyncLoadError, setAsyncLoadError] = useState<string | null>(null);
   const [bookingId, setBookingId] = useState<string | null>(null);
   const [bookError, setBookError] = useState<string | null>(null);
   const firedRef = useRef(false);
 
   useEffect(() => {
     if (firedRef.current) return;
-    if (!schoolId) {
-      setLoadError(t("auth.booktest.missing_school"));
-      return;
-    }
+    if (missingSchool) return;
     firedRef.current = true;
     (async () => {
       try {
@@ -58,15 +59,17 @@ export function ParentBookTestClient({ studentId, schoolId }: Props) {
         });
         const body = (await res.json().catch(() => null)) as Envelope<Schedule[]> | null;
         if (!res.ok || !body?.data) {
-          setLoadError(body?.responseMessage || `HTTP ${res.status}`);
+          setAsyncLoadError(body?.responseMessage || `HTTP ${res.status}`);
           return;
         }
         setSchedules(body.data);
       } catch (err) {
-        setLoadError(err instanceof Error ? err.message : String(err));
+        setAsyncLoadError(err instanceof Error ? err.message : String(err));
       }
     })();
-  }, [schoolId, t]);
+  }, [schoolId, missingSchool]);
+
+  const loadError = missingSchool ? t("auth.booktest.missing_school") : asyncLoadError;
 
   const bookable = useMemo(() => {
     return (schedules ?? []).filter(
