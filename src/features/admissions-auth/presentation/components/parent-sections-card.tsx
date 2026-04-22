@@ -17,6 +17,22 @@ type Row = {
   homeroomTeacherEmail?: string | null;
 };
 
+type AttendanceEntry = {
+  applicantStudentId: string;
+  studentName: string;
+  sectionName: string;
+  date: string;
+  status: string;
+};
+
+type AttendanceSummary = {
+  present: number;
+  late: number;
+  excused: number;
+  absent: number;
+  total: number;
+};
+
 /**
  * Parent dashboard card — "My child at school". Only renders when at
  * least one of the parent's kids has been assigned to a Section by
@@ -25,19 +41,27 @@ type Row = {
  */
 export function ParentSectionsCard() {
   const [rows, setRows] = useState<Row[] | null>(null);
+  const [attendance, setAttendance] = useState<AttendanceEntry[]>([]);
   const [error, setError] = useState<string | null>(null);
   const firedRef = useRef(false);
 
   const refresh = useCallback(async () => {
-    const res = await fetch("/api/me/sections", { cache: "no-store" });
-    const body = (await res.json().catch(() => null)) as Envelope<Row[]> | null;
-    // queueMicrotask to keep react-hooks/set-state-in-effect quiet on
-    // the fetch-on-mount setState calls.
+    const [sectionsRes, attendanceRes] = await Promise.all([
+      fetch("/api/me/sections", { cache: "no-store" }),
+      fetch("/api/me/attendance", { cache: "no-store" }),
+    ]);
+    const secBody = (await sectionsRes.json().catch(() => null)) as Envelope<Row[]> | null;
+    const attBody = (await attendanceRes.json().catch(() => null)) as Envelope<AttendanceEntry[]> | null;
     queueMicrotask(() => {
-      if (!res.ok || !body?.data) {
-        setError(body?.responseMessage || `HTTP ${res.status}`);
+      if (!sectionsRes.ok || !secBody?.data) {
+        setError(secBody?.responseMessage || `HTTP ${sectionsRes.status}`);
       } else {
-        setRows(body.data);
+        setRows(secBody.data);
+      }
+      // Attendance failure downgrades gracefully — section card still
+      // renders its basic layout if the attendance call fails.
+      if (attendanceRes.ok && attBody?.data) {
+        setAttendance(attBody.data);
       }
     });
   }, []);
@@ -50,6 +74,18 @@ export function ParentSectionsCard() {
 
   if (rows === null) return null;
   if (rows.length === 0) return null;
+
+  const summaryFor = (studentId: string): AttendanceSummary => {
+    const mine = attendance.filter((a) => a.applicantStudentId === studentId);
+    const s: AttendanceSummary = { present: 0, late: 0, excused: 0, absent: 0, total: mine.length };
+    for (const a of mine) {
+      if (a.status === "present") s.present++;
+      else if (a.status === "late") s.late++;
+      else if (a.status === "excused") s.excused++;
+      else if (a.status === "absent") s.absent++;
+    }
+    return s;
+  };
 
   return (
     <article className="parent-portal-section surface-card rounded-3xl p-5 sm:p-6">
@@ -100,12 +136,41 @@ export function ParentSectionsCard() {
                 ) : null}
               </p>
             ) : null}
-            <p className="mt-2 text-xs text-[#166534]/80">
-              Attendance and grades will appear here once the school&apos;s term starts.
-            </p>
+            <AttendanceSummaryRow summary={summaryFor(r.applicantStudentId)} />
           </div>
         ))}
       </div>
     </article>
+  );
+}
+
+/**
+ * One-line attendance summary per kid — "5 present · 1 late · 0 absent
+ * in the last 14 days" style. Falls back to a placeholder line when no
+ * attendance has been recorded yet so parents know to expect it.
+ */
+function AttendanceSummaryRow({ summary }: { summary: AttendanceSummary }) {
+  if (summary.total === 0) {
+    return (
+      <p className="mt-2 text-xs text-[#166534]/80">
+        Attendance and grades will appear here once the school&apos;s term starts.
+      </p>
+    );
+  }
+  const attendedPct = summary.total > 0
+    ? Math.round(((summary.present + summary.late) / summary.total) * 100)
+    : 0;
+  return (
+    <div className="mt-2 space-y-1">
+      <p className="text-xs text-[#166534]/90">
+        Attendance (last 14 days):{" "}
+        <span className="font-semibold">{summary.present}</span> present
+        {summary.late > 0 ? <>, <span className="font-semibold">{summary.late}</span> late</> : null}
+        {summary.excused > 0 ? <>, <span className="font-semibold">{summary.excused}</span> excused</> : null}
+        {summary.absent > 0 ? <>, <span className="font-semibold text-[#8b1f1f]">{summary.absent}</span> absent</> : null}
+        {" · "}
+        <span className="font-semibold">{attendedPct}%</span> attended
+      </p>
+    </div>
   );
 }
