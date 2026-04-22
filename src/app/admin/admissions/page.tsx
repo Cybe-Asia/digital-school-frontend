@@ -107,6 +107,7 @@ export default async function AdminAdmissionsDashboardPage() {
           <NavLink href="/admin/admissions/leads">Leads</NavLink>
           <NavLink href="/admin/admissions/applications">Applications</NavLink>
           <NavLink href="/admin/admissions/offers">Offers</NavLink>
+          <NavLink href="/admin/admissions/documents">Doc queue</NavLink>
           <NavLink href="/admin/admissions/enrolled">Enrolled</NavLink>
           <NavLink href="/admin/tests/schedules">Test schedules</NavLink>
         </nav>
