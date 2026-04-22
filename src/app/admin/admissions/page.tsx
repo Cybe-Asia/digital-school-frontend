@@ -106,6 +106,7 @@ export default async function AdminAdmissionsDashboardPage() {
         <nav className="flex flex-wrap gap-2 text-xs">
           <NavLink href="/admin/admissions/leads">Leads</NavLink>
           <NavLink href="/admin/admissions/applications">Applications</NavLink>
+          <NavLink href="/admin/admissions/enrolled">Enrolled</NavLink>
           <NavLink href="/admin/tests/schedules">Test schedules</NavLink>
         </nav>
       </header>
