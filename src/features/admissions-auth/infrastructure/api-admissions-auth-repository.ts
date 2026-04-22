@@ -162,7 +162,7 @@ export class ApiAdmissionsAuthRepository implements AdmissionsAuthRepository {
           success: true,
           accessToken: payload.data.jwtAccessToken,
           refreshToken: payload.data.refreshToken,
-          redirectTo: "/dashboard/parent",
+          redirectTo: "/parent/dashboard",
         }),
       },
     );
