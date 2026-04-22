@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { getServerServiceEndpoints } from "@/features/admissions-auth/infrastructure/service-endpoints";
 import { StatusBadge } from "@/features/admissions-common/status-badge";
 import { SessionRow, type SessionCardResult, type SessionCardSession } from "./session-row";
+import { ScheduleActions } from "./schedule-actions";
 
 export const metadata: Metadata = { title: "Schedule detail | Admin" };
 
@@ -141,6 +142,12 @@ export default async function AdminScheduleDetailPage({ params }: PageProps) {
             <p className="text-xs font-semibold uppercase tracking-wider text-[var(--ds-text-secondary)]">Status</p>
             <div className="mt-0.5"><StatusBadge status={schedule.status} size="sm" /></div>
           </div>
+        </div>
+        <div className="mt-4 border-t border-[var(--ds-border)] pt-4">
+          <ScheduleActions
+            scheduleId={schedule.testScheduleId}
+            scheduleStatus={schedule.status}
+          />
         </div>
       </header>
 
