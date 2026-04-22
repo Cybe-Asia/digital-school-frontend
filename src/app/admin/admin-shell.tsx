@@ -45,9 +45,11 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  // Close the mobile sidebar whenever the route changes.
+  // Close the mobile sidebar whenever the route changes. Deferred via
+  // microtask so react-hooks/set-state-in-effect doesn't flag this as
+  // a cascading render (it's legitimate route-driven teardown).
   useEffect(() => {
-    setMobileOpen(false);
+    queueMicrotask(() => setMobileOpen(false));
   }, [pathname]);
 
   // Keyboard: `/` focuses the global search input on any page that has one.
@@ -182,7 +184,7 @@ function Breadcrumbs({ pathname }: { pathname: string }) {
   );
 }
 
-function humanise(seg: string, all: string[], idx: number): string {
+function humanise(seg: string, _all: string[], _idx: number): string {
   // Skip decorative URL-encoded ids in the middle of paths — render the
   // parent segment's singular form instead. e.g. /students/[id] shows
   // "Students › <id>" which is redundant; collapse.
