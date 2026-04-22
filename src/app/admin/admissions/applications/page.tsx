@@ -3,6 +3,7 @@ import Link from "next/link";
 import { cookies } from "next/headers";
 import { getServerServiceEndpoints } from "@/features/admissions-auth/infrastructure/service-endpoints";
 import { StatusBadge } from "@/features/admissions-common/status-badge";
+import { ApplicationsFilterBar } from "./applications-filter-bar";
 
 export const metadata: Metadata = {
   title: "Admissions Applications | Admin",
@@ -45,7 +46,17 @@ type AdminApplication = {
  * if the requester isn't on the list we render a "not authorised"
  * message instead of the table.
  */
-export default async function AdminApplicationsPage() {
+type SP = Record<string, string | string[] | undefined>;
+function getSP(sp: SP, key: string): string | undefined {
+  const v = sp[key];
+  if (typeof v === "string") return v;
+  if (Array.isArray(v) && v.length > 0) return v[0];
+  return undefined;
+}
+
+export default async function AdminApplicationsPage({
+  searchParams,
+}: { searchParams: Promise<SP> }) {
   const cookieStore = await cookies();
   const token = cookieStore.get(SESSION_COOKIE_NAME)?.value;
 
@@ -57,11 +68,31 @@ export default async function AdminApplicationsPage() {
     );
   }
 
+  const sp = await searchParams;
+  const status = getSP(sp, "status") ?? "";
+  const school = getSP(sp, "school") ?? "";
+  const search = getSP(sp, "search") ?? "";
+  const dateFrom = getSP(sp, "dateFrom") ?? "";
+  const dateTo = getSP(sp, "dateTo") ?? "";
+  const hasApplication = getSP(sp, "hasApplication") ?? "";
+  const limit = Math.max(1, Math.min(500, parseInt(getSP(sp, "limit") ?? "100", 10) || 100));
+  const offset = Math.max(0, parseInt(getSP(sp, "offset") ?? "0", 10) || 0);
+
+  const qs = new URLSearchParams();
+  if (status) qs.set("status", status);
+  if (school) qs.set("school", school);
+  if (search) qs.set("search", search);
+  if (dateFrom) qs.set("dateFrom", dateFrom);
+  if (dateTo) qs.set("dateTo", dateTo);
+  if (hasApplication) qs.set("hasApplication", hasApplication);
+  qs.set("limit", String(limit));
+  qs.set("offset", String(offset));
+
   const { admission } = getServerServiceEndpoints();
   let payload: ApiEnvelope<AdminApplication[]> | null = null;
   let httpStatus = 0;
   try {
-    const res = await fetch(`${admission}/admin/applications`, {
+    const res = await fetch(`${admission}/admin/applications?${qs.toString()}`, {
       headers: { Authorization: `Bearer ${token}` },
       cache: "no-store",
     });
@@ -97,10 +128,27 @@ export default async function AdminApplicationsPage() {
             Applications
           </h1>
           <p className="mt-1 text-sm text-[var(--ds-text-secondary)]">
-            {applications.length} total &middot; newest first
+            {applications.length} rows · offset {offset}
           </p>
         </div>
+        <div className="flex gap-2 text-xs">
+          <a
+            href={`/api/admin/applications.csv?${qs.toString()}`}
+            download
+            className="rounded-lg border border-[var(--ds-border)] bg-[var(--ds-surface)] px-3 py-1.5 font-semibold text-[var(--ds-text-primary)] hover:bg-[var(--ds-soft)]"
+          >
+            Export CSV ↓
+          </a>
+          <Link
+            href="/admin/admissions"
+            className="rounded-lg border border-[var(--ds-border)] bg-[var(--ds-surface)] px-3 py-1.5 font-semibold text-[var(--ds-text-primary)] hover:bg-[var(--ds-soft)]"
+          >
+            ← Dashboard
+          </Link>
+        </div>
       </header>
+
+      <ApplicationsFilterBar initial={{ status, school, search, dateFrom, dateTo, hasApplication }} />
 
       {applications.length === 0 ? (
         <div className="rounded-2xl border border-[var(--ds-border)] bg-[var(--ds-surface)] px-5 py-10 text-center text-sm text-[var(--ds-text-secondary)]">
