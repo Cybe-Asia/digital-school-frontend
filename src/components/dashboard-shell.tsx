@@ -7,6 +7,7 @@ import {
 import ParentPortalScrollNav from "@/features/admissions-portal/presentation/components/parent-portal-scroll-nav";
 import ParentPortalStickyHeader from "@/features/admissions-portal/presentation/components/parent-portal-sticky-header";
 import { AddAnotherChildButton } from "@/features/admissions-auth/presentation/components/add-another-child-button";
+import { ParentOffersCard } from "@/features/admissions-auth/presentation/components/parent-offers-card";
 import { StatusBadge, StudentStatusStepper } from "@/features/admissions-common/status-badge";
 import { getServerI18n } from "@/i18n/server";
 import {
@@ -376,6 +377,12 @@ export default async function DashboardShell({ config }: DashboardShellProps) {
                         </div>
                       </div>
                     </article>
+
+                    {/* Offer + enrolment card — self-hides when neither
+                        applies for any of the parent's kids. Client-side
+                        fetch to /api/me/offers so it picks up Accept/
+                        Decline state changes without a full page reload. */}
+                    <ParentOffersCard />
 
                     <article id="registered-students" className="parent-portal-section surface-card scroll-mt-28 rounded-3xl p-5 sm:p-6">
                       <div className="flex items-start justify-between gap-3">

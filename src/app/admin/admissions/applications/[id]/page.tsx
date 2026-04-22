@@ -7,6 +7,7 @@ import { StatusBadge, StudentStatusStepper } from "@/features/admissions-common/
 import { ApplicationStatusForm } from "./application-status-form";
 import { StudentStatusForm } from "./student-status-form";
 import { AdminOpenDocumentRequestButton } from "./admin-open-document-request";
+import { AdminIssueOfferButton } from "./admin-issue-offer";
 
 export const metadata: Metadata = {
   title: "Application detail | Admin",
@@ -258,6 +259,17 @@ export default async function AdminApplicationDetailPage({ params }: PageProps) 
                     <AdminOpenDocumentRequestButton
                       studentId={s.studentId}
                       leadId={app.lead.admissionId}
+                    />
+                  </div>
+
+                  <div className="mt-3 border-t border-[var(--ds-border)] pt-3">
+                    <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-[var(--ds-text-secondary)]">
+                      Offer
+                    </p>
+                    <AdminIssueOfferButton
+                      studentId={s.studentId}
+                      applicantStatus={status}
+                      defaultSchoolId={`SCH-${(app.lead.schoolSelection || "IISS").toUpperCase()}`}
                     />
                   </div>
                 </div>

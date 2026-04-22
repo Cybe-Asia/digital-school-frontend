@@ -12,15 +12,23 @@ import { SetupContextSummary } from "./setup-context-summary";
 
 type SetupAccountPaymentFormProps = {
   admissionId: string;
+  /** Defaults to "application_fee" for the first-time registration flow.
+   *  The enrolment flow (after accepting an offer) passes "enrolment_fee"
+   *  via ?paymentType= so the same page serves both transactions. */
+  paymentType?: string;
 };
 
 /**
- * Step shown right after the parent has submitted their students.
- * Fetches the active FeeStructure for the selected school, then hands off to
- * Xendit's hosted invoice page. Xendit redirects the browser back to
+ * Step shown right after the parent has submitted their students — and
+ * also after they accept an Offer (enrolment_fee). Fetches the active
+ * FeeStructure for the selected school, then hands off to Xendit's
+ * hosted invoice page. Xendit redirects the browser back to
  * /auth/setup-account/payment/return where we poll for the final status.
  */
-export function SetupAccountPaymentForm({ admissionId }: SetupAccountPaymentFormProps) {
+export function SetupAccountPaymentForm({
+  admissionId,
+  paymentType = "application_fee",
+}: SetupAccountPaymentFormProps) {
   const { t } = useI18n();
   const [createError, setCreateError] = useState<string | null>(null);
 
@@ -29,7 +37,7 @@ export function SetupAccountPaymentForm({ admissionId }: SetupAccountPaymentForm
 
   // Preview computes the scaled total (unit fee × students) directly from
   // the backend, so the UI can never disagree with what Xendit charges.
-  const previewQuery = useInvoicePreviewQuery(admissionId, "application_fee", Boolean(contextSuccess));
+  const previewQuery = useInvoicePreviewQuery(admissionId, paymentType, Boolean(contextSuccess));
   const createInvoice = useCreateInvoiceMutation();
 
   if (!admissionId) {
@@ -45,7 +53,7 @@ export function SetupAccountPaymentForm({ admissionId }: SetupAccountPaymentForm
     try {
       const result = await createInvoice.mutateAsync({
         admissionId,
-        paymentType: "application_fee",
+        paymentType,
       });
       // Jump to Xendit's hosted checkout. On completion Xendit sends the
       // browser back to /auth/setup-account/payment/return?paymentId=...
