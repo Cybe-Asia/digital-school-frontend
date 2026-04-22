@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { cookies } from "next/headers";
 import { getServerServiceEndpoints } from "@/features/admissions-auth/infrastructure/service-endpoints";
+import { StatusBadge } from "@/features/admissions-common/status-badge";
 
 export const metadata: Metadata = {
   title: "Admissions Applications | Admin",
@@ -147,19 +148,19 @@ export default async function AdminApplicationsPage() {
                   <td className="px-4 py-3">
                     {app.application ? (
                       <div>
-                        <StatusPill status={app.application.status} />
+                        <StatusBadge status={app.application.status} size="sm" />
                         <div className="mt-0.5 text-xs text-[var(--ds-text-secondary)]">
                           {app.application.applicationCode}
                         </div>
                       </div>
                     ) : (
-                      <StatusPill status={app.lead.isVerified ? "EOI only" : "pending"} />
+                      <StatusBadge status={app.lead.isVerified ? "submitted" : "pending"} size="sm" label={app.lead.isVerified ? "EOI only" : "pending"} />
                     )}
                   </td>
                   <td className="px-4 py-3">
                     {app.latestPayment ? (
                       <div>
-                        <StatusPill status={app.latestPayment.status} />
+                        <StatusBadge status={app.latestPayment.status} size="sm" />
                         <div className="mt-0.5 text-xs text-[var(--ds-text-secondary)]">
                           {formatMoney(app.latestPayment.amount, app.latestPayment.currency)}
                         </div>
@@ -181,28 +182,6 @@ export default async function AdminApplicationsPage() {
   );
 }
 
-function StatusPill({ status }: { status: string }) {
-  const s = status.toLowerCase();
-  const colorClass =
-    s === "paid" || s === "application_fee_paid" || s === "completed"
-      ? "bg-[#e3fcef] text-[#166534]"
-      : s === "submitted" || s === "verified" || s === "offer_stage"
-      ? "bg-[#dbeafe] text-[#1e40af]"
-      : s === "payment_pending" ||
-        s === "pending" ||
-        s === "under_review" ||
-        s === "testing_in_progress" ||
-        s === "documents_pending"
-      ? "bg-[#fef3c7] text-[#92400e]"
-      : s === "expired" || s === "failed" || s === "rejected" || s === "withdrawn"
-      ? "bg-[#fee9e9] text-[#8b1f1f]"
-      : "bg-[var(--ds-soft)] text-[var(--ds-text-primary)]";
-  return (
-    <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-semibold ${colorClass}`}>
-      {status}
-    </span>
-  );
-}
 
 function formatDate(iso: string): string {
   try {

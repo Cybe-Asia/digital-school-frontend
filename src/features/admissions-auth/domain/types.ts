@@ -40,6 +40,12 @@ export type AdmissionsStudentProfile = {
   currentSchool: string;
   targetGrade: string;
   notes?: string;
+  /** Per-child ApplicantStudent lifecycle status from admission-service
+   *  (e.g. submitted, test_pending, test_approved, documents_pending,
+   *  offer_issued, enrolment_paid). Populated on the dashboard from /me.
+   *  Older deep-linked dashboards that don't come via /me leave this
+   *  undefined and fall back to "submitted" rendering. */
+  applicantStatus?: string;
 };
 
 export type RequestPasswordResetInput = {

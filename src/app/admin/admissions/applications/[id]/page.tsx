@@ -3,7 +3,9 @@ import Link from "next/link";
 import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 import { getServerServiceEndpoints } from "@/features/admissions-auth/infrastructure/service-endpoints";
+import { StatusBadge, StudentStatusStepper } from "@/features/admissions-common/status-badge";
 import { ApplicationStatusForm } from "./application-status-form";
+import { StudentStatusForm } from "./student-status-form";
 
 export const metadata: Metadata = {
   title: "Application detail | Admin",
@@ -36,6 +38,9 @@ type AdminApplication = {
     currentSchool: string;
     targetGradeLevel: string;
     notes?: string;
+    applicantStatus?: string;
+    applicationMode?: string;
+    ageAtApplication?: number | null;
   }>;
   latestPayment?: {
     paymentId: string;
@@ -159,7 +164,7 @@ export default async function AdminApplicationDetailPage({ params }: PageProps) 
                 {app.application.applicationCode} &middot; {app.application.applicationChannel}
               </p>
             </div>
-            <StatusPill status={app.application.status} />
+            <StatusBadge status={app.application.status} />
           </div>
           <div className="mt-4 grid grid-cols-2 gap-x-8 gap-y-3 text-sm sm:grid-cols-3">
             <KV label="Submitted" value={formatDate(app.application.submittedAt)} />
@@ -195,25 +200,61 @@ export default async function AdminApplicationDetailPage({ params }: PageProps) 
             No student details submitted yet.
           </p>
         ) : (
-          <div className="mt-3 space-y-3">
-            {app.students.map((s) => (
-              <div
-                key={s.studentId}
-                className="rounded-xl border border-[var(--ds-border)] bg-[var(--ds-soft)]/40 p-4"
-              >
-                <p className="font-semibold text-[var(--ds-text-primary)]">{s.fullName}</p>
-                <div className="mt-2 grid grid-cols-2 gap-x-6 gap-y-1.5 text-sm text-[var(--ds-text-secondary)] sm:grid-cols-3">
-                  <KV label="Date of birth" value={s.dateOfBirth} />
-                  <KV label="Current school" value={s.currentSchool} />
-                  <KV label="Target grade" value={s.targetGradeLevel} />
+          <div className="mt-3 space-y-5">
+            {app.students.map((s, idx) => {
+              const status = s.applicantStatus ?? "submitted";
+              return (
+                <div
+                  key={s.studentId}
+                  className="rounded-xl border border-[var(--ds-border)] bg-[var(--ds-soft)]/40 p-5"
+                >
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-wider text-[var(--ds-text-secondary)]">
+                        Student {idx + 1}
+                      </p>
+                      <p className="mt-0.5 text-lg font-semibold text-[var(--ds-text-primary)]">
+                        {s.fullName}
+                      </p>
+                    </div>
+                    <StatusBadge status={status} />
+                  </div>
+
+                  <div className="mt-4">
+                    <StudentStatusStepper status={status} />
+                  </div>
+
+                  <div className="mt-4 grid grid-cols-2 gap-x-6 gap-y-2 text-sm text-[var(--ds-text-secondary)] sm:grid-cols-4">
+                    <KV label="Date of birth" value={s.dateOfBirth} />
+                    <KV
+                      label="Age"
+                      value={s.ageAtApplication != null ? `${s.ageAtApplication}y` : "—"}
+                    />
+                    <KV label="Target grade" value={s.targetGradeLevel} />
+                    <KV label="Mode" value={s.applicationMode ?? "new"} />
+                    <div className="col-span-2 sm:col-span-4">
+                      <KV label="Current school" value={s.currentSchool} />
+                    </div>
+                  </div>
+
+                  {s.notes ? (
+                    <p className="mt-3 rounded-lg bg-[var(--ds-soft)] p-3 text-sm text-[var(--ds-text-primary)]">
+                      {s.notes}
+                    </p>
+                  ) : null}
+
+                  <div className="mt-4 border-t border-[var(--ds-border)] pt-3">
+                    <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-[var(--ds-text-secondary)]">
+                      Advance student status
+                    </p>
+                    <StudentStatusForm
+                      studentId={s.studentId}
+                      currentStatus={status}
+                    />
+                  </div>
                 </div>
-                {s.notes ? (
-                  <p className="mt-3 rounded-lg bg-[var(--ds-soft)] p-3 text-sm text-[var(--ds-text-primary)]">
-                    {s.notes}
-                  </p>
-                ) : null}
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </section>
@@ -250,29 +291,6 @@ export default async function AdminApplicationDetailPage({ params }: PageProps) 
         )}
       </section>
     </div>
-  );
-}
-
-function StatusPill({ status }: { status: string }) {
-  const s = status.toLowerCase();
-  const colorClass =
-    s === "paid" || s === "application_fee_paid" || s === "completed"
-      ? "bg-[#e3fcef] text-[#166534]"
-      : s === "submitted" || s === "verified" || s === "offer_stage"
-      ? "bg-[#dbeafe] text-[#1e40af]"
-      : s === "payment_pending" ||
-        s === "pending" ||
-        s === "under_review" ||
-        s === "testing_in_progress" ||
-        s === "documents_pending"
-      ? "bg-[#fef3c7] text-[#92400e]"
-      : s === "expired" || s === "failed" || s === "rejected" || s === "withdrawn"
-      ? "bg-[#fee9e9] text-[#8b1f1f]"
-      : "bg-[var(--ds-soft)] text-[var(--ds-text-primary)]";
-  return (
-    <span className={`inline-block rounded-full px-3 py-1 text-xs font-semibold ${colorClass}`}>
-      {status}
-    </span>
   );
 }
 

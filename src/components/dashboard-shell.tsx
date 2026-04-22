@@ -7,6 +7,7 @@ import {
 import ParentPortalScrollNav from "@/features/admissions-portal/presentation/components/parent-portal-scroll-nav";
 import ParentPortalStickyHeader from "@/features/admissions-portal/presentation/components/parent-portal-sticky-header";
 import { AddAnotherChildButton } from "@/features/admissions-auth/presentation/components/add-another-child-button";
+import { StatusBadge, StudentStatusStepper } from "@/features/admissions-common/status-badge";
 import { getServerI18n } from "@/i18n/server";
 import {
   type DashboardConfig,
@@ -406,8 +407,20 @@ export default async function DashboardShell({ config }: DashboardShellProps) {
                                   {t("auth.additional.target_grade_label")}: {t(`auth.additional.target_grade.${studentCard.targetGrade}`)}
                                 </p>
                               </div>
-                              <span className={statusClassName(studentCard.status)}>{t(studentCard.statusLabelKey)}</span>
+                              {/* Prefer the real backend status if /me returned it; fall back
+                                  to the mock status label for pre-/me deep-linked dashboards. */}
+                              {studentCard.applicantStatus ? (
+                                <StatusBadge status={studentCard.applicantStatus} />
+                              ) : (
+                                <span className={statusClassName(studentCard.status)}>{t(studentCard.statusLabelKey)}</span>
+                              )}
                             </div>
+
+                            {studentCard.applicantStatus ? (
+                              <div className="mt-5">
+                                <StudentStatusStepper status={studentCard.applicantStatus} />
+                              </div>
+                            ) : null}
 
                             <div className="mt-5 grid grid-cols-2 gap-x-4 gap-y-6 sm:gap-x-8">
                               <div>

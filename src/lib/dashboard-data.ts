@@ -81,6 +81,10 @@ export type ParentPortalStudentCard = {
   nextActionDetailKey: string;
   nextActionDetailValues?: TranslationValues;
   actionLabelKey: string;
+  /** Real per-child lifecycle status from the backend. Powers the
+   *  stepper + status badge rendered on each student card. Falls back
+   *  to "submitted" when unavailable (pre-/me deep links, mock data). */
+  applicantStatus?: string;
 };
 
 export type ParentPortalAction = {
@@ -365,6 +369,7 @@ export type ParentMePayload = {
     currentSchool: string;
     targetGradeLevel: string;
     notes?: string;
+    applicantStatus?: string;
   }>;
   latestPayment?: {
     status: "pending" | "paid" | "expired" | "failed" | string;
@@ -392,6 +397,7 @@ export function getParentAdmissionsContextFromMePayload(payload: ParentMePayload
     currentSchool: s.currentSchool,
     targetGrade: s.targetGradeLevel,
     notes: s.notes,
+    applicantStatus: s.applicantStatus,
   }));
   const primary = mapped[0];
 
@@ -627,6 +633,7 @@ function buildParentPortalExperience(
       nextActionDetailKey: template.nextActionDetailKey,
       nextActionDetailValues: { student: student.studentName, school: schoolShortName },
       actionLabelKey: template.actionLabelKey,
+      applicantStatus: student.applicantStatus,
     };
   });
 
