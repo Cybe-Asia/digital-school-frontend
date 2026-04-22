@@ -4,6 +4,8 @@ import { cookies } from "next/headers";
 import { getServerServiceEndpoints } from "@/features/admissions-auth/infrastructure/service-endpoints";
 import { StatusBadge } from "@/features/admissions-common/status-badge";
 import { EnrolledFilterBar } from "./enrolled-filter-bar";
+import { EmptyState } from "@/app/admin/_components/empty-state";
+import { FilterChips, type FilterChip } from "@/app/admin/_components/filter-chips";
 
 export const metadata: Metadata = {
   title: "Enrolled Students | Admin",
@@ -107,9 +109,15 @@ export default async function AdminEnrolledPage({ searchParams }: { searchParams
 
       <EnrolledFilterBar initial={{ school, yearGroup, status, search }} />
 
+      <FilterChips qs={qs} chips={buildEnrolledChips({ school, yearGroup, status, search })} />
+
       {rows.length === 0 ? (
-        <div className="mt-5 rounded-2xl border border-[var(--ds-border)] bg-[var(--ds-surface)] px-5 py-10 text-center text-sm text-[var(--ds-text-secondary)]">
-          No enrolled students yet. Parents must accept their offer and pay the enrolment fee for a record to appear here.
+        <div className="mt-5">
+          <EmptyState
+            icon="🎓"
+            title="No enrolled students yet"
+            description="Parents must accept their offer and pay the enrolment fee for a record to appear here."
+          />
         </div>
       ) : (
         <div className="mt-5 overflow-hidden rounded-2xl border border-[var(--ds-border)] bg-[var(--ds-surface)]">
@@ -161,6 +169,15 @@ export default async function AdminEnrolledPage({ searchParams }: { searchParams
       <Pager total={total} limit={limit} offset={offset} qs={qs} />
     </div>
   );
+}
+
+function buildEnrolledChips(f: { school: string; yearGroup: string; status: string; search: string }): FilterChip[] {
+  const out: FilterChip[] = [];
+  if (f.search) out.push({ key: "search", label: `Search: ${f.search}` });
+  if (f.school) out.push({ key: "school", label: `School: ${f.school.replace("SCH-", "")}` });
+  if (f.yearGroup) out.push({ key: "yearGroup", label: `Year: ${f.yearGroup}` });
+  if (f.status) out.push({ key: "status", label: `Status: ${f.status}` });
+  return out;
 }
 
 function Pager({ total, limit, offset, qs }: { total: number; limit: number; offset: number; qs: URLSearchParams }) {

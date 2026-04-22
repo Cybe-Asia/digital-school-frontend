@@ -4,6 +4,8 @@ import { cookies } from "next/headers";
 import { getServerServiceEndpoints } from "@/features/admissions-auth/infrastructure/service-endpoints";
 import { StatusBadge } from "@/features/admissions-common/status-badge";
 import { DocQueueFilterBar } from "./doc-queue-filter-bar";
+import { EmptyState } from "@/app/admin/_components/empty-state";
+import { FilterChips, type FilterChip } from "@/app/admin/_components/filter-chips";
 
 export const metadata: Metadata = {
   title: "Document Review Queue | Admin",
@@ -103,9 +105,15 @@ export default async function AdminDocQueuePage({ searchParams }: { searchParams
 
       <DocQueueFilterBar initial={{ status, school, search, minAgeDays }} />
 
+      <FilterChips qs={qs} chips={buildDocChips({ status, school, search, minAgeDays })} />
+
       {rows.length === 0 ? (
-        <div className="mt-5 rounded-2xl border border-[var(--ds-border)] bg-[var(--ds-surface)] px-5 py-10 text-center text-sm text-[var(--ds-text-secondary)]">
-          No artifacts match these filters. 🎉
+        <div className="mt-5">
+          <EmptyState
+            icon="🎉"
+            title="Queue is empty"
+            description="Every uploaded artifact has been reviewed. Nothing waiting."
+          />
         </div>
       ) : (
         <div className="mt-5 overflow-hidden rounded-2xl border border-[var(--ds-border)] bg-[var(--ds-surface)]">
@@ -189,6 +197,15 @@ function Pager({ total, limit, offset, qs }: { total: number; limit: number; off
       <Link aria-disabled={atEnd} href={atEnd ? "#" : href(next)} className={`rounded-lg border border-[var(--ds-border)] bg-[var(--ds-surface)] px-3 py-1.5 font-semibold ${atEnd ? "pointer-events-none opacity-40" : "text-[var(--ds-text-primary)] hover:bg-[var(--ds-soft)]"}`}>Next →</Link>
     </div>
   );
+}
+
+function buildDocChips(f: { status: string; school: string; search: string; minAgeDays: string }): FilterChip[] {
+  const out: FilterChip[] = [];
+  if (f.status) out.push({ key: "status", label: `Status: ${f.status}` });
+  if (f.school) out.push({ key: "school", label: `School: ${f.school.replace("SCH-", "")}` });
+  if (f.search) out.push({ key: "search", label: `Search: ${f.search}` });
+  if (f.minAgeDays) out.push({ key: "minAgeDays", label: `≥ ${f.minAgeDays}d old` });
+  return out;
 }
 
 function formatBytes(b: number): string {

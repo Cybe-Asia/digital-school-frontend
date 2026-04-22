@@ -5,6 +5,8 @@ import { getServerServiceEndpoints } from "@/features/admissions-auth/infrastruc
 import { StatusBadge } from "@/features/admissions-common/status-badge";
 import { OffersFilterBar } from "./offers-filter-bar";
 import { CancelOfferButton } from "./cancel-offer-button";
+import { EmptyState } from "@/app/admin/_components/empty-state";
+import { FilterChips, type FilterChip } from "@/app/admin/_components/filter-chips";
 
 export const metadata: Metadata = {
   title: "Admissions Offers | Admin",
@@ -106,9 +108,15 @@ export default async function AdminOffersPage({ searchParams }: { searchParams: 
 
       <OffersFilterBar initial={{ status, school, search, onlyOverdue }} />
 
+      <FilterChips qs={qs} chips={buildOfferChips({ status, school, search, onlyOverdue })} />
+
       {rows.length === 0 ? (
-        <div className="mt-5 rounded-2xl border border-[var(--ds-border)] bg-[var(--ds-surface)] px-5 py-10 text-center text-sm text-[var(--ds-text-secondary)]">
-          No offers match these filters.
+        <div className="mt-5">
+          <EmptyState
+            icon="📨"
+            title="No offers match these filters"
+            description={onlyOverdue ? "No overdue offers — the intake is healthy." : "Clear a chip or broaden the filters."}
+          />
         </div>
       ) : (
         <div className="mt-5 overflow-hidden rounded-2xl border border-[var(--ds-border)] bg-[var(--ds-surface)]">
@@ -195,6 +203,20 @@ function Pager({ total, limit, offset, qs }: { total: number; limit: number; off
       <Link aria-disabled={atEnd} href={atEnd ? "#" : href(next)} className={`rounded-lg border border-[var(--ds-border)] bg-[var(--ds-surface)] px-3 py-1.5 font-semibold ${atEnd ? "pointer-events-none opacity-40" : "text-[var(--ds-text-primary)] hover:bg-[var(--ds-soft)]"}`}>Next →</Link>
     </div>
   );
+}
+
+function buildOfferChips(f: {
+  status: string;
+  school: string;
+  search: string;
+  onlyOverdue: boolean;
+}): FilterChip[] {
+  const out: FilterChip[] = [];
+  if (f.status) out.push({ key: "status", label: `Status: ${f.status}` });
+  if (f.school) out.push({ key: "school", label: `School: ${f.school.replace("SCH-", "")}` });
+  if (f.search) out.push({ key: "search", label: `Search: ${f.search}` });
+  if (f.onlyOverdue) out.push({ key: "onlyOverdue", label: "Overdue only" });
+  return out;
 }
 
 function formatDate(iso: string): string {

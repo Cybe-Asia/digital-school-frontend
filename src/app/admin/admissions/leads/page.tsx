@@ -4,6 +4,8 @@ import { cookies } from "next/headers";
 import { getServerServiceEndpoints } from "@/features/admissions-auth/infrastructure/service-endpoints";
 import { StatusBadge } from "@/features/admissions-common/status-badge";
 import { LeadsFilterBar } from "./leads-filter-bar";
+import { EmptyState } from "@/app/admin/_components/empty-state";
+import { FilterChips, type FilterChip } from "@/app/admin/_components/filter-chips";
 
 export const metadata: Metadata = {
   title: "Admissions Leads | Admin",
@@ -154,9 +156,15 @@ export default async function AdminLeadsPage({ searchParams }: LeadsPageProps) {
         initial={{ status, school, search, dateFrom, dateTo, hasApplication }}
       />
 
+      <FilterChips qs={qs} chips={buildChips({ status, school, search, dateFrom, dateTo, hasApplication })} />
+
       {rows.length === 0 ? (
-        <div className="mt-5 rounded-2xl border border-[var(--ds-border)] bg-[var(--ds-surface)] px-5 py-10 text-center text-sm text-[var(--ds-text-secondary)]">
-          No leads match these filters.
+        <div className="mt-5">
+          <EmptyState
+            icon="🔍"
+            title="No leads match these filters"
+            description="Try clearing one of the chips above, or broaden the date range."
+          />
         </div>
       ) : (
         <div className="mt-5 overflow-hidden rounded-2xl border border-[var(--ds-border)] bg-[var(--ds-surface)]">
@@ -225,6 +233,24 @@ export default async function AdminLeadsPage({ searchParams }: LeadsPageProps) {
       <Pager total={total} limit={limit} offset={offset} qs={qs} />
     </div>
   );
+}
+
+function buildChips(f: {
+  status: string;
+  school: string;
+  search: string;
+  dateFrom: string;
+  dateTo: string;
+  hasApplication: string;
+}): FilterChip[] {
+  const out: FilterChip[] = [];
+  if (f.status) out.push({ key: "status", label: `Status: ${f.status}` });
+  if (f.school) out.push({ key: "school", label: `School: ${f.school.replace("SCH-", "")}` });
+  if (f.search) out.push({ key: "search", label: `Search: ${f.search}` });
+  if (f.dateFrom) out.push({ key: "dateFrom", label: `From: ${f.dateFrom.slice(0, 10)}` });
+  if (f.dateTo) out.push({ key: "dateTo", label: `To: ${f.dateTo.slice(0, 10)}` });
+  if (f.hasApplication) out.push({ key: "hasApplication", label: f.hasApplication === "true" ? "Has application" : "EOI only" });
+  return out;
 }
 
 function formatDate(iso: string): string {
