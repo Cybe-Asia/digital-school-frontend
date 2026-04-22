@@ -19,6 +19,7 @@ const NAV: NavGroup[] = [
       { label: "Offers", href: "/admin/admissions/offers" },
       { label: "Doc queue", href: "/admin/admissions/documents" },
       { label: "Enrolled", href: "/admin/admissions/enrolled" },
+      { label: "Settings", href: "/admin/admissions/settings" },
     ],
   },
   {
