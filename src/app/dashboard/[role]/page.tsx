@@ -8,6 +8,7 @@ import {
   getParentAdmissionsContextFromMePayload,
   getParentAdmissionsContextFromSearchParams,
   type ParentMePayload,
+  type ParentSisSnapshot,
 } from "@/lib/dashboard-data";
 import en from "@/i18n/translations/en.json";
 
@@ -39,6 +40,43 @@ async function loadParentMe(): Promise<ParentMePayload | null> {
   } catch {
     return null;
   }
+}
+
+/**
+ * Parent-scoped SIS snapshot: sections + attendance + grades for every
+ * kid the current parent owns. Each sub-call downgrades to [] on
+ * failure — the dashboard renders partial data rather than blanking
+ * out when only one call is flaky.
+ */
+async function loadParentSisSnapshot(): Promise<ParentSisSnapshot> {
+  const cookieStore = await cookies();
+  const token = cookieStore.get(SESSION_COOKIE_NAME)?.value;
+  if (!token) return { sections: [], attendance: [], grades: [] };
+
+  const { admission } = getServerServiceEndpoints();
+  const headers = { Authorization: `Bearer ${token}` };
+  const fetchJson = async (path: string) => {
+    try {
+      const res = await fetch(`${admission}${path}`, { headers, cache: "no-store" });
+      if (!res.ok) return [];
+      const body = (await res.json().catch(() => null)) as { data?: unknown } | null;
+      return Array.isArray(body?.data) ? body!.data : [];
+    } catch {
+      return [];
+    }
+  };
+
+  const [sections, attendance, grades] = await Promise.all([
+    fetchJson("/me/sections"),
+    fetchJson("/me/attendance"),
+    fetchJson("/me/grades"),
+  ]);
+
+  return {
+    sections: sections as ParentSisSnapshot["sections"],
+    attendance: attendance as ParentSisSnapshot["attendance"],
+    grades: grades as ParentSisSnapshot["grades"],
+  };
 }
 
 type DashboardPageProps = {
@@ -85,13 +123,15 @@ export default async function DashboardPage({ params, searchParams }: DashboardP
   // URL params. Falls back to the legacy URL path if the /me call fails or
   // returns partial data.
   let parentAdmissionsContext = null;
+  let parentSisSnapshot: ParentSisSnapshot | null = null;
   if (role === "parent") {
-    const mePayload = await loadParentMe();
+    const [mePayload, sisSnap] = await Promise.all([loadParentMe(), loadParentSisSnapshot()]);
     parentAdmissionsContext =
       getParentAdmissionsContextFromMePayload(mePayload) ??
       getParentAdmissionsContextFromSearchParams(query);
+    parentSisSnapshot = sisSnap;
   }
-  const config = getDashboardConfig(role, parentAdmissionsContext);
+  const config = getDashboardConfig(role, parentAdmissionsContext, parentSisSnapshot);
 
   if (!config) {
     notFound();

@@ -335,13 +335,56 @@ export const dashboardData: Record<DashboardRole, DashboardConfig> = {
 
 export const dashboardRoles: DashboardRole[] = ["student", "parent", "staff"];
 
-export function getDashboardConfig(role: string, admissionsContext?: ParentAdmissionsContext | null): DashboardConfig | null {
+/**
+ * Parent-scoped SIS data used to compute real metrics on the dashboard.
+ * Pass null to fall back to the pre-SIS presentation (still driven by
+ * /me context, just without attendance/grade rollups).
+ */
+export type ParentSisSnapshot = {
+  sections: Array<{
+    applicantStudentId: string;
+    studentName: string;
+    studentNumber: string;
+    sectionId: string;
+    sectionName: string;
+    yearGroup: string;
+    academicYear: string;
+    schoolId: string;
+    homeroomTeacherName?: string | null;
+    homeroomTeacherEmail?: string | null;
+  }>;
+  attendance: Array<{
+    applicantStudentId: string;
+    studentName: string;
+    sectionName: string;
+    date: string;
+    status: string;
+  }>;
+  grades: Array<{
+    applicantStudentId: string;
+    studentName: string;
+    sectionName: string;
+    subject: string;
+    term: string;
+    score: number;
+    maxScore: number;
+    recordedAt: string;
+  }>;
+};
+
+export function getDashboardConfig(
+  role: string,
+  admissionsContext?: ParentAdmissionsContext | null,
+  sisSnapshot?: ParentSisSnapshot | null,
+): DashboardConfig | null {
   if (role === "student" || role === "staff") {
     return dashboardData[role];
   }
 
   if (role === "parent") {
-    return admissionsContext ? createParentAdmissionsDashboard(admissionsContext) : dashboardData.parent;
+    return admissionsContext
+      ? createParentAdmissionsDashboard(admissionsContext, sisSnapshot ?? null)
+      : dashboardData.parent;
   }
 
   return null;
@@ -467,53 +510,259 @@ export function getParentAdmissionsContextFromSearchParams(searchParams: Dashboa
   };
 }
 
-function createParentAdmissionsDashboard(context: ParentAdmissionsContext): DashboardConfig {
+function createParentAdmissionsDashboard(
+  context: ParentAdmissionsContext,
+  sis: ParentSisSnapshot | null,
+): DashboardConfig {
   const primaryStudent = context.students[0];
-  const linkedStudents = context.hasExistingStudents === "yes" ? (context.existingChildrenCount ?? 0) + context.students.length : context.students.length;
-  const attendanceValue = getAttendanceValue(primaryStudent.targetGrade);
-  const assignmentCount = linkedStudents > 1 ? "5" : "3";
-  const tuitionDue = context.school === "iihs" ? "Rp 2.400.000" : "Rp 2.100.000";
+  const linkedStudents = context.hasExistingStudents === "yes"
+    ? (context.existingChildrenCount ?? 0) + context.students.length
+    : context.students.length;
   const schoolName = context.school === "iihs" ? "IIHS" : "IISS";
-  const additionalStudents = linkedStudents - 1;
-  const siblingLabel = additionalStudents > 0 ? `${primaryStudent.studentName} + ${additionalStudents} sibling${additionalStudents > 1 ? "s" : ""}` : primaryStudent.studentName;
   const parentPortal = buildParentPortalExperience(context, schoolName);
+
+  // --- Real SIS rollups (fall back to zeros / admissions-stage text when no
+  //     SIS data is present yet, e.g. kid still in test/docs stage).
+  const attendance = sis?.attendance ?? [];
+  const grades = sis?.grades ?? [];
+  const sections = sis?.sections ?? [];
+
+  const attendedCount = attendance.filter((a) => a.status === "present" || a.status === "late").length;
+  const attendancePct = attendance.length > 0
+    ? Math.round((attendedCount / attendance.length) * 100)
+    : null;
+
+  // Count outstanding action items: unsubmitted test bookings, unuploaded
+  // docs, unaccepted offers — approximated via applicantStatus. Precise
+  // counts live in downstream endpoints; this is the 'nudge' cell.
+  const outstandingActions = context.students.filter((s) => {
+    const st = s.applicantStatus ?? "";
+    return ["test_pending", "documents_pending", "offer_issued"].includes(st);
+  }).length;
+
+  // --- Metrics (top 4 tiles).
+  const metrics = [
+    {
+      labelKey: "dashboard.parent.metrics.linked_students.label",
+      value: String(linkedStudents),
+      trendKey: context.students.map((s) => s.studentName).join(" · ") || primaryStudent.studentName,
+    },
+    {
+      labelKey: "dashboard.parent.metrics.average_attendance.label",
+      value: attendancePct != null ? `${attendancePct}%` : "—",
+      trendKey: attendance.length > 0
+        ? `${attendedCount}/${attendance.length} days · ${sections[0]?.sectionName ?? ""}`
+        : "Attendance starts once the term begins",
+    },
+    {
+      labelKey: "dashboard.parent.metrics.upcoming_assignments.label",
+      value: String(outstandingActions),
+      trendKey: outstandingActions > 0 ? "Action needed on your dashboard below" : "Nothing waiting",
+    },
+    {
+      labelKey: "dashboard.parent.metrics.tuition_due.label",
+      value: "Rp 0",
+      trendKey: "Recurring tuition billing not live yet",
+    },
+  ];
+
+  // --- Progress bars: per-kid academic average (if grades present) +
+  //     per-kid attendance % (if attendance present). Fall back to
+  //     admissions-progression signal when SIS silent.
+  const perKidGradeAverage = (studentId: string): number | null => {
+    const mine = grades.filter((g) => g.applicantStudentId === studentId && g.maxScore > 0);
+    if (mine.length === 0) return null;
+    const total = mine.reduce((acc, g) => acc + (g.score / g.maxScore) * 100, 0);
+    return Math.round(total / mine.length);
+  };
+  const perKidAttendancePct = (studentId: string): number | null => {
+    const mine = attendance.filter((a) => a.applicantStudentId === studentId);
+    if (mine.length === 0) return null;
+    const attended = mine.filter((a) => a.status === "present" || a.status === "late").length;
+    return Math.round((attended / mine.length) * 100);
+  };
+
+  const progress = context.students.flatMap((student) => {
+    const gradeAvg = perKidGradeAverage(student.studentId);
+    const attPct = perKidAttendancePct(student.studentId);
+    const rows: { labelKey: string; value: number; max: number; helperKey: string }[] = [];
+    if (gradeAvg != null) {
+      rows.push({
+        labelKey: `${student.studentName} academic average`,
+        value: gradeAvg,
+        max: 100,
+        helperKey: `Across ${grades.filter((g) => g.applicantStudentId === student.studentId).length} graded subject(s)`,
+      });
+    }
+    if (attPct != null) {
+      rows.push({
+        labelKey: `${student.studentName} attendance`,
+        value: attPct,
+        max: 100,
+        helperKey: `Last ${attendance.filter((a) => a.applicantStudentId === student.studentId).length} days`,
+      });
+    }
+    return rows;
+  });
+
+  // --- Alerts: derived from applicantStatus + attendance today.
+  const alerts: DashboardConfig["alerts"] = [];
+  const todayIso = new Date().toISOString().slice(0, 10);
+  const absentToday = attendance.find((a) => a.date === todayIso && a.status === "absent");
+  if (absentToday) {
+    alerts.push({
+      titleKey: `${absentToday.studentName} marked absent today`,
+      detailKey: `Section ${absentToday.sectionName}. Contact the homeroom teacher if this is unexpected.`,
+      priority: "high",
+    });
+  }
+  for (const s of context.students) {
+    const st = s.applicantStatus ?? "";
+    if (st === "test_pending") {
+      alerts.push({
+        titleKey: `${s.studentName} needs to book a test`,
+        detailKey: "Use the 'Book test now' card below to pick a slot.",
+        priority: "medium",
+      });
+    } else if (st === "documents_pending") {
+      alerts.push({
+        titleKey: `${s.studentName} has outstanding documents`,
+        detailKey: "Upload the required files from the documents panel.",
+        priority: "medium",
+      });
+    } else if (st === "offer_issued") {
+      alerts.push({
+        titleKey: `${s.studentName} has an offer waiting`,
+        detailKey: "Review and accept the admissions offer on your dashboard.",
+        priority: "high",
+      });
+    }
+  }
+  if (alerts.length === 0) {
+    alerts.push({
+      titleKey: "Everything is on track",
+      detailKey: "No outstanding admissions actions for your family.",
+      priority: "low",
+    });
+  }
+
+  // --- Schedule: replace the mock timetable with contextual links
+  //     ("next steps" list derived from state).
+  const schedule = [
+    ...(sections[0]?.homeroomTeacherName
+      ? [{
+          time: "—",
+          titleKey: `Homeroom: ${sections[0].homeroomTeacherName}`,
+          metaKey: sections[0].homeroomTeacherEmail || sections[0].sectionName,
+        }]
+      : []),
+    ...(grades.slice(0, 3).map((g) => ({
+      time: formatShortDate(g.recordedAt),
+      titleKey: `${g.studentName} — ${g.subject} ${g.term}`,
+      metaKey: `${g.score} / ${g.maxScore} (${Math.round((g.score / g.maxScore) * 100)}%)`,
+    }))),
+  ];
+  if (schedule.length === 0) {
+    schedule.push({
+      time: "",
+      titleKey: "Recent activity will show here",
+      metaKey: "Grades and section updates appear once the school posts them.",
+    });
+  }
+
+  // --- Table: per-kid per-subject grade rows + an attendance row.
+  const tableRows = [
+    ...context.students.flatMap((student) => {
+      const kidGrades = grades.filter((g) => g.applicantStudentId === student.studentId);
+      const gradeRows = kidGrades.slice(0, 3).map((g) => ({
+        columnA: student.studentName,
+        columnB: `${g.subject} · ${g.term}`,
+        columnC: `${g.score}/${g.maxScore}`,
+        status: (g.score / g.maxScore >= 0.85
+          ? "excellent"
+          : g.score / g.maxScore >= 0.7
+            ? "improving"
+            : "attention_needed") as "excellent" | "improving" | "attention_needed",
+      }));
+      const attPct = perKidAttendancePct(student.studentId);
+      const attendanceRow = attPct != null
+        ? [{
+            columnA: student.studentName,
+            columnB: "Attendance",
+            columnC: `${attPct}%`,
+            status: (attPct >= 90 ? "excellent" : attPct >= 75 ? "watchlist" : "attention_needed") as
+              "excellent" | "watchlist" | "attention_needed",
+          }]
+        : [];
+      return [...gradeRows, ...attendanceRow];
+    }),
+  ];
+  if (tableRows.length === 0) {
+    // Still pre-enrolment — show admissions progression per kid.
+    tableRows.push(
+      ...context.students.flatMap((s) => [
+        { columnA: s.studentName, columnB: "Admissions stage", columnC: s.applicantStatus ?? "submitted", status: "improving" as const },
+      ]),
+    );
+  }
 
   return {
     ...dashboardData.parent,
     navItems: buildParentPortalNavItems(context),
     subtitleKey: buildAdmissionsSubtitle(primaryStudent.studentName, context.students.length),
-    metrics: [
-      { labelKey: "dashboard.parent.metrics.linked_students.label", value: String(linkedStudents), trendKey: siblingLabel },
-      { labelKey: "dashboard.parent.metrics.average_attendance.label", value: attendanceValue, trendKey: `Readiness snapshot for ${primaryStudent.studentName}` },
-      { labelKey: "dashboard.parent.metrics.upcoming_assignments.label", value: assignmentCount, trendKey: `${primaryStudent.studentName} onboarding tasks` },
-      { labelKey: "dashboard.parent.metrics.tuition_due.label", value: tuitionDue, trendKey: `${schoolName} admissions invoice` },
-    ],
-    progress: [
-      { labelKey: `${primaryStudent.studentName} enrollment readiness`, value: 84, max: 100, helperKey: `Target grade ${toReadableGrade(primaryStudent.targetGrade)} at ${schoolName}` },
-      { labelKey: `${primaryStudent.studentName} placement checklist`, value: 72, max: 100, helperKey: `Current school: ${primaryStudent.currentSchool}` },
-      { labelKey: "Family onboarding completion", value: linkedStudents > 1 ? 78 : 66, max: 100, helperKey: `Parent account owner: ${context.parentName}` },
-    ],
-    alerts: [
-      { titleKey: `${primaryStudent.studentName} file is ready for review`, detailKey: `Admissions has the EOI, OTP verification, and additional details from ${context.parentName}.`, priority: "high" },
-      { titleKey: "Welcome call pending confirmation", detailKey: `Use ${context.email} for the first parent onboarding call in ${context.locationSuburb}.`, priority: "medium" },
-      { titleKey: `${schoolName} orientation notice`, detailKey: `${primaryStudent.studentName} is queued for the next ${schoolName} orientation update.`, priority: "low" },
-    ],
-    schedule: [
-      { time: "09:00", titleKey: "Admissions document review", metaKey: `${primaryStudent.studentName} · ${toReadableGrade(primaryStudent.targetGrade)}` },
-      { time: "11:00", titleKey: "Parent onboarding call", metaKey: `${context.parentName} · ${context.email}` },
-      { time: "14:00", titleKey: "Placement readiness check", metaKey: `${primaryStudent.currentSchool}` },
-      { time: "16:30", titleKey: "School communication digest", metaKey: `${schoolName} parent bulletin` },
-    ],
-    tableRows: [
-      ...context.students.flatMap((student) => [
-        { columnA: student.studentName, columnB: "Admissions status", columnC: "Additional form complete", status: "excellent" as const },
-        { columnA: student.studentName, columnB: "Target grade", columnC: toReadableGrade(student.targetGrade), status: "improving" as const },
-      ]),
-      { columnA: context.parentName, columnB: "Parent account", columnC: "Google / password access ready", status: "excellent" },
-    ],
+    metrics,
+    progress: progress.length > 0
+      ? progress
+      : [
+          // Pre-SIS fallback: show admissions funnel progression per kid.
+          ...context.students.slice(0, 3).map((s) => ({
+            labelKey: `${s.studentName} admissions progress`,
+            value: admissionsProgressValue(s.applicantStatus),
+            max: 100,
+            helperKey: `Current stage: ${s.applicantStatus ?? "submitted"}`,
+          })),
+        ],
+    alerts,
+    schedule,
+    tableRows,
     admissionsContext: context,
     parentPortal,
   };
+}
+
+/**
+ * Maps a Student.applicantStatus to a 0-100 progression value so the
+ * pre-SIS dashboard can still show meaningful progress bars.
+ */
+function admissionsProgressValue(status?: string): number {
+  const map: Record<string, number> = {
+    draft: 5,
+    submitted: 15,
+    test_pending: 25,
+    test_scheduled: 35,
+    test_completed: 45,
+    test_approved: 55,
+    test_failed: 30,
+    documents_pending: 65,
+    documents_verified: 75,
+    offer_issued: 85,
+    offer_accepted: 90,
+    offer_declined: 85,
+    enrolment_paid: 95,
+    handed_to_sis: 100,
+    rejected: 10,
+    withdrawn: 10,
+  };
+  return status ? map[status] ?? 10 : 10;
+}
+
+function formatShortDate(iso: string): string {
+  if (!iso) return "";
+  try {
+    return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  } catch {
+    return iso.slice(0, 10);
+  }
 }
 
 function parseAdmissionsStudents(value: string | null): AdmissionsStudentProfile[] | null {
@@ -816,24 +1065,6 @@ function buildParentPortalNavItems(context: ParentAdmissionsContext): NavItem[] 
   ];
 }
 
-function getAttendanceValue(targetGrade: string): string {
-  if (targetGrade === "year11" || targetGrade === "year12") {
-    return "91%";
-  }
-
-  if (targetGrade === "year9" || targetGrade === "year10") {
-    return "93%";
-  }
-
-  return "95%";
-}
-
-function toReadableGrade(targetGrade: string): string {
-  const match = /^year(\d+)$/i.exec(targetGrade);
-
-  if (!match) {
-    return targetGrade;
-  }
-
-  return `Year ${match[1]}`;
-}
+// getAttendanceValue + toReadableGrade removed — the real SIS attendance
+// percentage now comes from /me/attendance and grade labels from the
+// admissionsContext directly.
