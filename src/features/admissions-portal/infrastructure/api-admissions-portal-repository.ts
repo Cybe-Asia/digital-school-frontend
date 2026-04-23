@@ -489,7 +489,25 @@ function buildDocuments(student: ParentMeRawStudent, index: number): Application
 function buildAssessment(student: ParentMeRawStudent): ApplicationAssessment {
   const normalised = (student.applicantStatus ?? "").toLowerCase();
 
-  if (normalised === "test_approved") {
+  // Post-assessment states — the kid has either passed the test and
+  // moved forward in the funnel, or gone all the way to enrolment.
+  // Every one of these must short-circuit the booking surface so the
+  // schedule page renders the "completed" / "celebration" tile instead
+  // of offering to book a new test (which the backend rejects 409).
+  const postAssessmentStatuses = new Set([
+    "test_approved",
+    "test_completed",
+    "documents_pending",
+    "documents_verified",
+    "offer_issued",
+    "offer_released",
+    "offer_accepted",
+    "enrolment_paid",
+    "accepted",
+    "enroled",
+    "handed_to_sis",
+  ]);
+  if (postAssessmentStatuses.has(normalised)) {
     return {
       status: "completed",
       resultStatus: "passed",
@@ -511,7 +529,19 @@ function buildAssessment(student: ParentMeRawStudent): ApplicationAssessment {
     };
   }
 
-  if (normalised === "test_pending" || normalised === "assessment_scheduled") {
+  // Terminal rejection / withdrawal — don't offer booking.
+  if (normalised === "rejected" || normalised === "withdrawn") {
+    return {
+      status: "completed",
+      resultStatus: "pending",
+      statusLabelKey: "admissions.portal.assessment.status.completed",
+      titleKey: "admissions.portal.assessment.title.completed",
+      helperKey: "admissions.portal.assessment.helper.completed",
+      ctaLabelKey: "admissions.portal.assessment.cta.review_result",
+    };
+  }
+
+  if (normalised === "test_pending" || normalised === "test_scheduled" || normalised === "assessment_scheduled") {
     return {
       status: "scheduled",
       resultStatus: "pending",
@@ -535,7 +565,17 @@ function buildAssessment(student: ParentMeRawStudent): ApplicationAssessment {
 function buildDecision(student: ParentMeRawStudent): ApplicationDecision {
   const normalised = (student.applicantStatus ?? "").toLowerCase();
 
-  if (normalised === "enrolment_paid" || normalised === "accepted" || normalised === "enroled") {
+  // Any post-offer-accepted state (enroled, handed_to_sis) means the
+  // decision is accepted and the student is enrolled. handed_to_sis
+  // in particular is the "past the admissions funnel entirely" state
+  // — the decision card should read as complete, not still-in-review.
+  if (
+    normalised === "enrolment_paid" ||
+    normalised === "accepted" ||
+    normalised === "enroled" ||
+    normalised === "offer_accepted" ||
+    normalised === "handed_to_sis"
+  ) {
     return {
       status: "accepted",
       statusLabelKey: "admissions.portal.decision.status.accepted",

@@ -258,7 +258,11 @@ function OverviewScreen({
           <h1 className="parent-text-serif mt-1 text-[clamp(26px,5vw,36px)] leading-tight text-[color:var(--ink-900)]">
             {t("parent.detail.overview_headline", {
               name: firstName,
-              grade: t(`auth.additional.target_grade.${application.targetGrade}`),
+              // targetGrade may be a known enum slug ("year7") or an ad-hoc
+              // string from the backend ("Grade 7"). Translate when a key
+              // exists, otherwise render the raw string — never show the
+              // key itself in the UI.
+              grade: translateTargetGrade(t, application.targetGrade),
               school: schoolShortName,
             })}
           </h1>
@@ -692,6 +696,20 @@ function DecisionScreen({
 }
 
 /* ---------------- Utilities --------------------------------------- */
+
+function translateTargetGrade(
+  t: (key: string, values?: Record<string, string | number>) => string,
+  raw: string | undefined | null,
+): string {
+  const value = (raw ?? "").trim();
+  if (!value) return "";
+  const key = `auth.additional.target_grade.${value}`;
+  const translated = t(key);
+  // i18next-style resolvers echo the key back when unmatched; when the
+  // echo happens, fall back to the raw value so the UI never shows a
+  // dotted key like "auth.additional.target_grade.Grade 7".
+  return translated === key ? value : translated;
+}
 
 function BackHeaderOnly() {
   // When a screen renders a hero tile as its entire content, we skip
