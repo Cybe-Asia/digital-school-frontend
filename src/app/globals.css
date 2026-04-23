@@ -343,8 +343,120 @@ h4 {
   background: var(--ds-surface);
   border: 1px solid var(--ds-border);
   box-shadow: var(--ds-shadow-soft);
-  transition: background-color 260ms ease, border-color 220ms ease, box-shadow 220ms ease;
+  transition: background-color 260ms ease, border-color 220ms ease, box-shadow 220ms ease, transform 180ms ease;
 }
+
+/* A "sunken" variant used for read-only panels (metadata, breakdowns).
+   Visual language: less elevation, tinted background, so elevated
+   action cards read as the primary tier. */
+.sunken-card {
+  background: color-mix(in srgb, var(--ds-soft) 60%, transparent);
+  border: 1px solid color-mix(in srgb, var(--ds-border) 80%, transparent);
+  transition: background-color 260ms ease, border-color 220ms ease;
+}
+
+/* Clickable card wrapper — hover transitions we re-use across the portal
+   so "this is clickable" reads without learning per-page patterns. */
+.card-interactive {
+  transition: transform 180ms ease, box-shadow 220ms ease, border-color 180ms ease;
+}
+
+.card-interactive:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--ds-shadow-strong);
+  border-color: color-mix(in srgb, var(--ds-primary) 45%, var(--ds-border));
+}
+
+/* Secondary CTA — the neutral pair for .cta-primary. */
+.cta-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  padding: 10px 16px;
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--ds-text-primary);
+  background: var(--ds-surface);
+  border: 1px solid var(--ds-border);
+  transition: border-color 160ms ease, background 180ms ease, transform 120ms ease;
+}
+
+.cta-secondary:hover {
+  border-color: var(--ds-primary);
+  background: color-mix(in srgb, var(--ds-primary) 6%, var(--ds-surface));
+  transform: translateY(-1px);
+}
+
+/* Eyebrow chip — the small capsule we render above H1s. */
+.eyebrow-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ds-primary);
+  background: color-mix(in srgb, var(--ds-primary) 10%, var(--ds-surface));
+  border: 1px solid color-mix(in srgb, var(--ds-primary) 25%, var(--ds-border));
+}
+
+/* Stat tile — used on dashboards for big-number blocks. */
+.stat-tile {
+  position: relative;
+  overflow: hidden;
+  background: var(--ds-surface);
+  border: 1px solid var(--ds-border);
+  border-radius: 20px;
+  padding: 18px;
+  box-shadow: var(--ds-shadow-soft);
+  transition: transform 180ms ease, box-shadow 220ms ease;
+}
+
+.stat-tile:hover {
+  transform: translateY(-1px);
+}
+
+.stat-tile::after {
+  content: "";
+  position: absolute;
+  inset: auto -20% -30% auto;
+  width: 140px;
+  height: 140px;
+  background: radial-gradient(circle, var(--ds-radial-a) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+/* Section header — utility for the eyebrow + H2 + subtitle stack so
+   every card uses the same rhythm. */
+.section-eyebrow {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ds-primary);
+}
+
+.section-title {
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+  color: var(--ds-text-primary);
+}
+
+@media (min-width: 640px) {
+  .section-title {
+    font-size: 22px;
+  }
+}
+
+/* Utility: hide scrollbars on horizontal-scroll tab strips. */
+.scrollbar-none::-webkit-scrollbar { display: none; }
+.scrollbar-none { scrollbar-width: none; }
 
 .hero-panel {
   border: 1px solid var(--ds-border);

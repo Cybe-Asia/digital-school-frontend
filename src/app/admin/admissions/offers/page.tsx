@@ -85,25 +85,31 @@ export default async function AdminOffersPage({ searchParams }: { searchParams: 
   const { rows, total } = payload?.data ?? { rows: [], total: 0, limit, offset };
 
   return (
-    <div className="mx-auto max-w-6xl px-6 py-8">
-      <header className="mb-5 flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--ds-primary)]">
-            Admissions
-          </p>
-          <h1 className="mt-1 text-2xl font-semibold text-[var(--ds-text-primary)]">Offers</h1>
-          <p className="mt-1 text-sm text-[var(--ds-text-secondary)]">
-            {total.toLocaleString()} total · showing {rows.length} · offset {offset}
-          </p>
+    <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
+      <header className="surface-card mb-6 rounded-3xl p-6 sm:p-7">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="flex items-start gap-3">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[var(--ds-primary)]/10 text-[var(--ds-primary)]" aria-hidden="true">
+              <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="5" width="18" height="14" rx="2" /><path d="m3 7 9 6 9-6" /></svg>
+            </span>
+            <div>
+              <span className="eyebrow-chip">Offers</span>
+              <h1 className="mt-3 text-[1.75rem] font-semibold leading-tight tracking-tight text-[var(--ds-text-primary)]">Offer letters</h1>
+              <p className="mt-1.5 text-sm text-[var(--ds-text-secondary)]">
+                <span className="font-semibold text-[var(--ds-text-primary)]">{total.toLocaleString()}</span> total · showing {rows.length} · offset {offset}
+              </p>
+            </div>
+          </div>
+          <nav>
+            <Link
+              href="/admin/admissions"
+              className="cta-secondary gap-1.5"
+            >
+              <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M19 12H5M12 19l-7-7 7-7" /></svg>
+              Dashboard
+            </Link>
+          </nav>
         </div>
-        <nav className="text-xs">
-          <Link
-            href="/admin/admissions"
-            className="rounded-lg border border-[var(--ds-border)] bg-[var(--ds-surface)] px-3 py-1.5 font-semibold text-[var(--ds-text-primary)] hover:bg-[var(--ds-soft)]"
-          >
-            ← Dashboard
-          </Link>
-        </nav>
       </header>
 
       <OffersFilterBar initial={{ status, school, search, onlyOverdue }} />
@@ -119,66 +125,67 @@ export default async function AdminOffersPage({ searchParams }: { searchParams: 
           />
         </div>
       ) : (
-        <div className="mt-5 overflow-hidden rounded-2xl border border-[var(--ds-border)] bg-[var(--ds-surface)]">
-          <table className="w-full text-left text-sm">
-            <thead className="bg-[var(--ds-soft)] text-xs uppercase tracking-wider text-[var(--ds-text-secondary)]">
-              <tr>
-                <th className="px-4 py-3">Offer</th>
-                <th className="px-4 py-3">Applicant</th>
-                <th className="px-4 py-3">Parent</th>
-                <th className="px-4 py-3">School / Year</th>
-                <th className="px-4 py-3">Status</th>
-                <th className="px-4 py-3">Age</th>
-                <th className="px-4 py-3">Accept by</th>
-                <th className="px-4 py-3"></th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((r) => (
-                <tr
-                  key={r.offerId}
-                  className={`border-t border-[var(--ds-border)] hover:bg-[var(--ds-soft)]/40 ${r.overdue ? "bg-[#fee9e9]/40" : ""}`}
-                >
-                  <td className="px-4 py-3 font-semibold text-[var(--ds-text-primary)]">{r.offerCode}</td>
-                  <td className="px-4 py-3">
-                    <Link
-                      href={`/admin/admissions/students/${encodeURIComponent(r.applicantStudentId)}?tab=offer`}
-                      className="font-semibold text-[var(--ds-text-primary)] hover:text-[var(--ds-primary)]"
-                    >
-                      {r.studentName || "—"}
-                    </Link>
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className="text-[var(--ds-text-primary)]">{r.parentName || "—"}</span>
-                    <br />
-                    <span className="text-xs text-[var(--ds-text-secondary)]">{r.parentEmail}</span>
-                  </td>
-                  <td className="px-4 py-3 text-[var(--ds-text-primary)]">
-                    {r.targetSchoolId}
-                    {r.targetYearGroup ? <div className="text-xs text-[var(--ds-text-secondary)]">{r.targetYearGroup} · AY {r.academicYear ?? "—"}</div> : null}
-                  </td>
-                  <td className="px-4 py-3">
-                    <StatusBadge status={r.status} size="sm" />
-                    {r.acceptanceStatus ? (
-                      <div className="mt-0.5 text-xs text-[var(--ds-text-secondary)]">response: {r.acceptanceStatus}</div>
-                    ) : null}
-                  </td>
-                  <td className="px-4 py-3 text-xs text-[var(--ds-text-secondary)]">
-                    {r.ageDays == null ? "—" : `${r.ageDays}d`}
-                  </td>
-                  <td className={`px-4 py-3 text-xs ${r.overdue ? "font-semibold text-[#8b1f1f]" : "text-[var(--ds-text-secondary)]"}`}>
-                    {r.acceptanceDueAt ? formatDate(r.acceptanceDueAt) : "—"}
-                    {r.overdue ? " · overdue" : ""}
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    {r.status === "issued" || r.status === "draft" ? (
-                      <CancelOfferButton offerId={r.offerId} />
-                    ) : null}
-                  </td>
+        <div className="mt-6 overflow-hidden rounded-3xl border border-[var(--ds-border)] bg-[var(--ds-surface)] shadow-[var(--ds-shadow-soft)]">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <thead className="bg-[var(--ds-soft)]/60 text-[11px] uppercase tracking-[0.12em] text-[var(--ds-text-secondary)]">
+                <tr>
+                  <th className="px-5 py-3.5 font-bold">Offer</th>
+                  <th className="px-5 py-3.5 font-bold">Applicant</th>
+                  <th className="px-5 py-3.5 font-bold">Parent</th>
+                  <th className="px-5 py-3.5 font-bold">School / Year</th>
+                  <th className="px-5 py-3.5 font-bold">Status</th>
+                  <th className="px-5 py-3.5 font-bold">Age</th>
+                  <th className="px-5 py-3.5 font-bold">Accept by</th>
+                  <th className="px-5 py-3.5 font-bold"></th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-[var(--ds-border)]/70">
+                {rows.map((r) => (
+                  <tr
+                    key={r.offerId}
+                    className={`transition-colors hover:bg-[var(--ds-soft)]/40 ${r.overdue ? "bg-[#fee9e9]/30" : ""}`}
+                  >
+                    <td className="px-5 py-4 font-mono text-[13px] font-semibold text-[var(--ds-text-primary)]">{r.offerCode}</td>
+                    <td className="px-5 py-4">
+                      <Link
+                        href={`/admin/admissions/students/${encodeURIComponent(r.applicantStudentId)}?tab=offer`}
+                        className="font-semibold text-[var(--ds-text-primary)] hover:text-[var(--ds-primary)]"
+                      >
+                        {r.studentName || "—"}
+                      </Link>
+                    </td>
+                    <td className="px-5 py-4">
+                      <span className="block text-[var(--ds-text-primary)]">{r.parentName || "—"}</span>
+                      <span className="mt-0.5 block text-xs text-[var(--ds-text-secondary)]">{r.parentEmail}</span>
+                    </td>
+                    <td className="px-5 py-4 text-[var(--ds-text-primary)]">
+                      {r.targetSchoolId}
+                      {r.targetYearGroup ? <div className="text-xs text-[var(--ds-text-secondary)]">{r.targetYearGroup} · AY {r.academicYear ?? "—"}</div> : null}
+                    </td>
+                    <td className="px-5 py-4">
+                      <StatusBadge status={r.status} size="sm" />
+                      {r.acceptanceStatus ? (
+                        <div className="mt-1 text-xs text-[var(--ds-text-secondary)]">response: {r.acceptanceStatus}</div>
+                      ) : null}
+                    </td>
+                    <td className="px-5 py-4 text-xs text-[var(--ds-text-secondary)]">
+                      {r.ageDays == null ? "—" : `${r.ageDays}d`}
+                    </td>
+                    <td className={`px-5 py-4 text-xs ${r.overdue ? "font-semibold text-[#8b1f1f]" : "text-[var(--ds-text-secondary)]"}`}>
+                      {r.acceptanceDueAt ? formatDate(r.acceptanceDueAt) : "—"}
+                      {r.overdue ? <span className="ml-1.5 rounded-full bg-[#fee9e9] px-2 py-0.5 text-[10px] font-bold uppercase text-[#8b1f1f]">Overdue</span> : null}
+                    </td>
+                    <td className="px-5 py-4 text-right">
+                      {r.status === "issued" || r.status === "draft" ? (
+                        <CancelOfferButton offerId={r.offerId} />
+                      ) : null}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 

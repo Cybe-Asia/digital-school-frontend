@@ -117,27 +117,37 @@ export default async function AdminApplicationDetailPage({ params }: PageProps) 
   }
 
   return (
-    <div className="mx-auto max-w-4xl px-6 py-8 space-y-6">
+    <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 space-y-6">
       <nav className="text-sm">
         <Link
           href="/admin/admissions/applications"
-          className="text-[var(--ds-primary)] hover:underline"
+          className="inline-flex items-center gap-1.5 text-[var(--ds-primary)] hover:underline"
         >
-          ← Back to applications
+          <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M19 12H5M12 19l-7-7 7-7" /></svg>
+          Back to applications
         </Link>
       </nav>
 
-      <header className="rounded-2xl border border-[var(--ds-border)] bg-[var(--ds-surface)] p-6">
-        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--ds-primary)]">
-          Parent application
-        </p>
-        <h1 className="mt-2 text-2xl font-semibold text-[var(--ds-text-primary)]">
-          {app.lead.parentName}
-        </h1>
-        <p className="mt-1 text-sm text-[var(--ds-text-secondary)]">
-          {app.lead.email} &middot; {app.lead.whatsappNumber}
-        </p>
-        <div className="mt-4 grid grid-cols-2 gap-x-8 gap-y-3 text-sm sm:grid-cols-4">
+      <header className="hero-panel relative overflow-hidden rounded-[28px] p-6 sm:p-8">
+        <div aria-hidden="true" className="pointer-events-none absolute -right-20 -top-20 h-56 w-56 rounded-full bg-[var(--ds-radial-a)] blur-3xl" />
+        <div className="relative flex items-start gap-4">
+          <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[var(--ds-primary)] to-[var(--ds-cta-fill-2)] text-xl font-bold text-[var(--ds-on-primary)] shadow-[0_12px_28px_-14px_rgba(11,110,79,0.6)]" aria-hidden="true">
+            {(app.lead.parentName ?? "?").split(" ").slice(0, 2).map((p) => p.charAt(0).toUpperCase()).join("")}
+          </span>
+          <div className="min-w-0">
+            <span className="eyebrow-chip">
+              <span className="h-1.5 w-1.5 rounded-full bg-[var(--ds-primary)]" aria-hidden="true" />
+              Parent application
+            </span>
+            <h1 className="mt-3 text-[1.9rem] font-semibold leading-tight tracking-tight text-[var(--ds-text-primary)]">
+              {app.lead.parentName}
+            </h1>
+            <p className="mt-1.5 text-sm text-[var(--ds-text-secondary)]">
+              <span className="font-semibold text-[var(--ds-text-primary)]">{app.lead.email}</span> · {app.lead.whatsappNumber}
+            </p>
+          </div>
+        </div>
+        <div className="relative mt-6 grid grid-cols-2 gap-x-8 gap-y-3 text-sm sm:grid-cols-4">
           <KV label="School" value={app.lead.schoolSelection} />
           <KV
             label="Email verified"

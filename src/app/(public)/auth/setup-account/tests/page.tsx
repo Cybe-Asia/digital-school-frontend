@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { AuthShell } from "@/features/admissions-auth/presentation/components/auth-shell";
 import { ParentBookTestClient } from "@/features/admissions-auth/presentation/components/parent-book-test";
+import { buildSetupStepIndicator } from "@/features/admissions-auth/presentation/lib/setup-account-steps";
+import { getServerI18n } from "@/i18n/server";
 
 export const metadata: Metadata = {
   title: "Book test",
@@ -22,12 +24,14 @@ export default async function ParentBookTestPage({ searchParams }: PageProps) {
   const sp = await searchParams;
   const studentId = single(sp.studentId);
   const schoolId = single(sp.schoolId);
+  const { t } = await getServerI18n();
 
   return (
     <AuthShell
       eyebrow="auth.booktest.eyebrow"
       title="auth.booktest.title"
       description="auth.booktest.description"
+      stepIndicator={buildSetupStepIndicator(t, "tests")}
     >
       <ParentBookTestClient studentId={studentId} schoolId={schoolId} />
     </AuthShell>

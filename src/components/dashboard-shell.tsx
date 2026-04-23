@@ -347,37 +347,48 @@ export default async function DashboardShell({ config }: DashboardShellProps) {
                 <section className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
                   {parentPortal.summaryCards.map((card, index) => {
                     const hasSentence = Boolean(card.titleKey);
-                    const toneAccent =
+                    const toneDot =
                       card.tone === "positive"
-                        ? "border-l-4 border-l-[#22c55e]"
+                        ? "bg-[#22c55e]"
                         : card.tone === "warning"
-                          ? "border-l-4 border-l-[#ef4444]"
+                          ? "bg-[#ef4444]"
                           : card.tone === "info"
-                            ? "border-l-4 border-l-[var(--ds-primary)]"
-                            : "border-l-4 border-l-[var(--ds-border)]";
+                            ? "bg-[var(--ds-primary)]"
+                            : "bg-[var(--ds-border)]";
+                    const toneRing =
+                      card.tone === "positive"
+                        ? "ring-[#22c55e]/30"
+                        : card.tone === "warning"
+                          ? "ring-[#ef4444]/30"
+                          : card.tone === "info"
+                            ? "ring-[var(--ds-primary)]/30"
+                            : "ring-[var(--ds-border)]";
 
                     const inner = hasSentence ? (
                       <>
-                        <p className="text-base font-semibold leading-snug text-[var(--ds-text-primary)]">
+                        <span className={`inline-flex h-6 w-6 items-center justify-center rounded-full ring-4 ${toneRing}`} aria-hidden="true">
+                          <span className={`h-2 w-2 rounded-full ${toneDot}`} />
+                        </span>
+                        <p className="mt-4 text-[15px] font-semibold leading-snug text-[var(--ds-text-primary)]">
                           {t(card.titleKey!, card.titleValues)}
                         </p>
                         {card.subtitleKey ? (
-                          <p className="mt-1 text-sm text-[var(--ds-text-secondary)]">
+                          <p className="mt-1.5 text-sm leading-relaxed text-[var(--ds-text-secondary)]">
                             {t(card.subtitleKey, card.subtitleValues)}
                           </p>
                         ) : null}
                       </>
                     ) : (
                       <>
-                        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--ds-text-secondary)]">
+                        <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[var(--ds-text-secondary)]">
                           {t(card.labelKey)}
                         </p>
-                        <p className="mt-2 text-2xl font-semibold text-[var(--ds-text-primary)]">{card.value}</p>
-                        <p className="mt-2 text-sm text-[var(--ds-primary)]">{t(card.helperKey, card.helperValues)}</p>
+                        <p className="mt-3 text-[2rem] font-semibold leading-none tracking-tight text-[var(--ds-text-primary)]">{card.value}</p>
+                        <p className="mt-2.5 text-sm font-semibold text-[var(--ds-primary)]">{t(card.helperKey, card.helperValues)}</p>
                       </>
                     );
 
-                    const classes = `surface-card block rounded-2xl p-4 sm:p-5 transition hover:shadow-[var(--ds-shadow-soft)] ${toneAccent}`;
+                    const classes = `stat-tile block relative ${card.href ? "card-interactive" : ""}`;
 
                     return card.href ? (
                       <Link
@@ -401,35 +412,87 @@ export default async function DashboardShell({ config }: DashboardShellProps) {
                 <section className="space-y-6">
                   {/* 1. Action items — highest-priority first. Parents should
                          see what needs doing before they see anything else. */}
-                  <article id="action-items" className="parent-portal-section surface-card scroll-mt-28 rounded-3xl p-5 sm:p-6">
-                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--ds-primary)]">
-                      {t("dashboard.parent.portal.actions.title")}
-                    </p>
-                    <h3 className="mt-2 text-lg font-semibold text-[var(--ds-text-primary)]">
-                      {t("dashboard.parent.portal.actions.heading")}
-                    </h3>
-                    <div className="mt-5 grid gap-3 lg:grid-cols-2">
+                  <article id="action-items" className="parent-portal-section surface-card scroll-mt-28 rounded-3xl p-6 sm:p-8">
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div className="flex items-start gap-3">
+                        <span className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[var(--ds-primary)]/10 text-[var(--ds-primary)]" aria-hidden="true">
+                          <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M13 2 3 14h7l-1 8 10-12h-7z" /></svg>
+                        </span>
+                        <div>
+                          <p className="section-eyebrow">{t("dashboard.parent.portal.actions.title")}</p>
+                          <h3 className="mt-1.5 section-title">
+                            {t("dashboard.parent.portal.actions.heading")}
+                          </h3>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="mt-6 grid gap-4 lg:grid-cols-2">
                       {[...parentPortal.actions]
                         .sort((a, b) => priorityOrderValue(a.priority) - priorityOrderValue(b.priority))
-                        .map((action, index) => (
-                          <div key={`${action.titleKey}-${index}`} className="rounded-2xl border border-[var(--ds-border)] bg-[var(--ds-soft)]/35 p-4">
-                            <div className="flex items-center justify-between gap-3">
-                              <p className="text-sm font-semibold text-[var(--ds-text-primary)]">{t(action.titleKey, action.titleValues)}</p>
-                              <span className={priorityClassName(action.priority)}>{t(priorityLabelMap[action.priority])}</span>
-                            </div>
-                            <p className="mt-2 text-sm leading-relaxed text-[var(--ds-text-secondary)]">{t(action.detailKey, action.detailValues)}</p>
-                            <Link
-                              href={
-                                index < parentPortal.studentCards.length
-                                  ? getStudentPortalHref(admissionsContext, parentPortal.studentCards[index], index)
-                                  : "#registered-students"
-                              }
-                              className="mt-4 inline-flex rounded-xl border border-[var(--ds-border)] bg-[var(--ds-surface)] px-4 py-2 text-sm font-semibold text-[var(--ds-text-primary)]"
+                        .map((action, index) => {
+                          // The action card and its CTA must visually belong
+                          // to the SAME child (design principle #2). We derive
+                          // the owning student from the action's titleValues so
+                          // the CTA label and the target route are always in
+                          // lockstep with the title above it.
+                          const studentName =
+                            (typeof action.titleValues?.student === "string" ? action.titleValues.student : undefined) ??
+                            (typeof action.detailValues?.student === "string" ? action.detailValues.student : undefined) ??
+                            "";
+                          const ownerIndex = studentName
+                            ? parentPortal.studentCards.findIndex((s) => s.studentName === studentName)
+                            : -1;
+                          const linkedIndex = ownerIndex >= 0 ? ownerIndex : Math.min(index, parentPortal.studentCards.length - 1);
+                          const linkedCard =
+                            linkedIndex >= 0 ? parentPortal.studentCards[linkedIndex] : undefined;
+                          const href = linkedCard
+                            ? getStudentPortalHref(admissionsContext, linkedCard, linkedIndex)
+                            : "#registered-students";
+                          // Frame the whole card as a visually bounded unit. A
+                          // coloured left stripe + student-avatar header make
+                          // it unambiguous which kid this card is about.
+                          const initials = studentName
+                            .split(" ")
+                            .slice(0, 2)
+                            .map((part) => part.charAt(0).toUpperCase())
+                            .join("");
+                          const stripeCls = action.priority === "high"
+                            ? "bg-[#ef4444]"
+                            : action.priority === "medium"
+                              ? "bg-[#f59e0b]"
+                              : "bg-[var(--ds-primary)]";
+                          return (
+                            <div
+                              key={`${action.titleKey}-${index}`}
+                              className="relative overflow-hidden rounded-2xl border border-[var(--ds-border)] bg-[var(--ds-surface)] p-5 transition hover:border-[var(--ds-primary)]/50 hover:shadow-[var(--ds-shadow-soft)]"
+                              data-student={studentName || undefined}
                             >
-                              {t(action.ctaLabelKey)}
-                            </Link>
-                          </div>
-                        ))}
+                              <span className={`absolute left-0 top-0 h-full w-1 ${stripeCls}`} aria-hidden="true" />
+                              {studentName ? (
+                                <div className="mb-3 flex items-center gap-2.5">
+                                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--ds-primary)]/12 text-[11px] font-bold text-[var(--ds-primary)]" aria-hidden="true">
+                                    {initials || "?"}
+                                  </span>
+                                  <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--ds-text-secondary)]">
+                                    {t("auth.additional.student_section_title", { number: linkedIndex >= 0 ? linkedIndex + 1 : index + 1 })} <span className="text-[var(--ds-primary)]">{studentName}</span>
+                                  </p>
+                                </div>
+                              ) : null}
+                              <div className="flex items-start justify-between gap-3">
+                                <p className="text-[15px] font-semibold leading-snug text-[var(--ds-text-primary)]">{t(action.titleKey, action.titleValues)}</p>
+                                <span className={priorityClassName(action.priority)}>{t(priorityLabelMap[action.priority])}</span>
+                              </div>
+                              <p className="mt-2 text-sm leading-relaxed text-[var(--ds-text-secondary)]">{t(action.detailKey, action.detailValues)}</p>
+                              <Link
+                                href={href}
+                                className="cta-secondary mt-4 gap-1.5"
+                              >
+                                {t(action.ctaLabelKey, studentName ? { student: studentName } : undefined)}
+                                <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12h14M13 5l7 7-7 7" /></svg>
+                              </Link>
+                            </div>
+                          );
+                        })}
                     </div>
                   </article>
 
@@ -444,43 +507,66 @@ export default async function DashboardShell({ config }: DashboardShellProps) {
                   <ParentSectionsCard />
 
                   {/* 2. My children cards — condensed when SIS is live. */}
-                  <article id="registered-students" className="parent-portal-section surface-card scroll-mt-28 rounded-3xl p-5 sm:p-6">
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--ds-primary)]">
-                            {t("dashboard.parent.portal.students.title")}
-                          </p>
-                          <h3 className="mt-2 text-lg font-semibold text-[var(--ds-text-primary)]">
-                            {t("dashboard.parent.portal.students.heading")}
-                          </h3>
+                  <article id="registered-students" className="parent-portal-section surface-card scroll-mt-28 rounded-3xl p-6 sm:p-8">
+                      <div className="flex flex-wrap items-start justify-between gap-3">
+                        <div className="flex items-start gap-3">
+                          <span className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[var(--ds-primary)]/10 text-[var(--ds-primary)]" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13A4 4 0 0 1 16 11" /></svg>
+                          </span>
+                          <div>
+                            <p className="section-eyebrow">
+                              {t("dashboard.parent.portal.students.title")}
+                            </p>
+                            <h3 className="mt-1.5 section-title">
+                              {t("dashboard.parent.portal.students.heading")}
+                            </h3>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-3">
-                          <span className="rounded-full bg-[var(--ds-soft)] px-3 py-1 text-xs font-semibold text-[var(--ds-text-primary)]">
+                        <div className="flex items-center gap-2.5">
+                          <span className="rounded-full border border-[var(--ds-border)] bg-[var(--ds-soft)] px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--ds-text-primary)]">
                             {t("dashboard.parent.portal.students.count_chip", { count: admissionsContext.students.length })}
                           </span>
                           <AddAnotherChildButton />
                         </div>
                       </div>
-                      <div className="mt-5 grid gap-4">
-                        {parentPortal.studentCards.map((studentCard, index) => (
-                          <div key={`${studentCard.studentName}-${index}`} className="rounded-3xl border border-[var(--ds-border)] bg-[var(--ds-soft)]/35 p-4 sm:p-5">
-                            <div className="flex flex-wrap items-start justify-between gap-3">
-                              <div>
-                                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--ds-text-secondary)]">
-                                  {t("auth.additional.student_section_title", { number: index + 1 })}
-                                </p>
-                                <h4 className="mt-2 text-lg font-semibold text-[var(--ds-text-primary)]">{studentCard.studentName}</h4>
-                                <p className="mt-1 text-sm text-[var(--ds-text-secondary)]">
-                                  {t("auth.additional.target_grade_label")}: {t(`auth.additional.target_grade.${studentCard.targetGrade}`)}
-                                </p>
+                      <div className="mt-6 grid gap-5">
+                        {parentPortal.studentCards.map((studentCard, index) => {
+                          const initials = studentCard.studentName
+                            .split(" ")
+                            .slice(0, 2)
+                            .map((part) => part.charAt(0).toUpperCase())
+                            .join("");
+                          return (
+                          <div
+                            key={`${studentCard.studentName}-${index}`}
+                            className="relative overflow-hidden rounded-3xl border border-[var(--ds-border)] bg-[var(--ds-surface)] p-5 sm:p-6 shadow-[var(--ds-shadow-soft)] transition hover:shadow-[var(--ds-shadow-strong)]"
+                            data-student={studentCard.studentName}
+                          >
+                            <span className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-[var(--ds-primary)] via-[var(--ds-highlight)] to-[var(--ds-accent)]" aria-hidden="true" />
+                            <div className="flex flex-wrap items-start justify-between gap-4">
+                              <div className="flex items-start gap-4 min-w-0">
+                                <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[var(--ds-primary)] to-[var(--ds-cta-fill-2)] text-lg font-bold text-[var(--ds-on-primary)] shadow-[0_10px_24px_-14px_rgba(11,110,79,0.6)]" aria-hidden="true">
+                                  {initials || "?"}
+                                </span>
+                                <div className="min-w-0">
+                                  <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--ds-text-secondary)]">
+                                    {t("auth.additional.student_section_title", { number: index + 1 })}
+                                  </p>
+                                  <h4 className="mt-1.5 text-xl font-semibold leading-tight text-[var(--ds-text-primary)] sm:text-[1.35rem]">{studentCard.studentName}</h4>
+                                  <p className="mt-1 text-sm text-[var(--ds-text-secondary)]">
+                                    {t("auth.additional.target_grade_label")}: <span className="font-semibold text-[var(--ds-text-primary)]">{t(`auth.additional.target_grade.${studentCard.targetGrade}`)}</span>
+                                  </p>
+                                </div>
                               </div>
                               {/* Prefer the real backend status if /me returned it; fall back
                                   to the mock status label for pre-/me deep-linked dashboards. */}
-                              {studentCard.applicantStatus ? (
-                                <StatusBadge status={studentCard.applicantStatus} />
-                              ) : (
-                                <span className={statusClassName(studentCard.status)}>{t(studentCard.statusLabelKey)}</span>
-                              )}
+                              <div className="shrink-0">
+                                {studentCard.applicantStatus ? (
+                                  <StatusBadge status={studentCard.applicantStatus} />
+                                ) : (
+                                  <span className={statusClassName(studentCard.status)}>{t(studentCard.statusLabelKey)}</span>
+                                )}
+                              </div>
                             </div>
 
                             {studentCard.applicantStatus ? (
@@ -601,24 +687,32 @@ export default async function DashboardShell({ config }: DashboardShellProps) {
                                 href={getStudentPortalHref(admissionsContext, studentCard, index)}
                                 className="cta-primary rounded-xl px-4 py-2 text-sm font-semibold"
                               >
-                                {t(studentCard.actionLabelKey)}
+                                {t(studentCard.actionLabelKey, { student: studentCard.studentName })}
                               </Link>
                             </div>
                           </div>
-                        ))}
+                        );
+                        })}
                       </div>
                     </article>
 
                   {/* 3. SIS today — attendance + latest grade per kid. Only
                          renders when at least one kid has a studentId. */}
                   {parentPortal.sisToday.length > 0 ? (
-                    <article id="sis-today" className="parent-portal-section surface-card scroll-mt-28 rounded-3xl p-5 sm:p-6">
-                      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--ds-primary)]">
-                        {t("dashboard.parent.portal.sis_today.title")}
-                      </p>
-                      <h3 className="mt-2 text-lg font-semibold text-[var(--ds-text-primary)]">
-                        {t("dashboard.parent.portal.sis_today.heading")}
-                      </h3>
+                    <article id="sis-today" className="parent-portal-section surface-card scroll-mt-28 rounded-3xl p-6 sm:p-8">
+                      <div className="flex items-start gap-3">
+                        <span className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[var(--ds-primary)]/10 text-[var(--ds-primary)]" aria-hidden="true">
+                          <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12h4l3-8 4 16 3-8h4" /></svg>
+                        </span>
+                        <div>
+                          <p className="section-eyebrow">
+                            {t("dashboard.parent.portal.sis_today.title")}
+                          </p>
+                          <h3 className="mt-1.5 section-title">
+                            {t("dashboard.parent.portal.sis_today.heading")}
+                          </h3>
+                        </div>
+                      </div>
                       <div className="mt-5 grid gap-4 md:grid-cols-2">
                         {parentPortal.sisToday.map((kid, idx) => {
                           const tone =
@@ -680,42 +774,57 @@ export default async function DashboardShell({ config }: DashboardShellProps) {
                   ) : null}
 
                   {/* 4. Payments center. */}
-                  <article id="payments-center" className="parent-portal-section surface-card scroll-mt-28 rounded-3xl p-5 sm:p-6">
-                      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--ds-primary)]">
-                        {t("dashboard.parent.portal.payments.title")}
-                      </p>
-                      <h3 className="mt-2 text-lg font-semibold text-[var(--ds-text-primary)]">
-                        {t("dashboard.parent.portal.payments.heading")}
-                      </h3>
-                      <div className="mt-5 rounded-2xl border border-[var(--ds-border)] bg-[var(--ds-soft)]/35 p-4">
-                        <div className="flex items-start justify-between gap-3">
+                  <article id="payments-center" className="parent-portal-section surface-card scroll-mt-28 rounded-3xl p-6 sm:p-8">
+                      <div className="flex items-start gap-3">
+                        <span className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[var(--ds-primary)]/10 text-[var(--ds-primary)]" aria-hidden="true">
+                          <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="5" width="20" height="14" rx="2" /><path d="M2 10h20M6 15h4" /></svg>
+                        </span>
+                        <div>
+                          <p className="section-eyebrow">
+                            {t("dashboard.parent.portal.payments.title")}
+                          </p>
+                          <h3 className="mt-1.5 section-title">
+                            {t("dashboard.parent.portal.payments.heading")}
+                          </h3>
+                        </div>
+                      </div>
+                      <div className="mt-6 rounded-2xl border border-[var(--ds-border)] bg-gradient-to-br from-[var(--ds-soft)]/80 via-[var(--ds-surface)] to-[var(--ds-soft)]/40 p-5 sm:p-6">
+                        <div className="flex flex-wrap items-start justify-between gap-4">
                           <div>
-                            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--ds-text-secondary)]">
+                            <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--ds-text-secondary)]">
                               {t("dashboard.parent.portal.payments.amount_label")}
                             </p>
-                            <p className="mt-2 text-2xl font-semibold text-[var(--ds-text-primary)]">{parentPortal.paymentSummary.amount}</p>
-                            <p className="mt-2 text-sm text-[var(--ds-text-secondary)]">
+                            <p className="mt-3 text-[2.25rem] font-semibold leading-none tracking-tight text-[var(--ds-text-primary)]">{parentPortal.paymentSummary.amount}</p>
+                            <p className="mt-3 max-w-md text-sm leading-relaxed text-[var(--ds-text-secondary)]">
                               {t(parentPortal.paymentSummary.helperKey, parentPortal.paymentSummary.helperValues)}
                             </p>
                           </div>
-                          <span className="status-pill status-neutral">{t(parentPortal.paymentSummary.statusKey)}</span>
+                          <span className="status-pill status-neutral shrink-0">{t(parentPortal.paymentSummary.statusKey)}</span>
                         </div>
                         <Link
                           href={firstPaymentHref ?? "#payments-center"}
-                          className="mt-4 inline-flex cta-primary rounded-xl px-4 py-2 text-sm font-semibold"
+                          className="mt-5 inline-flex items-center gap-2 cta-primary rounded-xl px-5 py-2.5 text-sm font-semibold"
                         >
                           {t(parentPortal.paymentSummary.ctaLabelKey)}
+                          <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12h14M13 5l7 7-7 7" /></svg>
                         </Link>
                       </div>
                     </article>
 
-                    <article id="family-updates" className="parent-portal-section surface-card scroll-mt-28 rounded-3xl p-5 sm:p-6">
-                      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--ds-primary)]">
-                        {t("dashboard.parent.portal.updates.title")}
-                      </p>
-                      <h3 className="mt-2 text-lg font-semibold text-[var(--ds-text-primary)]">
-                        {t("dashboard.parent.portal.updates.heading")}
-                      </h3>
+                    <article id="family-updates" className="parent-portal-section surface-card scroll-mt-28 rounded-3xl p-6 sm:p-8">
+                      <div className="flex items-start gap-3">
+                        <span className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[var(--ds-primary)]/10 text-[var(--ds-primary)]" aria-hidden="true">
+                          <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16v12H5.5L4 18z" /></svg>
+                        </span>
+                        <div>
+                          <p className="section-eyebrow">
+                            {t("dashboard.parent.portal.updates.title")}
+                          </p>
+                          <h3 className="mt-1.5 section-title">
+                            {t("dashboard.parent.portal.updates.heading")}
+                          </h3>
+                        </div>
+                      </div>
                       <div className="mt-5 space-y-3">
                         {parentPortal.updates.map((update, index) => {
                           const displayTitle =

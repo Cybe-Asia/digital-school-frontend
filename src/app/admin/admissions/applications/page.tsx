@@ -118,112 +118,122 @@ export default async function AdminApplicationsPage({
   const applications = payload?.data ?? [];
 
   return (
-    <div className="mx-auto max-w-6xl px-6 py-8">
-      <header className="mb-6 flex items-end justify-between gap-4">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--ds-primary)]">
-            Admissions
-          </p>
-          <h1 className="mt-1 text-2xl font-semibold text-[var(--ds-text-primary)]">
-            Applications
-          </h1>
-          <p className="mt-1 text-sm text-[var(--ds-text-secondary)]">
-            {applications.length} rows · offset {offset}
-          </p>
-        </div>
-        <div className="flex gap-2 text-xs">
-          <a
-            href={`/api/admin/applications.csv?${qs.toString()}`}
-            download
-            className="rounded-lg border border-[var(--ds-border)] bg-[var(--ds-surface)] px-3 py-1.5 font-semibold text-[var(--ds-text-primary)] hover:bg-[var(--ds-soft)]"
-          >
-            Export CSV ↓
-          </a>
-          <Link
-            href="/admin/admissions"
-            className="rounded-lg border border-[var(--ds-border)] bg-[var(--ds-surface)] px-3 py-1.5 font-semibold text-[var(--ds-text-primary)] hover:bg-[var(--ds-soft)]"
-          >
-            ← Dashboard
-          </Link>
+    <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
+      <header className="surface-card mb-6 rounded-3xl p-6 sm:p-7">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="flex items-start gap-3">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[var(--ds-primary)]/10 text-[var(--ds-primary)]" aria-hidden="true">
+              <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8" /></svg>
+            </span>
+            <div>
+              <span className="eyebrow-chip">Applicants</span>
+              <h1 className="mt-3 text-[1.75rem] font-semibold leading-tight tracking-tight text-[var(--ds-text-primary)]">Applications</h1>
+              <p className="mt-1.5 text-sm text-[var(--ds-text-secondary)]">
+                <span className="font-semibold text-[var(--ds-text-primary)]">{applications.length}</span> rows · offset {offset}
+              </p>
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-2 text-xs">
+            <a
+              href={`/api/admin/applications.csv?${qs.toString()}`}
+              download
+              className="cta-secondary gap-1.5"
+            >
+              <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" /></svg>
+              Export CSV
+            </a>
+            <Link
+              href="/admin/admissions"
+              className="cta-secondary gap-1.5"
+            >
+              <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M19 12H5M12 19l-7-7 7-7" /></svg>
+              Dashboard
+            </Link>
+          </div>
         </div>
       </header>
 
       <ApplicationsFilterBar initial={{ status, school, search, dateFrom, dateTo, hasApplication }} />
 
       {applications.length === 0 ? (
-        <div className="rounded-2xl border border-[var(--ds-border)] bg-[var(--ds-surface)] px-5 py-10 text-center text-sm text-[var(--ds-text-secondary)]">
-          No applications yet.
+        <div className="mt-6 rounded-3xl border border-dashed border-[var(--ds-border)] bg-[var(--ds-soft)]/35 px-6 py-14 text-center">
+          <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-[var(--ds-surface)] text-[var(--ds-primary)]" aria-hidden="true">
+            <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><path d="M14 2v6h6" /></svg>
+          </div>
+          <p className="text-base font-semibold text-[var(--ds-text-primary)]">No applications yet</p>
+          <p className="mt-1 text-sm text-[var(--ds-text-secondary)]">Applications will show up here as parents complete the registration flow.</p>
         </div>
       ) : (
-        <div className="overflow-hidden rounded-2xl border border-[var(--ds-border)] bg-[var(--ds-surface)]">
-          <table className="w-full text-left text-sm">
-            <thead className="bg-[var(--ds-soft)] text-xs uppercase tracking-wider text-[var(--ds-text-secondary)]">
-              <tr>
-                <th className="px-4 py-3">Parent</th>
-                <th className="px-4 py-3">School</th>
-                <th className="px-4 py-3">Students</th>
-                <th className="px-4 py-3">Application</th>
-                <th className="px-4 py-3">Fee</th>
-                <th className="px-4 py-3">Submitted</th>
-              </tr>
-            </thead>
-            <tbody>
-              {applications.map((app) => (
-                <tr
-                  key={app.lead.admissionId}
-                  className="border-t border-[var(--ds-border)] hover:bg-[var(--ds-soft)]/40"
-                >
-                  <td className="px-4 py-3">
-                    <Link
-                      href={`/admin/admissions/applications/${encodeURIComponent(app.lead.admissionId)}`}
-                      className="block text-[var(--ds-text-primary)] hover:text-[var(--ds-primary)]"
-                    >
-                      <span className="font-semibold">{app.lead.parentName}</span>
-                      <br />
-                      <span className="text-xs text-[var(--ds-text-secondary)]">{app.lead.email}</span>
-                    </Link>
-                  </td>
-                  <td className="px-4 py-3 text-[var(--ds-text-primary)]">{app.lead.schoolSelection}</td>
-                  <td className="px-4 py-3">
-                    {app.students.length === 0 ? (
-                      <span className="text-xs text-[var(--ds-text-secondary)]">none yet</span>
-                    ) : (
-                      <span className="text-[var(--ds-text-primary)]">
-                        {app.students.map((s) => s.fullName).join(", ")}
-                      </span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3">
-                    {app.application ? (
-                      <div>
-                        <StatusBadge status={app.application.status} size="sm" />
-                        <div className="mt-0.5 text-xs text-[var(--ds-text-secondary)]">
-                          {app.application.applicationCode}
-                        </div>
-                      </div>
-                    ) : (
-                      <StatusBadge status={app.lead.isVerified ? "submitted" : "pending"} size="sm" label={app.lead.isVerified ? "EOI only" : "pending"} />
-                    )}
-                  </td>
-                  <td className="px-4 py-3">
-                    {app.latestPayment ? (
-                      <div>
-                        <StatusBadge status={app.latestPayment.status} size="sm" />
-                        <div className="mt-0.5 text-xs text-[var(--ds-text-secondary)]">
-                          {formatMoney(app.latestPayment.amount, app.latestPayment.currency)}
-                        </div>
-                      </div>
-                    ) : (
-                      <span className="text-xs text-[var(--ds-text-secondary)]">—</span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 text-xs text-[var(--ds-text-secondary)]">
-                    {formatDate(app.lead.createdAt)}
-                  </td>
+        <div className="mt-6 overflow-hidden rounded-3xl border border-[var(--ds-border)] bg-[var(--ds-surface)] shadow-[var(--ds-shadow-soft)]">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <thead className="bg-[var(--ds-soft)]/60 text-[11px] uppercase tracking-[0.12em] text-[var(--ds-text-secondary)]">
+                <tr>
+                  <th className="px-5 py-3.5 font-bold">Parent</th>
+                  <th className="px-5 py-3.5 font-bold">School</th>
+                  <th className="px-5 py-3.5 font-bold">Students</th>
+                  <th className="px-5 py-3.5 font-bold">Application</th>
+                  <th className="px-5 py-3.5 font-bold">Fee</th>
+                  <th className="px-5 py-3.5 font-bold">Submitted</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-[var(--ds-border)]/70">
+                {applications.map((app) => (
+                  <tr
+                    key={app.lead.admissionId}
+                    className="transition-colors hover:bg-[var(--ds-soft)]/40"
+                  >
+                    <td className="px-5 py-4">
+                      <Link
+                        href={`/admin/admissions/applications/${encodeURIComponent(app.lead.admissionId)}`}
+                        className="group block text-[var(--ds-text-primary)]"
+                      >
+                        <span className="font-semibold group-hover:text-[var(--ds-primary)]">{app.lead.parentName}</span>
+                        <span className="mt-0.5 block text-xs text-[var(--ds-text-secondary)]">{app.lead.email}</span>
+                      </Link>
+                    </td>
+                    <td className="px-5 py-4 text-[var(--ds-text-primary)]">{app.lead.schoolSelection}</td>
+                    <td className="px-5 py-4">
+                      {app.students.length === 0 ? (
+                        <span className="text-xs text-[var(--ds-text-secondary)]">none yet</span>
+                      ) : (
+                        <span className="text-[var(--ds-text-primary)]">
+                          {app.students.map((s) => s.fullName).join(", ")}
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-5 py-4">
+                      {app.application ? (
+                        <div>
+                          <StatusBadge status={app.application.status} size="sm" />
+                          <div className="mt-1 text-xs text-[var(--ds-text-secondary)]">
+                            {app.application.applicationCode}
+                          </div>
+                        </div>
+                      ) : (
+                        <StatusBadge status={app.lead.isVerified ? "submitted" : "pending"} size="sm" label={app.lead.isVerified ? "EOI only" : "pending"} />
+                      )}
+                    </td>
+                    <td className="px-5 py-4">
+                      {app.latestPayment ? (
+                        <div>
+                          <StatusBadge status={app.latestPayment.status} size="sm" />
+                          <div className="mt-1 text-xs text-[var(--ds-text-secondary)]">
+                            {formatMoney(app.latestPayment.amount, app.latestPayment.currency)}
+                          </div>
+                        </div>
+                      ) : (
+                        <span className="text-xs text-[var(--ds-text-secondary)]">—</span>
+                      )}
+                    </td>
+                    <td className="px-5 py-4 text-xs text-[var(--ds-text-secondary)]">
+                      {formatDate(app.lead.createdAt)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </div>

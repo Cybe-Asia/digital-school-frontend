@@ -63,57 +63,72 @@ export default async function AdminSectionsPage({ searchParams }: { searchParams
   const sections = payload?.data ?? [];
 
   return (
-    <div className="mx-auto max-w-6xl px-6 py-8">
-      <header className="mb-5 flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--ds-primary)]">
-            School (SIS)
-          </p>
-          <h1 className="mt-1 text-2xl font-semibold text-[var(--ds-text-primary)]">Sections</h1>
-          <p className="mt-1 text-sm text-[var(--ds-text-secondary)]">
-            {sections.length} section(s) · bridge from admissions into timetable/attendance/grades.
-          </p>
+    <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
+      <header className="surface-card mb-6 rounded-3xl p-6 sm:p-7">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="flex items-start gap-3">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[var(--ds-primary)]/10 text-[var(--ds-primary)]" aria-hidden="true">
+              <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9 12 2l9 7" /><path d="M5 9v11a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9" /><path d="M9 21v-6h6v6" /></svg>
+            </span>
+            <div>
+              <span className="eyebrow-chip">School · SIS</span>
+              <h1 className="mt-3 text-[1.75rem] font-semibold leading-tight tracking-tight text-[var(--ds-text-primary)]">Sections</h1>
+              <p className="mt-1.5 max-w-xl text-sm text-[var(--ds-text-secondary)]">
+                <span className="font-semibold text-[var(--ds-text-primary)]">{sections.length}</span> active · bridge from admissions into timetable, attendance, and grades.
+              </p>
+            </div>
+          </div>
         </div>
       </header>
 
       <CreateSectionForm />
 
-      <div className="mt-5 overflow-hidden rounded-2xl border border-[var(--ds-border)] bg-[var(--ds-surface)]">
-        <table className="w-full text-left text-sm">
-          <thead className="bg-[var(--ds-soft)] text-xs uppercase tracking-wider text-[var(--ds-text-secondary)]">
-            <tr>
-              <th className="px-4 py-3">Name</th>
-              <th className="px-4 py-3">School</th>
-              <th className="px-4 py-3">Year group</th>
-              <th className="px-4 py-3">AY</th>
-              <th className="px-4 py-3">Enrolled</th>
-              <th className="px-4 py-3">Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {sections.length === 0 ? (
-              <tr><td colSpan={6} className="px-4 py-10 text-center text-sm text-[var(--ds-text-secondary)]">
-                No sections yet. Create one above — you&apos;ll need at least an active section before you can assign enrolled students to it.
-              </td></tr>
-            ) : sections.map((s) => (
-              <tr key={s.sectionId} className="border-t border-[var(--ds-border)] hover:bg-[var(--ds-soft)]/40">
-                <td className="px-4 py-3">
-                  <Link
-                    href={`/admin/sis/sections/${encodeURIComponent(s.sectionId)}`}
-                    className="font-semibold text-[var(--ds-text-primary)] hover:text-[var(--ds-primary)]"
-                  >
-                    {s.name}
-                  </Link>
-                </td>
-                <td className="px-4 py-3 text-[var(--ds-text-primary)]">{s.schoolId}</td>
-                <td className="px-4 py-3 text-[var(--ds-text-primary)]">{s.yearGroup}</td>
-                <td className="px-4 py-3 text-[var(--ds-text-primary)]">{s.academicYear}</td>
-                <td className="px-4 py-3 text-[var(--ds-text-primary)]">{s.enrolledCount}</td>
-                <td className="px-4 py-3"><StatusBadge status={s.status} size="sm" /></td>
+      <div className="mt-6 overflow-hidden rounded-3xl border border-[var(--ds-border)] bg-[var(--ds-surface)] shadow-[var(--ds-shadow-soft)]">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-sm">
+            <thead className="bg-[var(--ds-soft)]/60 text-[11px] uppercase tracking-[0.12em] text-[var(--ds-text-secondary)]">
+              <tr>
+                <th className="px-5 py-3.5 font-bold">Name</th>
+                <th className="px-5 py-3.5 font-bold">School</th>
+                <th className="px-5 py-3.5 font-bold">Year group</th>
+                <th className="px-5 py-3.5 font-bold">AY</th>
+                <th className="px-5 py-3.5 font-bold">Enrolled</th>
+                <th className="px-5 py-3.5 font-bold">Status</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-[var(--ds-border)]/70">
+              {sections.length === 0 ? (
+                <tr><td colSpan={6} className="px-6 py-14">
+                  <div className="flex flex-col items-center gap-3 text-center">
+                    <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[var(--ds-soft)] text-[var(--ds-primary)]" aria-hidden="true">
+                      <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="3" /><path d="M9 3v18M3 9h18" /></svg>
+                    </span>
+                    <p className="text-base font-semibold text-[var(--ds-text-primary)]">No sections yet</p>
+                    <p className="max-w-md text-sm text-[var(--ds-text-secondary)]">Create one above — you&apos;ll need at least an active section before you can assign enrolled students to it.</p>
+                  </div>
+                </td></tr>
+              ) : sections.map((s) => (
+                <tr key={s.sectionId} className="transition-colors hover:bg-[var(--ds-soft)]/40">
+                  <td className="px-5 py-4">
+                    <Link
+                      href={`/admin/sis/sections/${encodeURIComponent(s.sectionId)}`}
+                      className="font-semibold text-[var(--ds-text-primary)] hover:text-[var(--ds-primary)]"
+                    >
+                      {s.name}
+                    </Link>
+                  </td>
+                  <td className="px-5 py-4 text-[var(--ds-text-primary)]">{s.schoolId}</td>
+                  <td className="px-5 py-4 text-[var(--ds-text-primary)]">{s.yearGroup}</td>
+                  <td className="px-5 py-4 text-[var(--ds-text-primary)]">{s.academicYear}</td>
+                  <td className="px-5 py-4">
+                    <span className="inline-flex h-7 min-w-[28px] items-center justify-center rounded-full bg-[var(--ds-soft)] px-2 text-xs font-bold text-[var(--ds-text-primary)]">{s.enrolledCount}</span>
+                  </td>
+                  <td className="px-5 py-4"><StatusBadge status={s.status} size="sm" /></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );

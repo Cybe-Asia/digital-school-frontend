@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { AuthShell } from "@/features/admissions-auth/presentation/components/auth-shell";
 import { ParentDocumentsClient } from "@/features/admissions-auth/presentation/components/parent-documents";
+import { buildSetupStepIndicator } from "@/features/admissions-auth/presentation/lib/setup-account-steps";
+import { getServerI18n } from "@/i18n/server";
 
 export const metadata: Metadata = {
   title: "Upload documents",
@@ -17,11 +19,13 @@ export const metadata: Metadata = {
  * kid this parent owns) and renders one upload panel per request.
  */
 export default async function ParentDocumentsPage() {
+  const { t } = await getServerI18n();
   return (
     <AuthShell
       eyebrow="auth.documents.eyebrow"
       title="auth.documents.title"
       description="auth.documents.description"
+      stepIndicator={buildSetupStepIndicator(t, "documents")}
     >
       <ParentDocumentsClient />
     </AuthShell>

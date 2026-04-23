@@ -73,20 +73,21 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
 
   return (
     <ToastProvider>
-    <div className="min-h-screen bg-[var(--ds-soft)]/30">
+    <div className="min-h-screen bg-gradient-to-br from-[var(--ds-bg-grad-start)] to-[var(--ds-bg-grad-end)]">
       {/* Top bar — mobile hamburger + breadcrumbs */}
-      <header className="sticky top-0 z-30 border-b border-[var(--ds-border)] bg-[var(--ds-surface)]/95 backdrop-blur supports-[backdrop-filter]:bg-[var(--ds-surface)]/75">
-        <div className="flex items-center gap-3 px-4 py-3 lg:pl-60">
+      <header className="sticky top-0 z-30 border-b border-[var(--ds-border)]/70 bg-[var(--ds-surface)]/95 backdrop-blur supports-[backdrop-filter]:bg-[var(--ds-surface)]/80">
+        <div className="flex items-center gap-3 px-4 py-3.5 lg:pl-60">
           <button
             type="button"
             onClick={() => setMobileOpen((o) => !o)}
             aria-label="Toggle menu"
-            className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--ds-border)] bg-[var(--ds-surface)] text-sm lg:hidden"
+            className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-[var(--ds-border)] bg-[var(--ds-surface)] text-sm transition hover:border-[var(--ds-primary)] lg:hidden"
           >
-            ☰
+            <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M3 6h18M3 12h18M3 18h18" /></svg>
           </button>
           <Breadcrumbs pathname={pathname} />
-          <span className="ml-auto rounded-full border border-[var(--ds-border)] bg-[var(--ds-soft)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-[var(--ds-text-secondary)]">
+          <span className="ml-auto inline-flex items-center gap-1.5 rounded-full border border-[var(--ds-border)] bg-[var(--ds-soft)] px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--ds-text-secondary)]">
+            <span className="h-1.5 w-1.5 rounded-full bg-[#22c55e] animate-pulse" aria-hidden="true" />
             school-test
           </span>
         </div>
@@ -94,25 +95,28 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
 
       {/* Sidebar — fixed on lg+, slide-over on mobile */}
       <aside
-        className={`fixed top-0 z-40 h-screen w-56 border-r border-[var(--ds-border)] bg-[var(--ds-surface)] transition-transform lg:translate-x-0 ${
+        className={`fixed top-0 z-40 h-screen w-56 border-r border-[var(--ds-border)] bg-[var(--ds-surface)] shadow-[var(--ds-shadow-soft)] transition-transform lg:translate-x-0 ${
           mobileOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
-        <div className="flex items-center gap-2 border-b border-[var(--ds-border)] px-4 py-3">
-          <span className="text-sm font-semibold text-[var(--ds-text-primary)]">Digital School</span>
+        <div className="flex items-center gap-2.5 border-b border-[var(--ds-border)] px-4 py-4">
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[var(--ds-primary)] to-[var(--ds-cta-fill-2)] text-[var(--ds-on-primary)]" aria-hidden="true">
+            <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z" /><path d="M6 12v5c3 3 9 3 12 0v-5" /></svg>
+          </span>
+          <span className="text-sm font-bold tracking-tight text-[var(--ds-text-primary)]">Digital School</span>
           <button
             type="button"
             onClick={() => setMobileOpen(false)}
             aria-label="Close menu"
-            className="ml-auto inline-flex h-7 w-7 items-center justify-center rounded-md text-sm text-[var(--ds-text-secondary)] lg:hidden"
+            className="ml-auto inline-flex h-7 w-7 items-center justify-center rounded-md text-sm text-[var(--ds-text-secondary)] hover:bg-[var(--ds-soft)] lg:hidden"
           >
             ×
           </button>
         </div>
         <nav className="overflow-y-auto px-2 py-3">
           {NAV.map((group) => (
-            <div key={group.label} className="mb-4">
-              <p className="px-2 pb-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--ds-text-secondary)]">
+            <div key={group.label} className="mb-5">
+              <p className="px-2.5 pb-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--ds-text-secondary)]">
                 {group.label}
               </p>
               <ul className="space-y-0.5">
@@ -124,9 +128,9 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
                     <li key={item.href}>
                       <Link
                         href={item.href}
-                        className={`block rounded-lg px-2.5 py-1.5 text-sm transition ${
+                        className={`relative block rounded-xl px-3 py-2 text-sm transition ${
                           active
-                            ? "bg-[var(--ds-primary)]/10 font-semibold text-[var(--ds-primary)]"
+                            ? "bg-[var(--ds-primary)]/10 font-semibold text-[var(--ds-primary)] before:absolute before:left-0 before:top-1/2 before:h-5 before:w-1 before:-translate-y-1/2 before:rounded-r-full before:bg-[var(--ds-primary)]"
                             : "text-[var(--ds-text-primary)] hover:bg-[var(--ds-soft)]"
                         }`}
                       >

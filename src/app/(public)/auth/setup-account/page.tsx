@@ -5,6 +5,8 @@ import {
   getSetupAdmissionIdFromSearchParams,
   getSetupTokenFromSearchParams,
 } from "@/features/admissions-auth/presentation/lib/setup-account-routes";
+import { buildSetupStepIndicator } from "@/features/admissions-auth/presentation/lib/setup-account-steps";
+import { getServerI18n } from "@/i18n/server";
 
 export const metadata: Metadata = {
   title: "Setup Account | Cybe Digital School",
@@ -19,6 +21,7 @@ export default async function SetupAccountPage({ searchParams }: SetupAccountPag
   const params = await searchParams;
   const token = getSetupTokenFromSearchParams(params);
   const admissionId = getSetupAdmissionIdFromSearchParams(params);
+  const { t } = await getServerI18n();
 
   return (
     <AuthShell
@@ -28,6 +31,7 @@ export default async function SetupAccountPage({ searchParams }: SetupAccountPag
       footerPrompt="auth.setup.footer_prompt"
       footerLinkLabel="auth.setup.footer_link"
       footerHref="/admissions/login"
+      stepIndicator={buildSetupStepIndicator(t, "account")}
     >
       <SetupAccountForm token={token} admissionId={admissionId} />
     </AuthShell>

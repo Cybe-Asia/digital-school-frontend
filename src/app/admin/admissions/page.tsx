@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { cookies } from "next/headers";
 import { getServerServiceEndpoints } from "@/features/admissions-auth/infrastructure/service-endpoints";
-import AdminShellHeader from "@/app/admin/_components/admin-shell-header";
 
 export const metadata: Metadata = {
   title: "Admissions Dashboard | Admin",
@@ -116,27 +115,33 @@ export default async function AdminAdmissionsDashboardPage() {
     0;
 
   return (
-    <div className="mx-auto max-w-6xl px-6 py-8">
-      <AdminShellHeader />
-      <header className="mb-6 flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--ds-primary)]">
-            Admissions
-          </p>
-          <h1 className="mt-1 text-2xl font-semibold text-[var(--ds-text-primary)]">Dashboard</h1>
-          <p className="mt-1 text-xs text-[var(--ds-text-secondary)]">
-            as of {formatDate(f.computedAt)}
-          </p>
+    <div className="mx-auto max-w-6xl px-4 pb-10 pt-4 sm:px-6">
+      <header className="hero-panel relative mb-7 overflow-hidden rounded-[28px] p-6 sm:p-8">
+        <div aria-hidden="true" className="pointer-events-none absolute -right-20 -top-20 h-56 w-56 rounded-full bg-[var(--ds-radial-a)] blur-3xl" />
+        <div aria-hidden="true" className="pointer-events-none absolute -bottom-16 left-1/3 h-40 w-40 rounded-full bg-[var(--ds-radial-b)] blur-3xl" />
+        <div className="relative flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <span className="eyebrow-chip">
+              <span className="h-1.5 w-1.5 rounded-full bg-[var(--ds-primary)]" aria-hidden="true" />
+              Admissions console
+            </span>
+            <h1 className="mt-4 text-[1.9rem] font-semibold leading-[1.1] tracking-tight text-[var(--ds-text-primary)] sm:text-[2.2rem]">
+              Funnel at a glance
+            </h1>
+            <p className="mt-3 max-w-xl text-[15px] leading-relaxed text-[var(--ds-text-secondary)]">
+              Live pipeline from first enquiry to enrolment. Snapshot taken {formatDate(f.computedAt)}.
+            </p>
+          </div>
+          <nav className="flex flex-wrap gap-2 text-xs">
+            <NavLink href="/admin/admissions/leads">Leads</NavLink>
+            <NavLink href="/admin/admissions/applications">Applications</NavLink>
+            <NavLink href="/admin/admissions/offers">Offers</NavLink>
+            <NavLink href="/admin/admissions/documents">Doc queue</NavLink>
+            <NavLink href="/admin/admissions/enrolled">Enrolled</NavLink>
+            <NavLink href="/admin/sis/sections">SIS · Sections</NavLink>
+            <NavLink href="/admin/tests/schedules">Test schedules</NavLink>
+          </nav>
         </div>
-        <nav className="flex flex-wrap gap-2 text-xs">
-          <NavLink href="/admin/admissions/leads">Leads</NavLink>
-          <NavLink href="/admin/admissions/applications">Applications</NavLink>
-          <NavLink href="/admin/admissions/offers">Offers</NavLink>
-          <NavLink href="/admin/admissions/documents">Doc queue</NavLink>
-          <NavLink href="/admin/admissions/enrolled">Enrolled</NavLink>
-          <NavLink href="/admin/sis/sections">SIS · Sections</NavLink>
-          <NavLink href="/admin/tests/schedules">Test schedules</NavLink>
-        </nav>
       </header>
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -146,12 +151,17 @@ export default async function AdminAdmissionsDashboardPage() {
         <Tile label="Enrolled (7d)" value={f.weeklyEnrolled.toLocaleString()} accent="green" />
       </div>
 
-      <section className="mt-6">
-        <h2 className="text-sm font-semibold uppercase tracking-wider text-[var(--ds-text-secondary)]">
-          Needs attention
-        </h2>
+      <section className="mt-8">
+        <div className="mb-3 flex items-center gap-3">
+          <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#fee9e9] text-[#8b1f1f]" aria-hidden="true">
+            <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 9v4M12 17h.01" /><circle cx="12" cy="12" r="10" /></svg>
+          </span>
+          <h2 className="text-sm font-semibold uppercase tracking-[0.14em] text-[var(--ds-text-secondary)]">
+            Needs attention
+          </h2>
+        </div>
         {hasStuck ? (
-          <div className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <StuckTile
               label="Stuck in test_pending ≥ 7d"
               value={f.stuckCounts.stuckTestPending7d}
@@ -169,9 +179,15 @@ export default async function AdminAdmissionsDashboardPage() {
             />
           </div>
         ) : (
-          <p className="mt-2 rounded-2xl border border-[#166534]/20 bg-[#e3fcef] px-4 py-3 text-sm text-[#166534]">
-            🎉 Nothing stuck for more than a week. Intake is healthy.
-          </p>
+          <div className="flex items-center gap-3 rounded-2xl border border-[#166534]/20 bg-gradient-to-br from-[#e3fcef] to-[#d3f7e2] px-5 py-4 text-sm">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#22c55e]/20 text-[#166534]" aria-hidden="true">
+              <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg>
+            </span>
+            <div>
+              <p className="font-semibold text-[#166534]">Everything is moving</p>
+              <p className="text-[#166534]/80">Nothing stuck for more than a week. Intake is healthy.</p>
+            </div>
+          </div>
         )}
       </section>
 
@@ -306,16 +322,22 @@ function Tile({
 }) {
   const accentCls =
     accent === "green"
-      ? "border-[#166534]/20 bg-[#e3fcef]"
+      ? "border-[#166534]/25 bg-gradient-to-br from-[#e3fcef] to-[#d3f7e2]"
       : accent === "red"
-        ? "border-[#b42318]/20 bg-[#fee9e9]"
+        ? "border-[#b42318]/25 bg-gradient-to-br from-[#fee9e9] to-[#fdd5d5]"
         : "border-[var(--ds-border)] bg-[var(--ds-surface)]";
   const body = (
-    <div className={`rounded-2xl border ${accentCls} p-4`}>
-      <p className="text-xs font-semibold uppercase tracking-wider text-[var(--ds-text-secondary)]">
+    <div className={`rounded-2xl border ${accentCls} p-5 transition ${href ? "card-interactive" : ""}`}>
+      <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--ds-text-secondary)]">
         {label}
       </p>
-      <p className="mt-1 text-2xl font-semibold text-[var(--ds-text-primary)]">{value}</p>
+      <p className="mt-3 text-[2rem] font-semibold leading-none tracking-tight text-[var(--ds-text-primary)]">{value}</p>
+      {href ? (
+        <p className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-[var(--ds-primary)]">
+          Open
+          <svg viewBox="0 0 24 24" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12h14M13 5l7 7-7 7" /></svg>
+        </p>
+      ) : null}
     </div>
   );
   return href ? <Link href={href}>{body}</Link> : body;

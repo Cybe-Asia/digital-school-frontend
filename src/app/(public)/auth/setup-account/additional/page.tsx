@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { AuthShell } from "@/features/admissions-auth/presentation/components/auth-shell";
 import { SetupAccountAdditionalForm } from "@/features/admissions-auth/presentation/components/setup-account-additional-form";
 import { getSetupAdmissionIdFromSearchParams } from "@/features/admissions-auth/presentation/lib/setup-account-routes";
+import { buildSetupStepIndicator } from "@/features/admissions-auth/presentation/lib/setup-account-steps";
 import { getServerI18n } from "@/i18n/server";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -19,12 +20,14 @@ type SetupAccountAdditionalPageProps = {
 
 export default async function SetupAccountAdditionalPage({ searchParams }: SetupAccountAdditionalPageProps) {
   const admissionId = getSetupAdmissionIdFromSearchParams(await searchParams);
+  const { t } = await getServerI18n();
 
   return (
     <AuthShell
       eyebrow="auth.additional.eyebrow"
       title="auth.additional.title"
       description="auth.additional.description"
+      stepIndicator={buildSetupStepIndicator(t, "additional")}
     >
       <SetupAccountAdditionalForm admissionId={admissionId} />
     </AuthShell>

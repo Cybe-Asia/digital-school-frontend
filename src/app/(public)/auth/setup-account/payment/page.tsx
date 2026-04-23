@@ -2,7 +2,9 @@ import type { Metadata } from "next";
 import { AuthShell } from "@/features/admissions-auth/presentation/components/auth-shell";
 import { SetupAccountPaymentForm } from "@/features/admissions-auth/presentation/components/setup-account-payment-form";
 import { getSetupAdmissionIdFromSearchParams } from "@/features/admissions-auth/presentation/lib/setup-account-routes";
+import { buildSetupStepIndicator } from "@/features/admissions-auth/presentation/lib/setup-account-steps";
 import { getSingleSearchParam } from "@/shared/lib/search-params";
+import { getServerI18n } from "@/i18n/server";
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
@@ -31,12 +33,14 @@ export default async function SetupAccountPaymentPage({ searchParams }: SetupAcc
   const admissionId = getSetupAdmissionIdFromSearchParams(sp);
   const paymentType =
     getSingleSearchParam(sp.paymentType) ?? "application_fee";
+  const { t } = await getServerI18n();
 
   return (
     <AuthShell
       eyebrow="auth.payment.eyebrow"
       title="auth.payment.title"
       description="auth.payment.description"
+      stepIndicator={buildSetupStepIndicator(t, "payment")}
     >
       <SetupAccountPaymentForm admissionId={admissionId} paymentType={paymentType} />
     </AuthShell>

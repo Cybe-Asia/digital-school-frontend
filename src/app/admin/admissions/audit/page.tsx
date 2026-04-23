@@ -71,15 +71,20 @@ export default async function AdminAuditPage({ searchParams }: { searchParams: P
   }
 
   return (
-    <div className="mx-auto max-w-5xl px-6 py-8">
-      <header className="mb-5">
-        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--ds-primary)]">
-          Admissions
-        </p>
-        <h1 className="mt-1 text-2xl font-semibold text-[var(--ds-text-primary)]">Audit log</h1>
-        <p className="mt-1 text-sm text-[var(--ds-text-secondary)]">
-          Append-only record of admin actions. Newest first. Filters narrow the window.
-        </p>
+    <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
+      <header className="surface-card mb-6 rounded-3xl p-6 sm:p-7">
+        <div className="flex items-start gap-3">
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[var(--ds-primary)]/10 text-[var(--ds-primary)]" aria-hidden="true">
+            <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><path d="M14 2v6h6M9 13h6M9 17h4" /></svg>
+          </span>
+          <div>
+            <span className="eyebrow-chip">Audit trail</span>
+            <h1 className="mt-3 text-[1.75rem] font-semibold leading-tight tracking-tight text-[var(--ds-text-primary)]">Admin audit log</h1>
+            <p className="mt-1.5 max-w-2xl text-sm text-[var(--ds-text-secondary)]">
+              Append-only record of every admin mutation. Newest first. Filters narrow the window.
+            </p>
+          </div>
+        </div>
       </header>
 
       <AuditFilterBar initial={{ actorEmail, action, targetType, targetId }} />
@@ -93,35 +98,40 @@ export default async function AdminAuditPage({ searchParams }: { searchParams: P
           />
         </div>
       ) : (
-        <ol className="mt-5 space-y-2">
+        <ol className="mt-6 space-y-2">
           {events.map((e) => {
             const targetHref = hrefForTarget(e.targetType, e.targetId);
             return (
               <li
                 key={e.eventId}
-                className="rounded-xl border border-[var(--ds-border)] bg-[var(--ds-surface)] p-3 text-sm"
+                className="relative rounded-2xl border border-[var(--ds-border)] bg-[var(--ds-surface)] p-4 text-sm transition hover:border-[var(--ds-primary)]/40 hover:shadow-[var(--ds-shadow-soft)]"
               >
-                <div className="flex flex-wrap items-start justify-between gap-2">
-                  <div>
-                    <p className="font-semibold text-[var(--ds-text-primary)]">
-                      <span className="font-mono text-xs">{e.action}</span>
-                      {" → "}
-                      <span className="text-[var(--ds-text-secondary)]">{e.targetType}:</span>
-                      {targetHref ? (
-                        <Link href={targetHref} className="ml-0.5 font-mono text-xs text-[var(--ds-primary)] hover:underline">
-                          {e.targetId}
-                        </Link>
-                      ) : (
-                        <span className="ml-0.5 font-mono text-xs text-[var(--ds-text-primary)]">{e.targetId}</span>
-                      )}
-                    </p>
-                    <p className="mt-0.5 text-xs text-[var(--ds-text-secondary)]">
-                      by {e.actorEmail ?? e.actorLeadId} · {formatDate(e.createdAt)}
-                    </p>
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div className="flex gap-3 min-w-0">
+                    <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--ds-primary)]/10 text-[var(--ds-primary)]" aria-hidden="true">
+                      <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 8v4l3 2" /><circle cx="12" cy="12" r="10" /></svg>
+                    </span>
+                    <div className="min-w-0">
+                      <p className="font-semibold text-[var(--ds-text-primary)]">
+                        <span className="inline-flex items-center rounded-md bg-[var(--ds-soft)] px-1.5 py-0.5 font-mono text-[11px]">{e.action}</span>
+                        <span className="mx-1.5 text-[var(--ds-text-secondary)]">→</span>
+                        <span className="text-[var(--ds-text-secondary)]">{e.targetType}:</span>
+                        {targetHref ? (
+                          <Link href={targetHref} className="ml-0.5 font-mono text-xs text-[var(--ds-primary)] hover:underline">
+                            {e.targetId}
+                          </Link>
+                        ) : (
+                          <span className="ml-0.5 font-mono text-xs text-[var(--ds-text-primary)]">{e.targetId}</span>
+                        )}
+                      </p>
+                      <p className="mt-1 text-xs text-[var(--ds-text-secondary)]">
+                        by <span className="font-semibold text-[var(--ds-text-primary)]">{e.actorEmail ?? e.actorLeadId}</span> · {formatDate(e.createdAt)}
+                      </p>
+                    </div>
                   </div>
                 </div>
                 {e.diff ? (
-                  <pre className="mt-2 overflow-x-auto rounded-lg bg-[var(--ds-soft)] p-2 text-[11px] leading-snug text-[var(--ds-text-primary)]">
+                  <pre className="mt-3 overflow-x-auto rounded-xl bg-[var(--ds-soft)]/60 p-3 text-[11px] leading-snug text-[var(--ds-text-primary)]">
                     {prettyJson(e.diff)}
                   </pre>
                 ) : null}

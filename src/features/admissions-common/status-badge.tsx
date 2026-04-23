@@ -20,11 +20,19 @@
 type Tone = "neutral" | "info" | "warn" | "success" | "danger";
 
 const TONE_CLASSES: Record<Tone, string> = {
-  neutral: "bg-[var(--ds-soft)] text-[var(--ds-text-primary)]",
-  info: "bg-[#dbeafe] text-[#1e40af]",
-  warn: "bg-[#fef3c7] text-[#92400e]",
-  success: "bg-[#e3fcef] text-[#166534]",
-  danger: "bg-[#fee9e9] text-[#8b1f1f]",
+  neutral: "bg-[var(--ds-soft)] text-[var(--ds-text-primary)] border-[var(--ds-border)]",
+  info: "bg-[#dbeafe] text-[#1e40af] border-[#1e40af]/20",
+  warn: "bg-[#fef3c7] text-[#92400e] border-[#92400e]/25",
+  success: "bg-[#e3fcef] text-[#166534] border-[#166534]/25",
+  danger: "bg-[#fee9e9] text-[#8b1f1f] border-[#8b1f1f]/25",
+};
+
+const TONE_DOT: Record<Tone, string> = {
+  neutral: "bg-[var(--ds-text-secondary)]",
+  info: "bg-[#3b82f6]",
+  warn: "bg-[#f59e0b]",
+  success: "bg-[#22c55e]",
+  danger: "bg-[#ef4444]",
 };
 
 /** Classify a status string into a color bucket. */
@@ -94,9 +102,11 @@ type StatusBadgeProps = {
 export function StatusBadge({ status, label, size = "md" }: StatusBadgeProps) {
   const tone = toneFor(status);
   const cls = TONE_CLASSES[tone];
-  const padding = size === "sm" ? "px-2 py-0.5 text-xs" : "px-3 py-1 text-xs";
+  const dotCls = TONE_DOT[tone];
+  const padding = size === "sm" ? "px-2 py-0.5 text-[10px]" : "px-2.5 py-1 text-[11px]";
   return (
-    <span className={`inline-block rounded-full font-semibold ${padding} ${cls}`}>
+    <span className={`inline-flex items-center gap-1.5 rounded-full border font-bold uppercase tracking-[0.08em] ${padding} ${cls}`}>
+      <span className={`h-1.5 w-1.5 rounded-full ${dotCls}`} aria-hidden="true" />
       {label ?? prettifyStatus(status)}
     </span>
   );

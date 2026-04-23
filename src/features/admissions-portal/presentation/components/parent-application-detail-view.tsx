@@ -1,5 +1,9 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { PageHeader, type Breadcrumb } from "@/components/ui/page-header";
+import { StudentSwitcher, type StudentSwitcherItem } from "@/components/ui/student-switcher";
+import { StickyAside, type StickyAsideItem } from "@/components/ui/sticky-aside";
+import { statusToneFor } from "@/components/ui/status-pill";
 import { getParentDashboardHref } from "@/features/admissions-auth/presentation/lib/setup-account-routes";
 import {
   getAdmissionsJourneyStages,
@@ -25,7 +29,6 @@ import {
   type ParentApplicationSection,
 } from "@/features/admissions-portal/presentation/lib/admissions-portal-routes";
 import { getServerI18n } from "@/i18n/server";
-import { cn } from "@/shared/lib/cn";
 
 type ParentApplicationDetailViewProps = {
   activeSection: ParentApplicationSection;
@@ -102,67 +105,8 @@ function journeyStateBadgeClassName(state: "complete" | "current" | "upcoming" |
   return "status-pill status-negative";
 }
 
-function portalSectionClassName(state: "complete" | "current" | "locked", isActive: boolean) {
-  if (isActive && state !== "locked") {
-    return "border-[var(--ds-primary)] bg-[var(--ds-primary)] text-[var(--ds-on-primary)] shadow-[0_18px_38px_-28px_rgba(15,92,69,0.55)]";
-  }
-
-  if (state === "complete") {
-    return "border-[color-mix(in_srgb,var(--ds-primary)_40%,var(--ds-border))] bg-[color-mix(in_srgb,var(--ds-surface)_40%,var(--ds-soft))] text-[var(--ds-text-primary)] hover:border-[var(--ds-primary)]/55";
-  }
-
-  if (state === "current") {
-    return "border-[color-mix(in_srgb,var(--ds-primary)_60%,var(--ds-border))] bg-[var(--ds-surface)] text-[var(--ds-text-primary)] hover:-translate-y-0.5 hover:border-[var(--ds-primary)]";
-  }
-
-  return "border-[color-mix(in_srgb,#d14b52_38%,var(--ds-border))] bg-[color-mix(in_srgb,var(--ds-surface)_82%,transparent)] text-[var(--ds-text-secondary)]";
-}
-
-function portalSectionIconWrapClassName(state: "complete" | "current" | "locked", isActive: boolean) {
-  if (isActive && state !== "locked") {
-    return "border-[color-mix(in_srgb,var(--ds-on-primary)_24%,transparent)] bg-[color-mix(in_srgb,var(--ds-on-primary)_18%,transparent)] text-[var(--ds-on-primary)]";
-  }
-
-  if (state === "complete") {
-    return "border-[color-mix(in_srgb,var(--ds-primary)_36%,var(--ds-border))] bg-[color-mix(in_srgb,var(--ds-primary)_12%,var(--ds-surface))] text-[var(--ds-primary)]";
-  }
-
-  if (state === "current") {
-    return "border-[color-mix(in_srgb,var(--ds-primary)_45%,var(--ds-border))] bg-[color-mix(in_srgb,var(--ds-primary)_10%,var(--ds-surface))] text-[var(--ds-primary)]";
-  }
-
-  return "border-[color-mix(in_srgb,#d14b52_40%,var(--ds-border))] bg-[color-mix(in_srgb,#d14b52_10%,var(--ds-surface))] text-[#b83d44]";
-}
-
-function getPortalSectionStateLabelKey(state: "complete" | "current" | "locked") {
-  return `admissions.portal.journey.state.${state}`;
-}
-
-function SectionStateIcon({ state }: { state: "complete" | "current" | "locked" }) {
-  if (state === "complete") {
-    return (
-      <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-        <path d="M20 6 9 17l-5-5" />
-      </svg>
-    );
-  }
-
-  if (state === "current") {
-    return (
-      <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-        <circle cx="12" cy="12" r="8" />
-        <path d="M12 8v4l2.5 2.5" />
-      </svg>
-    );
-  }
-
-  return (
-    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <rect x="5" y="11" width="14" height="10" rx="2" />
-      <path d="M8 11V8a4 4 0 1 1 8 0v3" />
-    </svg>
-  );
-}
+// portalSectionClassName / portalSectionIconWrapClassName / SectionStateIcon
+// were replaced by the shared <StickyAside> primitive — see above.
 
 function getJourneyStateLabelKey(state: "complete" | "current" | "upcoming" | "locked" | "attention") {
   return `admissions.portal.journey.state.${state}`;
@@ -470,17 +414,27 @@ function CompactCard({
   title,
   detail,
   action,
+  tone = "neutral",
 }: {
   eyebrow: string;
   title: string;
   detail?: string;
   action?: ReactNode;
+  tone?: "neutral" | "positive" | "warning" | "accent";
 }) {
+  const accent =
+    tone === "positive"
+      ? "before:bg-[#22c55e]"
+      : tone === "warning"
+        ? "before:bg-[#f59e0b]"
+        : tone === "accent"
+          ? "before:bg-[var(--ds-primary)]"
+          : "before:bg-[var(--ds-border)]";
   return (
-    <article className="surface-card rounded-3xl p-5">
-      <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--ds-text-secondary)]">{eyebrow}</p>
-      <p className="mt-2 text-base font-semibold text-[var(--ds-text-primary)]">{title}</p>
-      {detail ? <p className="mt-2 text-sm text-[var(--ds-text-secondary)]">{detail}</p> : null}
+    <article className={`relative surface-card rounded-3xl p-5 sm:p-6 before:absolute before:left-0 before:top-6 before:bottom-6 before:w-1 before:rounded-full ${accent}`}>
+      <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--ds-text-secondary)]">{eyebrow}</p>
+      <p className="mt-3 text-[1.05rem] font-semibold leading-snug text-[var(--ds-text-primary)]">{title}</p>
+      {detail ? <p className="mt-2 text-sm leading-relaxed text-[var(--ds-text-secondary)]">{detail}</p> : null}
       {action ? <div className="mt-4">{action}</div> : null}
     </article>
   );
@@ -568,31 +522,113 @@ export async function ParentApplicationDetailView({
   ];
   const familyNotesValue = application.familyNotes?.trim() ? application.familyNotes : t("admissions.portal.application.family_notes_empty");
 
+  // Build page-level subject-naming aids used by <PageHeader> so every
+  // sub-route (documents / payment / schedule / decision) always makes it
+  // obvious *whose* data the page is about — see design principle #3.
+  const sectionLabelKey = `admissions.portal.nav.${activeSection}.label` as const;
+  const sectionBreadcrumbKey = `ui.breadcrumb.${activeSection}` as const;
+  const pageTitle =
+    activeSection === "overview"
+      ? application.studentName
+      : `${t(sectionLabelKey)} · ${application.studentName}`;
+  const subtitleContext = t("ui.subtitle.student_context", {
+    grade: t(`auth.additional.target_grade.${application.targetGrade}`),
+    school: schoolShortName,
+    status: t(application.statusLabelKey),
+  });
+  const pageBreadcrumbs: Breadcrumb[] = [
+    { label: t("ui.breadcrumb.home"), href: "/" },
+    { label: t("ui.breadcrumb.parent_dashboard"), href: dashboardHref },
+    {
+      label: application.studentName,
+      href: activeSection === "overview" ? undefined : getParentApplicationDetailHref(application.id),
+    },
+  ];
+  if (activeSection !== "overview") {
+    pageBreadcrumbs.push({ label: t(sectionBreadcrumbKey) });
+  }
+
+  // Student switcher — one tab per sibling application. We anchor each
+  // tab on the *same sub-section* the user is currently viewing, so
+  // clicking "Fatima" while on "Payment for Ahmad" lands on "Payment for
+  // Fatima" (not bounces back to her overview).
+  const switcherItems: StudentSwitcherItem[] = applications.map((summary) => ({
+    id: summary.id,
+    studentName: summary.studentName,
+    href:
+      activeSection === "overview"
+        ? getParentApplicationDetailHref(summary.id)
+        : getParentApplicationSectionHref(summary.id, activeSection),
+    statusLabel: t(summary.statusLabelKey),
+    statusRawValue: summary.status,
+    statusTone: statusToneFor(summary.status),
+  }));
+
+  // Derive "needs action" badges for the section nav — design principle
+  // #5. Badge shows when that section has something the parent must do.
+  const paymentNeedsAction = application.payment.status !== "paid";
+  const documentsNeedsAction =
+    !documentUploadLocked && application.documents.some((d) => d.status === "missing");
+  const scheduleNeedsAction =
+    !assessmentBookingLocked && application.assessment.status === "not_booked";
+  const decisionNeedsAction = application.decision.status === "offer_released";
+
+  const sectionNavItems: StickyAsideItem[] = portalSections.map((section) => {
+    const sectionId = section.id as ParentApplicationSection;
+    const isActive = sectionId === activeSection;
+    const isLocked = section.state === "locked";
+    const needsAction =
+      sectionId === "payment"
+        ? paymentNeedsAction
+        : sectionId === "documents"
+          ? documentsNeedsAction
+          : sectionId === "schedule"
+            ? scheduleNeedsAction
+            : sectionId === "decision"
+              ? decisionNeedsAction
+              : false;
+    return {
+      id: sectionId,
+      label: t(`admissions.portal.nav.${sectionId}.label`),
+      href: getSectionHref(application.id, sectionId),
+      active: isActive,
+      disabled: isLocked,
+      badge: needsAction && !isLocked ? t("ui.section_nav.needs_action_badge") : undefined,
+      badgeTone: needsAction ? "warn" : undefined,
+    } as StickyAsideItem;
+  });
+
+  const sectionNavAriaLabel = t("ui.section_nav.aria_label", { student: application.studentName });
+
   return (
     <div className="dashboard-bg min-h-screen pb-10">
       <div className="mx-auto max-w-[1360px] px-4 pt-4 sm:px-6 sm:pt-5 lg:px-8">
         <section className="brand-header rounded-[32px] p-4 sm:p-5 lg:p-6">
-          <div className="flex flex-wrap items-center gap-2.5">
-            <Link
-              href={dashboardHref}
-              className="rounded-full border border-[var(--ds-border)] bg-[color-mix(in_srgb,var(--ds-surface)_88%,transparent)] px-3.5 py-2 text-sm font-semibold text-[var(--ds-text-primary)] transition hover:border-[var(--ds-primary)]"
-            >
-              {t("admissions.portal.back_to_dashboard")}
-            </Link>
-            <span className="rounded-full bg-[color-mix(in_srgb,var(--ds-surface)_78%,transparent)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--ds-text-secondary)]">
-              {t("admissions.portal.application.eyebrow")}
-            </span>
-            <span className={statusClassName(application.status)}>{t(application.statusLabelKey)}</span>
-          </div>
+          <PageHeader
+            breadcrumbs={pageBreadcrumbs}
+            eyebrow={t("admissions.portal.application.eyebrow")}
+            title={pageTitle}
+            subtitle={subtitleContext}
+            statusLabel={t(application.statusLabelKey)}
+            statusRawValue={application.status}
+            size="hero"
+          />
+
+          {switcherItems.length > 1 ? (
+            <div className="mt-4">
+              <StudentSwitcher
+                items={switcherItems}
+                activeId={application.id}
+                ariaLabel={t("ui.student_switcher.aria_label")}
+              />
+            </div>
+          ) : null}
 
           <div className="mt-4 grid gap-4 xl:grid-cols-[minmax(0,1.45fr)_312px]">
             <div className="max-w-4xl">
               <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--ds-primary)]">
                 {t("admissions.portal.journey.title")}
               </p>
-              <h1 className="mt-2 text-2xl font-semibold leading-tight text-[var(--ds-text-primary)] sm:text-[2rem] lg:text-[2.35rem]">
-                {application.studentName}
-              </h1>
               <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--ds-text-secondary)]">
                 {t("admissions.portal.journey.description", translationValues)}
               </p>
@@ -601,7 +637,7 @@ export async function ParentApplicationDetailView({
                 <span>·</span>
                 <span>{application.currentSchool}</span>
                 <span>·</span>
-                <span>{application.id}</span>
+                <span>{t("ui.subtitle.application_id", { id: application.id })}</span>
               </div>
             </div>
 
@@ -646,84 +682,52 @@ export async function ParentApplicationDetailView({
               </p>
             </div>
 
-            <div className="mt-4 grid gap-3 lg:grid-cols-5">
-              {journeyStages.map((stage, index) => (
-                <Link
-                  key={stage.id}
-                  href={getJourneyStageHref(application, stage.id)}
-                  className={`group rounded-[24px] border p-3.5 transition-transform duration-200 hover:-translate-y-0.5 ${journeyStateClassName(stage.state)}`}
-                >
-                  <div className="flex items-center justify-between gap-3">
-                    <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--ds-text-secondary)]">
-                      {t("admissions.portal.journey.step_label", { step: index + 1 })}
-                    </span>
-                    <span className={journeyStateBadgeClassName(stage.state)}>{t(getJourneyStateLabelKey(stage.state))}</span>
-                  </div>
-                  <p className="mt-3 text-base font-semibold text-[var(--ds-text-primary)]">
-                    {t(getJourneyStageTitleKey(stage.id))}
-                  </p>
-                  <p className="mt-1.5 text-sm leading-6 text-[var(--ds-text-secondary)]">
-                    {t(getJourneyStageDetailKey(stage.id), translationValues)}
-                  </p>
-                </Link>
-              ))}
+            <div className="mt-5 grid gap-3 lg:grid-cols-5">
+              {journeyStages.map((stage, index) => {
+                const isDone = stage.state === "complete";
+                const isCurrent = stage.state === "current";
+                return (
+                  <Link
+                    key={stage.id}
+                    href={getJourneyStageHref(application, stage.id)}
+                    className={`group relative rounded-[24px] border p-4 transition hover:-translate-y-0.5 hover:shadow-[var(--ds-shadow-soft)] ${journeyStateClassName(stage.state)}`}
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <span className={`flex h-7 w-7 items-center justify-center rounded-full text-[11px] font-bold ${
+                        isDone
+                          ? "bg-[var(--ds-primary)] text-[var(--ds-on-primary)]"
+                          : isCurrent
+                            ? "bg-[var(--ds-primary)] text-[var(--ds-on-primary)] ring-4 ring-[var(--ds-primary)]/20"
+                            : "bg-[var(--ds-border)] text-[var(--ds-text-secondary)]"
+                      }`} aria-hidden="true">
+                        {isDone ? (
+                          <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg>
+                        ) : (
+                          index + 1
+                        )}
+                      </span>
+                      <span className={journeyStateBadgeClassName(stage.state)}>{t(getJourneyStateLabelKey(stage.state))}</span>
+                    </div>
+                    <p className="mt-4 text-[15px] font-semibold leading-snug text-[var(--ds-text-primary)]">
+                      {t(getJourneyStageTitleKey(stage.id))}
+                    </p>
+                    <p className="mt-1.5 text-sm leading-6 text-[var(--ds-text-secondary)]">
+                      {t(getJourneyStageDetailKey(stage.id), translationValues)}
+                    </p>
+                  </Link>
+                );
+              })}
             </div>
           </div>
         </section>
 
         <div className="mt-6 grid gap-6 lg:grid-cols-[260px_1fr]">
-          <aside className="space-y-4 lg:sticky lg:top-6 lg:self-start">
-            <section className="surface-card rounded-3xl p-4">
-              <div className="space-y-2">
-                {portalSections.map((section) => {
-                  const isActive = section.id === activeSection;
-                  const isLocked = section.state === "locked";
-                  const label = t(`admissions.portal.nav.${section.id}.label`);
-                  const content = (
-                    <div className="flex items-center justify-between gap-3">
-                      <span className="text-sm font-semibold">{label}</span>
-                      <span
-                        className={cn(
-                          "inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border transition-colors",
-                          portalSectionIconWrapClassName(section.state, isActive),
-                        )}
-                      >
-                        <SectionStateIcon state={section.state} />
-                        <span className="sr-only">{t(getPortalSectionStateLabelKey(section.state))}</span>
-                      </span>
-                    </div>
-                  );
-
-                  if (isLocked) {
-                    return (
-                      <div
-                        key={section.id}
-                        aria-disabled="true"
-                        className={cn(
-                          "block cursor-not-allowed rounded-2xl border px-4 py-3 transition",
-                          portalSectionClassName(section.state, isActive),
-                        )}
-                      >
-                        {content}
-                      </div>
-                    );
-                  }
-
-                  return (
-                    <Link
-                      key={section.id}
-                      href={getSectionHref(application.id, section.id as ParentApplicationSection)}
-                      className={cn(
-                        "block rounded-2xl border px-4 py-3 transition duration-200",
-                        portalSectionClassName(section.state, isActive),
-                      )}
-                    >
-                      {content}
-                    </Link>
-                  );
-                })}
-              </div>
-            </section>
+          <div className="space-y-4 lg:self-start">
+            <StickyAside
+              items={sectionNavItems}
+              eyebrow={t("ui.section_nav.eyebrow")}
+              ariaLabel={sectionNavAriaLabel}
+            />
 
             <section className="surface-card rounded-3xl p-4">
               <div className="space-y-3 text-sm">
@@ -775,7 +779,7 @@ export async function ParentApplicationDetailView({
                 ))}
               </div>
             </section>
-          </aside>
+          </div>
 
           <main className="space-y-4">
             <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
@@ -783,21 +787,25 @@ export async function ParentApplicationDetailView({
                 eyebrow={t("admissions.portal.overview.summary.payment_status")}
                 title={t(application.payment.statusLabelKey)}
                 detail={t(getPaymentDueContextKey(application))}
+                tone={application.payment.status === "paid" ? "positive" : "warning"}
               />
               <CompactCard
                 eyebrow={t("admissions.portal.overview.summary.document_status")}
                 title={t("admissions.portal.documents.progress_value", { done: uploadedDocuments, total: application.documents.length })}
                 detail={`${documentProgress}%`}
+                tone={uploadedDocuments === application.documents.length ? "positive" : "accent"}
               />
               <CompactCard
                 eyebrow={t("admissions.portal.schedule.status_label")}
                 title={t(application.assessment.statusLabelKey)}
                 detail={application.assessment.scheduleLabel ?? t(application.assessment.helperKey)}
+                tone={application.assessment.status === "completed" ? "positive" : "accent"}
               />
               <CompactCard
                 eyebrow={t("admissions.portal.decision_page.current_status_label")}
                 title={t(application.decision.statusLabelKey)}
                 detail={t(application.decision.helperKey)}
+                tone={application.decision.status === "offer_released" ? "positive" : "neutral"}
               />
             </section>
 
@@ -884,10 +892,13 @@ export async function ParentApplicationDetailView({
                     </div>
                   </div>
 
-                  <div className="mt-5 grid gap-3 lg:grid-cols-3">
+                  <div className="mt-6 grid gap-3 lg:grid-cols-3">
                     {application.payment.methods.map((method) => (
-                      <article key={method.id} className="rounded-[26px] border border-[var(--ds-border)] bg-[var(--ds-surface)] p-5 transition-transform duration-200 hover:-translate-y-0.5">
-                        <p className="text-base font-semibold text-[var(--ds-text-primary)]">{t(method.labelKey)}</p>
+                      <article key={method.id} className="group relative overflow-hidden rounded-[26px] border border-[var(--ds-border)] bg-[var(--ds-surface)] p-5 transition card-interactive">
+                        <span className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-xl bg-[var(--ds-primary)]/10 text-[var(--ds-primary)] transition group-hover:bg-[var(--ds-primary)] group-hover:text-[var(--ds-on-primary)]" aria-hidden="true">
+                          <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M13 5l7 7-7 7" /></svg>
+                        </span>
+                        <p className="pr-10 text-[15px] font-semibold text-[var(--ds-text-primary)]">{t(method.labelKey)}</p>
                         <p className="mt-2 text-sm leading-6 text-[var(--ds-text-secondary)]">{t(method.descriptionKey)}</p>
                       </article>
                     ))}
@@ -1080,13 +1091,16 @@ export async function ParentApplicationDetailView({
                       </div>
                     </div>
 
-                    <div className="mt-5 grid gap-3 lg:grid-cols-3">
+                    <div className="mt-6 grid gap-3 lg:grid-cols-3">
                       {availableSlots.map((slot) => (
-                        <article key={slot.id} className="rounded-[26px] border border-[var(--ds-border)] bg-[var(--ds-surface)] p-5 transition-transform duration-200 hover:-translate-y-0.5">
-                          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--ds-text-secondary)]">
+                        <article key={slot.id} className="group relative overflow-hidden rounded-[26px] border border-[var(--ds-border)] bg-[var(--ds-surface)] p-5 transition card-interactive">
+                          <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[var(--ds-primary)]/10 text-[var(--ds-primary)]" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" /><path d="M16 2v4M8 2v4M3 10h18" /></svg>
+                          </span>
+                          <p className="mt-4 text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--ds-text-secondary)]">
                             {t(slot.labelKey)}
                           </p>
-                          <p className="mt-3 text-lg font-semibold text-[var(--ds-text-primary)]">
+                          <p className="mt-2 text-lg font-semibold leading-snug text-[var(--ds-text-primary)]">
                             {formatDateTime(slot.startsAt, language)} WIB
                           </p>
                           <p className="mt-2 text-sm leading-6 text-[var(--ds-text-secondary)]">

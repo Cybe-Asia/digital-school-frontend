@@ -131,25 +131,32 @@ export default async function AdminLeadsPage({ searchParams }: LeadsPageProps) {
   const { rows, total } = payload.data ?? { rows: [], total: 0, limit, offset };
 
   return (
-    <div className="mx-auto max-w-6xl px-6 py-8">
-      <header className="mb-5 flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--ds-primary)]">
-            Admissions
-          </p>
-          <h1 className="mt-1 text-2xl font-semibold text-[var(--ds-text-primary)]">Leads</h1>
-          <p className="mt-1 text-sm text-[var(--ds-text-secondary)]">
-            {total.toLocaleString()} total · showing {rows.length} · offset {offset}
-          </p>
+    <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
+      <header className="surface-card mb-6 rounded-3xl p-6 sm:p-7">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="flex items-start gap-3">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[var(--ds-primary)]/10 text-[var(--ds-primary)]" aria-hidden="true">
+              <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 21l-4.35-4.35" /><circle cx="11" cy="11" r="8" /></svg>
+            </span>
+            <div>
+              <span className="eyebrow-chip">Inbound enquiries</span>
+              <h1 className="mt-3 text-[1.75rem] font-semibold leading-tight tracking-tight text-[var(--ds-text-primary)]">Leads</h1>
+              <p className="mt-1.5 text-sm text-[var(--ds-text-secondary)]">
+                <span className="font-semibold text-[var(--ds-text-primary)]">{total.toLocaleString()}</span> total ·
+                showing <span className="font-semibold text-[var(--ds-text-primary)]">{rows.length}</span> · offset {offset}
+              </p>
+            </div>
+          </div>
+          <nav>
+            <Link
+              href="/admin/admissions/applications"
+              className="cta-secondary gap-1.5"
+            >
+              Applications view
+              <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12h14M13 5l7 7-7 7" /></svg>
+            </Link>
+          </nav>
         </div>
-        <nav className="text-xs">
-          <Link
-            href="/admin/admissions/applications"
-            className="rounded-lg border border-[var(--ds-border)] bg-[var(--ds-surface)] px-3 py-1.5 font-semibold text-[var(--ds-text-primary)] hover:bg-[var(--ds-soft)]"
-          >
-            Applications view →
-          </Link>
-        </nav>
       </header>
 
       <LeadsFilterBar
@@ -167,66 +174,69 @@ export default async function AdminLeadsPage({ searchParams }: LeadsPageProps) {
           />
         </div>
       ) : (
-        <div className="mt-5 overflow-hidden rounded-2xl border border-[var(--ds-border)] bg-[var(--ds-surface)]">
-          <table className="w-full text-left text-sm">
-            <thead className="bg-[var(--ds-soft)] text-xs uppercase tracking-wider text-[var(--ds-text-secondary)]">
-              <tr>
-                <th className="px-4 py-3">Parent</th>
-                <th className="px-4 py-3">School</th>
-                <th className="px-4 py-3">Lead</th>
-                <th className="px-4 py-3">Application</th>
-                <th className="px-4 py-3">Students</th>
-                <th className="px-4 py-3">Latest payment</th>
-                <th className="px-4 py-3">Submitted</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((r) => (
-                <tr
-                  key={r.leadId}
-                  className="border-t border-[var(--ds-border)] hover:bg-[var(--ds-soft)]/40"
-                >
-                  <td className="px-4 py-3">
-                    <Link
-                      href={`/admin/admissions/leads/${encodeURIComponent(r.leadId)}`}
-                      className="block text-[var(--ds-text-primary)] hover:text-[var(--ds-primary)]"
-                    >
-                      <span className="font-semibold">{r.parentName || "—"}</span>
-                      <br />
-                      <span className="text-xs text-[var(--ds-text-secondary)]">{r.email}</span>
-                    </Link>
-                  </td>
-                  <td className="px-4 py-3 text-[var(--ds-text-primary)]">{r.school}</td>
-                  <td className="px-4 py-3">
-                    <StatusBadge status={r.leadStatus} size="sm" />
-                  </td>
-                  <td className="px-4 py-3">
-                    {r.applicationStatus ? (
-                      <StatusBadge status={r.applicationStatus} size="sm" />
-                    ) : (
-                      <span className="text-xs text-[var(--ds-text-secondary)]">—</span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 text-[var(--ds-text-primary)]">{r.applicantCount}</td>
-                  <td className="px-4 py-3">
-                    {r.latestPaymentStatus ? (
-                      <div>
-                        <StatusBadge status={r.latestPaymentStatus} size="sm" />
-                        <div className="mt-0.5 text-xs text-[var(--ds-text-secondary)]">
-                          {r.latestPaymentType ?? "—"}
-                        </div>
-                      </div>
-                    ) : (
-                      <span className="text-xs text-[var(--ds-text-secondary)]">—</span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 text-xs text-[var(--ds-text-secondary)]">
-                    {formatDate(r.submittedAt)}
-                  </td>
+        <div className="mt-6 overflow-hidden rounded-3xl border border-[var(--ds-border)] bg-[var(--ds-surface)] shadow-[var(--ds-shadow-soft)]">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <thead className="bg-[var(--ds-soft)]/60 text-[11px] uppercase tracking-[0.12em] text-[var(--ds-text-secondary)]">
+                <tr>
+                  <th className="px-5 py-3.5 font-bold">Parent</th>
+                  <th className="px-5 py-3.5 font-bold">School</th>
+                  <th className="px-5 py-3.5 font-bold">Lead</th>
+                  <th className="px-5 py-3.5 font-bold">Application</th>
+                  <th className="px-5 py-3.5 font-bold">Students</th>
+                  <th className="px-5 py-3.5 font-bold">Latest payment</th>
+                  <th className="px-5 py-3.5 font-bold">Submitted</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-[var(--ds-border)]/70">
+                {rows.map((r) => (
+                  <tr
+                    key={r.leadId}
+                    className="transition-colors hover:bg-[var(--ds-soft)]/40"
+                  >
+                    <td className="px-5 py-4">
+                      <Link
+                        href={`/admin/admissions/leads/${encodeURIComponent(r.leadId)}`}
+                        className="group block text-[var(--ds-text-primary)]"
+                      >
+                        <span className="font-semibold group-hover:text-[var(--ds-primary)]">{r.parentName || "—"}</span>
+                        <span className="mt-0.5 block text-xs text-[var(--ds-text-secondary)]">{r.email}</span>
+                      </Link>
+                    </td>
+                    <td className="px-5 py-4 text-[var(--ds-text-primary)]">{r.school}</td>
+                    <td className="px-5 py-4">
+                      <StatusBadge status={r.leadStatus} size="sm" />
+                    </td>
+                    <td className="px-5 py-4">
+                      {r.applicationStatus ? (
+                        <StatusBadge status={r.applicationStatus} size="sm" />
+                      ) : (
+                        <span className="text-xs text-[var(--ds-text-secondary)]">—</span>
+                      )}
+                    </td>
+                    <td className="px-5 py-4">
+                      <span className="inline-flex h-7 min-w-[28px] items-center justify-center rounded-full bg-[var(--ds-soft)] px-2 text-xs font-bold text-[var(--ds-text-primary)]">{r.applicantCount}</span>
+                    </td>
+                    <td className="px-5 py-4">
+                      {r.latestPaymentStatus ? (
+                        <div>
+                          <StatusBadge status={r.latestPaymentStatus} size="sm" />
+                          <div className="mt-1 text-xs text-[var(--ds-text-secondary)]">
+                            {r.latestPaymentType ?? "—"}
+                          </div>
+                        </div>
+                      ) : (
+                        <span className="text-xs text-[var(--ds-text-secondary)]">—</span>
+                      )}
+                    </td>
+                    <td className="px-5 py-4 text-xs text-[var(--ds-text-secondary)]">
+                      {formatDate(r.submittedAt)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 
