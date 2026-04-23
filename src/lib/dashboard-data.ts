@@ -475,7 +475,11 @@ export function getParentAdmissionsContextFromMePayload(payload: ParentMePayload
   if (!payload) return null;
 
   const { lead, students } = payload;
-  const school = lead.schoolSelection?.toLowerCase();
+  // admission-service stores schoolSelection as either raw "iiss"/"iihs"
+  // (legacy) or prefixed "SCH-IISS"/"SCH-IIHS" (current seed format).
+  // Strip the prefix before matching so both shapes land on the same
+  // dashboard context.
+  const school = lead.schoolSelection?.toLowerCase().replace(/^sch-/, "");
   if (school !== "iihs" && school !== "iiss") return null;
   if (!students || students.length === 0) return null;
 
