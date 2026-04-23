@@ -575,7 +575,9 @@ function buildAssessment(student: ParentMeRawStudent): ApplicationAssessment {
     };
   }
 
-  if (normalised === "test_pending" || normalised === "test_scheduled" || normalised === "assessment_scheduled") {
+  // test_scheduled = parent has actually booked a TestSession.
+  // assessment_scheduled is the legacy alias used by older demo seeds.
+  if (normalised === "test_scheduled" || normalised === "assessment_scheduled") {
     return {
       status: "scheduled",
       resultStatus: "pending",
@@ -583,6 +585,22 @@ function buildAssessment(student: ParentMeRawStudent): ApplicationAssessment {
       titleKey: "admissions.portal.assessment.title.scheduled",
       helperKey: "admissions.portal.assessment.helper.scheduled",
       ctaLabelKey: "admissions.portal.assessment.cta.reschedule",
+    };
+  }
+
+  // test_pending = admin-approved the student for testing, parent has
+  // NOT booked a session yet. This is the 'book now' CTA state — it
+  // must NOT render as 'scheduled' (the earlier bug showed a phantom
+  // 'Booked for .' tile on the overview after paying, even though no
+  // TestSession existed).
+  if (normalised === "test_pending") {
+    return {
+      status: "not_booked",
+      resultStatus: "pending",
+      statusLabelKey: "admissions.portal.assessment.status.not_booked",
+      titleKey: "admissions.portal.assessment.title.not_booked",
+      helperKey: "admissions.portal.assessment.helper.not_booked",
+      ctaLabelKey: "admissions.portal.assessment.cta.book_now",
     };
   }
 
