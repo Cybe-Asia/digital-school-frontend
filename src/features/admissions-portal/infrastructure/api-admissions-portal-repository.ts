@@ -108,28 +108,41 @@ function buildApplicationRecords(
   payload: ParentMeRichPayload,
   context: AdmissionsPortalContext,
 ): ApplicationRecord[] {
-  // Prefer the nested applications[] — one per ApplicantStudent, each with
-  // its own latestPayment. Fall back to flat students[] + single
-  // latestPayment when the backend hasn't rolled out the nested shape yet.
+  // The admission-service data model is: ONE Lead → ONE Application →
+  // MANY ApplicantStudents. `/me.applications[0].students[]` therefore
+  // enumerates every kid in the same Application. The dashboard iterates
+  // `payload.students` (flat, authoritative) when building each student
+  // card; we mirror that here so dashboard links like
+  // `/dashboard/parent/applications/student-2-fatima-.../documents`
+  // resolve to a real record instead of 404.
+  const flatStudents = payload.students ?? [];
   const nested = Array.isArray(payload.applications) ? payload.applications : [];
 
-  if (nested.length > 0) {
-    const records: ApplicationRecord[] = [];
-    nested.forEach((app, index) => {
-      const student = extractStudent(app.students, app.student, payload.students, index);
-      if (!student) return;
-      // Per-application lead overrides top-level lead for the owner/intake
-      // fields (an admin may assign different officers per application).
-      const leadForApp = { ...payload.lead, ...(app.lead ?? {}) } as ParentMeRichPayload["lead"];
-      records.push(buildRecord(context, student, index, app.latestPayment ?? null, leadForApp));
+  // Build a per-studentId payment lookup from the nested applications[]
+  // so if the backend ever splits invoices per child, we pick the right
+  // one. Today all kids share the Lead-scoped latestPayment.
+  const paymentByStudentId = new Map<string, ParentMeRawPayment>();
+  const leadByStudentId = new Map<string, ParentMeRichPayload["lead"]>();
+  nested.forEach((app) => {
+    const appLead = { ...payload.lead, ...(app.lead ?? {}) } as ParentMeRichPayload["lead"];
+    const appStudents = app.students ?? (app.student ? [app.student] : []);
+    appStudents.forEach((s) => {
+      if (s.studentId && app.latestPayment) {
+        paymentByStudentId.set(s.studentId, app.latestPayment);
+      }
+      if (s.studentId) leadByStudentId.set(s.studentId, appLead);
     });
-    if (records.length > 0) return records;
-  }
+  });
 
-  // Fallback: every student gets the same latestPayment (shared invoice).
-  return (payload.students ?? []).map((student, index) =>
-    buildRecord(context, student, index, payload.latestPayment ?? null, payload.lead),
-  );
+  return flatStudents.map((student, index) => {
+    const payment =
+      (student.studentId && paymentByStudentId.get(student.studentId)) ||
+      payload.latestPayment ||
+      null;
+    const leadForApp =
+      (student.studentId && leadByStudentId.get(student.studentId)) || payload.lead;
+    return buildRecord(context, student, index, payment, leadForApp);
+  });
 }
 
 function extractStudent(
