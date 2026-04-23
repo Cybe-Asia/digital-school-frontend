@@ -126,6 +126,9 @@ export type ApplicationDetail = ApplicationSummary & {
   lastUpdatedAt: string;
   admissionsOwner: string;
   intakeLabel: string;
+  /** Neo4j Student node id — required for the real test-booking POST.
+   *  Optional because older deep-link contexts may not carry it. */
+  studentId?: string;
   studentBirthDate?: string;
   familyNotes?: string;
   payment: ApplicationPayment;

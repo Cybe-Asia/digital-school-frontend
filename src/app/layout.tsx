@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
+import { Fraunces, Inter } from "next/font/google";
 import Providers from "@/app/providers";
 import type { ThemeId } from "@/components/theme-provider";
 import type { LanguageCode } from "@/components/language-provider";
@@ -13,6 +14,27 @@ import {
 } from "@/shared/lib/ui-preferences";
 import { resolveUnleashConfig } from "@/shared/feature-flags/runtime-config";
 import "./globals.css";
+
+// Parent-app font pairing (2026 redesign).
+//   display: Fraunces — a warm optical-sized serif. Gives headings a
+//            "parenting-app" softness; the opposite of the dry uniform
+//            sans that made the old revamp feel like a spreadsheet.
+//   body:    Inter — neutral, legible at 15-16px, pairs cleanly with
+//            Fraunces without competing for attention.
+// Exposed via CSS custom properties read by globals.css
+// (--font-sans-stack / --font-heading-stack).
+const bodyFont = Inter({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-parent-body",
+});
+
+const displayFont = Fraunces({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-parent-display",
+  axes: ["SOFT", "opsz"],
+});
 
 export const metadata: Metadata = {
   title: "TWSI Digital School Dashboard",
@@ -35,7 +57,21 @@ export default async function RootLayout({
   const featureFlagsConfig = resolveUnleashConfig();
 
   return (
-    <html lang={initialLanguage} data-theme={initialThemeId} suppressHydrationWarning>
+    <html
+      lang={initialLanguage}
+      data-theme={initialThemeId}
+      suppressHydrationWarning
+      className={`${bodyFont.variable} ${displayFont.variable}`}
+      style={{
+        // Wire the Next/font CSS variables into the globals.css stacks
+        // so parent-app surfaces pick up Inter + Fraunces automatically
+        // without admin pages (which rely on --ds-* tokens) changing
+        // fonts too — they inherit sans-serif via the same stack.
+        // @ts-expect-error - custom properties
+        "--font-sans-stack": `var(--font-parent-body), "Inter", "Segoe UI", sans-serif`,
+        "--font-heading-stack": `var(--font-parent-display), "Fraunces", Georgia, serif`,
+      }}
+    >
       <body className="antialiased">
         <Providers
           initialLanguage={initialLanguage}

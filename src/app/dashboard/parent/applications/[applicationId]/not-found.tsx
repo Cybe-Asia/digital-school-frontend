@@ -1,29 +1,26 @@
 import Link from "next/link";
 import { cookies } from "next/headers";
-import { PageHeader } from "@/components/ui/page-header";
-import { StatusPill } from "@/components/ui/status-pill";
+import { BigButton, KidAvatar, Screen, Tile } from "@/components/parent-ui";
 import { getParentApplications } from "@/features/admissions-portal/application/get-parent-applications";
 import { createAdmissionsPortalRepository } from "@/features/admissions-portal/infrastructure/create-admissions-portal-repository";
 import { fetchParentMe } from "@/features/admissions-portal/infrastructure/fetch-parent-me";
 import { getParentApplicationDetailHref } from "@/features/admissions-portal/presentation/lib/admissions-portal-routes";
 import { getParentAdmissionsContextFromMePayload } from "@/lib/dashboard-data";
 import { getServerI18n } from "@/i18n/server";
+import { ArrowIcon } from "@/components/parent-ui/icons";
 
 const SESSION_COOKIE_NAME = "ds-session";
 
 /**
- * Specific 404 page that replaces the generic Next.js `not-found` for the
- * parent application routes. Design principle #6: list the parent's real
- * children with their current status so they can recover with one click
- * instead of staring at "page not found".
+ * 404 for parent application routes. Redesigned 2026. Instead of a
+ * "page not found" with a breadcrumb + status pill, we use the warm
+ * parent canvas and list the parent's real kids so they can recover
+ * in one tap.
  */
 export default async function ParentApplicationNotFound() {
   const { t } = await getServerI18n();
 
-  // Fetch the parent's real children so we can list them. If the session
-  // is absent or the /me call fails, render a graceful fallback pointing
-  // back to the dashboard — we never want this page to itself 500.
-  let children: { id: string; studentName: string; statusLabel: string; statusRaw: string }[] = [];
+  let children: { id: string; studentName: string }[] = [];
   try {
     const cookieStore = await cookies();
     const token = cookieStore.get(SESSION_COOKIE_NAME)?.value;
@@ -37,8 +34,6 @@ export default async function ParentApplicationNotFound() {
           children = applications.map((app) => ({
             id: app.id,
             studentName: app.studentName,
-            statusLabel: t(app.statusLabelKey),
-            statusRaw: app.status,
           }));
         }
       }
@@ -48,64 +43,57 @@ export default async function ParentApplicationNotFound() {
   }
 
   return (
-    <div className="dashboard-bg min-h-screen pb-10 pt-6 sm:pt-10">
-      <div className="mx-auto max-w-3xl px-4 sm:px-6">
-        <div className="surface-card rounded-3xl p-5 sm:p-6">
-          <PageHeader
-            breadcrumbs={[
-              { label: t("ui.breadcrumb.home"), href: "/" },
-              { label: t("ui.breadcrumb.parent_dashboard"), href: "/parent/dashboard" },
-              { label: t("ui.breadcrumb.application") },
-            ]}
-            eyebrow={t("ui.breadcrumb.application")}
-            title={t("ui.not_found.title")}
-            subtitle={t("ui.not_found.description")}
-            size="compact"
-          />
+    <Screen>
+      <Tile variant="hero" className="mb-5">
+        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[color:var(--brand-strong)]">
+          404
+        </p>
+        <h1 className="parent-text-serif mt-2 text-[clamp(26px,5vw,34px)] leading-tight text-[color:var(--ink-900)]">
+          {t("ui.not_found.title")}
+        </h1>
+        <p className="mt-3 text-[15px] leading-relaxed text-[color:var(--ink-500)]">
+          {t("ui.not_found.description")}
+        </p>
+      </Tile>
 
-          <div className="mt-5">
-            {children.length === 0 ? (
-              <p className="rounded-2xl border border-[var(--ds-border)] bg-[var(--ds-soft)]/50 p-4 text-sm text-[var(--ds-text-primary)]">
-                {t("ui.not_found.no_students")}
-              </p>
-            ) : (
-              <>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--ds-text-secondary)]">
-                  {t("ui.not_found.students_header")}
+      {children.length > 0 ? (
+        <div className="space-y-3">
+          {children.map((child) => (
+            <Tile key={child.id} href={getParentApplicationDetailHref(child.id)}>
+              <div className="flex items-center gap-3">
+                <KidAvatar name={child.studentName} size={44} />
+                <p className="parent-text-serif flex-1 text-[17px] text-[color:var(--ink-900)]">
+                  {child.studentName}
                 </p>
-                <ul className="mt-3 space-y-2">
-                  {children.map((child) => (
-                    <li key={child.id}>
-                      <Link
-                        href={getParentApplicationDetailHref(child.id)}
-                        className="flex items-center justify-between gap-3 rounded-2xl border border-[var(--ds-border)] bg-[var(--ds-surface)] px-4 py-3 transition hover:border-[var(--ds-primary)]"
-                      >
-                        <span className="truncate text-sm font-semibold text-[var(--ds-text-primary)]">
-                          {child.studentName}
-                        </span>
-                        <StatusPill
-                          label={child.statusLabel || t("ui.not_found.child_status_fallback")}
-                          status={child.statusRaw}
-                          size="sm"
-                        />
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              </>
-            )}
-
-            <div className="mt-5">
-              <Link
-                href="/parent/dashboard"
-                className="cta-primary inline-flex rounded-xl px-4 py-2.5 text-sm font-semibold"
-              >
-                {t("ui.not_found.back_to_dashboard")}
-              </Link>
-            </div>
-          </div>
+                <span className="h-4 w-4 text-[color:var(--ink-400)]" aria-hidden="true">
+                  <ArrowIcon />
+                </span>
+              </div>
+            </Tile>
+          ))}
         </div>
+      ) : (
+        <Tile variant="flat">
+          <p className="text-sm text-[color:var(--ink-500)]">
+            {t("ui.not_found.no_students")}
+          </p>
+        </Tile>
+      )}
+
+      <div className="mt-6">
+        <BigButton href="/parent/dashboard" variant="ghost">
+          {t("ui.not_found.back_to_dashboard")}
+        </BigButton>
       </div>
-    </div>
+
+      <p className="mt-4 text-center text-sm">
+        <Link
+          href="/"
+          className="text-[color:var(--ink-400)] underline underline-offset-4"
+        >
+          {t("common.navigation.home")}
+        </Link>
+      </p>
+    </Screen>
   );
 }

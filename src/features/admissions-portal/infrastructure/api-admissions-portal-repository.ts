@@ -182,6 +182,11 @@ function buildRecord(
     lastUpdatedAt: payment?.paidAt ?? "",
     admissionsOwner,
     intakeLabel,
+    // Real Neo4j Student id — plumbed through for the schedule-booking
+    // POST so the parent can actually reserve a slot. Pre-/me deep
+    // links may omit this field, in which case the schedule view shows
+    // an inline "contact admissions" error instead of a dead button.
+    studentId: student.studentId,
     studentBirthDate: student.dateOfBirth,
     familyNotes: context.notes,
     payment: buildPayment(context, payment),

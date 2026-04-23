@@ -3,6 +3,8 @@ import { cookies } from "next/headers";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import DashboardShell from "@/components/dashboard-shell";
+import { BigButton, Screen, Tile } from "@/components/parent-ui";
+import { getServerI18n } from "@/i18n/server";
 import { getServerServiceEndpoints } from "@/features/admissions-auth/infrastructure/service-endpoints";
 import {
   getDashboardConfig,
@@ -147,7 +149,7 @@ export default async function ParentDashboardPage({ searchParams }: ParentDashbo
   const context = meContext ?? queryContext;
 
   if (!context) {
-    return <ParentDashboardError meResult={meResult} />;
+    return await renderParentDashboardError(meResult);
   }
 
   const latestPayment = meResult.kind === "ok" ? meResult.payload.latestPayment ?? null : null;
@@ -168,71 +170,38 @@ export default async function ParentDashboardPage({ searchParams }: ParentDashbo
   return <DashboardShell config={config} />;
 }
 
-function ParentDashboardError({ meResult }: { meResult: MeResult }) {
+async function renderParentDashboardError(meResult: MeResult) {
+  const { t } = await getServerI18n();
   const status = meResult.kind === "error" ? meResult.status : 0;
   const detail = meResult.kind === "error" ? meResult.detail : "No parent context returned";
   const isAuth = status === 401 || status === 403;
 
   return (
-    <div className="dashboard-bg min-h-screen pb-10">
-      <div className="mx-auto max-w-[760px] px-4 pt-10 sm:px-6">
-        <div className="surface-card rounded-3xl p-6 sm:p-8">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--ds-error,#b91c1c)]">
-            Dasbor tidak bisa dimuat
-          </p>
-          <h1 className="mt-2 text-2xl font-semibold text-[var(--ds-text-primary)]">
-            Kami tidak berhasil mengambil data keluarga Anda
-          </h1>
-          <p className="mt-3 text-sm leading-relaxed text-[var(--ds-text-secondary)]">
-            Dasbor Orang Tua menolak menampilkan data contoh. Ini adalah
-            kesalahan nyata dari layanan <code>/me</code>. Detail di bawah ini
-            membantu tim kami memperbaikinya.
-          </p>
-
-          <dl className="mt-6 grid gap-3 rounded-2xl border border-[var(--ds-border)] bg-[var(--ds-soft)]/40 p-4 text-sm">
-            <div className="flex items-start justify-between gap-4">
-              <dt className="font-semibold text-[var(--ds-text-secondary)]">HTTP status</dt>
-              <dd className="font-mono text-[var(--ds-text-primary)]">{status || "n/a"}</dd>
-            </div>
-            <div className="flex items-start justify-between gap-4">
-              <dt className="font-semibold text-[var(--ds-text-secondary)]">Detail</dt>
-              <dd className="max-w-[420px] break-words text-right font-mono text-xs text-[var(--ds-text-primary)]">
-                {detail}
-              </dd>
-            </div>
-          </dl>
-
-          <div className="mt-6 flex flex-wrap gap-3">
-            {isAuth ? (
-              <Link
-                href="/login"
-                className="cta-primary rounded-xl px-4 py-2 text-sm font-semibold"
-              >
-                Login ulang
-              </Link>
-            ) : (
-              <Link
-                href="/parent/dashboard"
-                className="cta-primary rounded-xl px-4 py-2 text-sm font-semibold"
-              >
-                Coba lagi
-              </Link>
-            )}
-            <Link
-              href="/"
-              className="rounded-xl border border-[var(--ds-border)] bg-[var(--ds-surface)] px-4 py-2 text-sm font-semibold text-[var(--ds-text-primary)]"
-            >
-              Kembali ke beranda
-            </Link>
-          </div>
-
-          <p className="mt-5 text-xs text-[var(--ds-text-secondary)]">
-            Catatan: kami sengaja TIDAK menampilkan dasbor contoh di sini —
-            kalau data keluarga tidak tersedia, kami lebih baik kelihatan
-            kosong daripada menunjukkan angka palsu.
-          </p>
+    <Screen>
+      <Tile variant="hero">
+        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[color:var(--warm-coral)]">
+          {t("parent.error.cant_load_title")}
+        </p>
+        <h1 className="parent-text-serif mt-3 text-[clamp(26px,5vw,34px)] leading-tight text-[color:var(--ink-900)]">
+          {t("parent.error.cant_load_body")}
+        </h1>
+        <p className="mt-3 font-mono text-[11px] text-[color:var(--ink-400)]">
+          {status || "n/a"} · {detail}
+        </p>
+        <div className="mt-6">
+          <BigButton href={isAuth ? "/login" : "/parent/dashboard"}>
+            {isAuth ? t("parent.error.to_login") : t("parent.error.retry")}
+          </BigButton>
         </div>
-      </div>
-    </div>
+        <div className="mt-3 text-center">
+          <Link
+            href="/"
+            className="text-sm text-[color:var(--ink-500)] underline underline-offset-4"
+          >
+            {t("common.navigation.home")}
+          </Link>
+        </div>
+      </Tile>
+    </Screen>
   );
 }
