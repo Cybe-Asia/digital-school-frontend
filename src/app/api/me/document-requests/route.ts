@@ -25,7 +25,10 @@ export async function POST(request: Request): Promise<Response> {
   }
 
   const { admission } = getServerServiceEndpoints();
-  const upstream = `${admission}/me/document-requests`;
+  // Admin-service exposes GET /me/document-requests (list) and
+  // POST /documents/upload (multipart upload). Route the upload
+  // body to the right path.
+  const upstream = `${admission}/documents/upload`;
 
   const contentType = request.headers.get("content-type") ?? "application/octet-stream";
   const body = await request.arrayBuffer();

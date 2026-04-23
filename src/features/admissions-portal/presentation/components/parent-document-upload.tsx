@@ -259,6 +259,17 @@ function DocumentRow({
             </span>
           ) : null}
 
+          {existing?.documentArtifactId ? (
+            <a
+              href={`/api/me/documents/${encodeURIComponent(existing.documentArtifactId)}/download`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="parent-ghost-btn w-auto px-4 py-2 text-sm"
+            >
+              {t("parent.documents.preview_cta")}
+            </a>
+          ) : null}
+
           <input
             ref={inputRef}
             type="file"

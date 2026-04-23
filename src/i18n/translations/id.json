@@ -1195,6 +1195,7 @@
   "parent.documents.required_helper": "Wajib diunggah — PDF atau foto.",
   "parent.documents.upload_cta": "Unggah",
   "parent.documents.replace_cta": "Ganti file",
+  "parent.documents.preview_cta": "Lihat",
   "parent.documents.uploading": "Mengunggah…",
   "parent.documents.type.birth_certificate": "Akta kelahiran",
   "parent.documents.type.family_card": "Kartu Keluarga",
