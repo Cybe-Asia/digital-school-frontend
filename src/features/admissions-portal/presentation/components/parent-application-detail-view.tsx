@@ -16,6 +16,7 @@ import {
 } from "@/features/admissions-portal/presentation/lib/admissions-portal-routes";
 import { ParentScheduleBooking } from "@/features/admissions-portal/presentation/components/parent-schedule-booking";
 import { ParentDocumentUpload } from "@/features/admissions-portal/presentation/components/parent-document-upload";
+import { WarnLinkClient } from "@/components/parent-ui/warn-link-client";
 import { KidAvatar, Screen, Tile, BigButton } from "@/components/parent-ui";
 import {
   ArrowIcon,
@@ -199,6 +200,9 @@ function OverviewScreen({
       href: getParentApplicationSectionHref(appId, "payment"),
       icon: <WalletIcon />,
       done: payment.status === "paid",
+      // Payment is never locked — parent should always be able to
+      // open it to pay or see receipt.
+      warn: null as null | { title: string; body: string },
     },
     {
       id: "schedule",
@@ -216,6 +220,12 @@ function OverviewScreen({
       done:
         application.assessment.status === "completed" ||
         application.assessment.status === "scheduled",
+      warn: assessmentLocked
+        ? {
+            title: t("parent.detail.warn.schedule_locked_title"),
+            body: t("parent.detail.warn.schedule_locked_body", { name: firstName }),
+          }
+        : null,
     },
     {
       id: "documents",
@@ -224,7 +234,14 @@ function OverviewScreen({
         docsMissing === 0
           ? t("parent.detail.card.documents_body_done")
           : docsLocked
-            ? t("parent.detail.card.schedule_body_locked")
+            ? // Docs are gated by `!isAssessmentPassed` — the test, NOT
+              // the payment. Use a distinct copy so parents don't get
+              // 'Available after payment' when payment is already done.
+              application.assessment.status === "scheduled"
+              ? t("parent.detail.card.documents_body_after_test")
+              : application.assessment.status === "not_booked"
+                ? t("parent.detail.card.documents_body_after_booking")
+                : t("parent.detail.card.documents_body_after_result")
             : t("parent.detail.card.documents_body_missing", {
                 missing: docsMissing,
                 total: docsTotal,
@@ -232,6 +249,12 @@ function OverviewScreen({
       href: getParentApplicationSectionHref(appId, "documents"),
       icon: <DocIcon />,
       done: docsMissing === 0,
+      warn: docsLocked
+        ? {
+            title: t("parent.detail.warn.documents_locked_title"),
+            body: t("parent.detail.warn.documents_locked_body", { name: firstName }),
+          }
+        : null,
     },
     {
       id: "decision",
@@ -245,6 +268,13 @@ function OverviewScreen({
       href: getParentApplicationSectionHref(appId, "decision"),
       icon: <CheckCircleIcon />,
       done: application.decision.status === "accepted",
+      warn:
+        application.decision.status === "pending" && docsLocked
+          ? {
+              title: t("parent.detail.warn.decision_locked_title"),
+              body: t("parent.detail.warn.decision_locked_body", { name: firstName }),
+            }
+          : null,
     },
   ];
 
@@ -275,8 +305,8 @@ function OverviewScreen({
       </p>
 
       <div className="space-y-3">
-        {cards.map((c) => (
-          <Tile key={c.id} href={c.href} className="group">
+        {cards.map((c) => {
+          const body = (
             <div className="flex items-center gap-3">
               <span
                 className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${
@@ -305,8 +335,22 @@ function OverviewScreen({
                 </span>
               </span>
             </div>
-          </Tile>
-        ))}
+          );
+          return (
+            <WarnLinkClient
+              key={c.id}
+              href={c.href}
+              className="parent-tile group block"
+              warn={Boolean(c.warn)}
+              warnTitle={c.warn?.title ?? ""}
+              warnBody={c.warn?.body ?? ""}
+              confirmLabel={t("parent.detail.warn.confirm")}
+              cancelLabel={t("parent.detail.warn.cancel")}
+            >
+              {body}
+            </WarnLinkClient>
+          );
+        })}
       </div>
     </>
   );

@@ -118,31 +118,64 @@ function buildApplicationRecords(
   const flatStudents = payload.students ?? [];
   const nested = Array.isArray(payload.applications) ? payload.applications : [];
 
-  // Build a per-studentId payment lookup from the nested applications[]
-  // so if the backend ever splits invoices per child, we pick the right
-  // one. Today all kids share the Lead-scoped latestPayment.
-  const paymentByStudentId = new Map<string, ParentMeRawPayment>();
+  // Build per-studentId lookups from the nested applications[]. The
+  // current admission-service model stores ONE latestPayment per
+  // Application regardless of how many students it contains — so a
+  // Lead-level payment (e.g. Ahmad's enrolment_fee) would otherwise
+  // leak onto every sibling's card as "All paid up", which is a lie
+  // for kids at an earlier funnel stage. We therefore ONLY inherit
+  // the Lead's payment for students whose applicantStatus is
+  // consistent with that payment type having been paid by them.
   const leadByStudentId = new Map<string, ParentMeRichPayload["lead"]>();
   nested.forEach((app) => {
     const appLead = { ...payload.lead, ...(app.lead ?? {}) } as ParentMeRichPayload["lead"];
     const appStudents = app.students ?? (app.student ? [app.student] : []);
     appStudents.forEach((s) => {
-      if (s.studentId && app.latestPayment) {
-        paymentByStudentId.set(s.studentId, app.latestPayment);
-      }
       if (s.studentId) leadByStudentId.set(s.studentId, appLead);
     });
   });
 
   return flatStudents.map((student, index) => {
-    const payment =
-      (student.studentId && paymentByStudentId.get(student.studentId)) ||
-      payload.latestPayment ||
-      null;
+    // Only inherit the Lead's latestPayment when the student is past
+    // the corresponding gate. An enrolment_fee payment only applies
+    // to kids that are actually enrolled (handed_to_sis / enroled /
+    // enrolment_paid). Siblings at earlier stages get `null` so
+    // their payment card renders the correct "no invoice yet" state
+    // instead of showing another kid's paid enrolment fee.
+    const payment = resolvePaymentForStudent(student, payload.latestPayment ?? null);
     const leadForApp =
       (student.studentId && leadByStudentId.get(student.studentId)) || payload.lead;
     return buildRecord(context, student, index, payment, leadForApp);
   });
+}
+
+function resolvePaymentForStudent(
+  student: ParentMeRawStudent,
+  leadPayment: ParentMeRawPayment | null,
+): ParentMeRawPayment | null {
+  if (!leadPayment) return null;
+  const status = (student.applicantStatus ?? "").toLowerCase();
+  const paymentType = (leadPayment.paymentType ?? "").toLowerCase();
+
+  // Enrolment-fee is uniquely personal — it belongs only to the student
+  // who actually accepted the offer and enrolled. Showing an enrolment
+  // fee on a sibling's card (at an earlier funnel stage) would claim
+  // "All paid up" for a kid who hasn't paid anything yet.
+  if (paymentType === "enrolment_fee") {
+    const enrolledStatuses = new Set([
+      "offer_accepted",
+      "enrolment_paid",
+      "enroled",
+      "handed_to_sis",
+    ]);
+    if (enrolledStatuses.has(status)) return leadPayment;
+    return null;
+  }
+
+  // Application-fee, registration, and any other Lead-scoped payment
+  // can safely inherit across kids — these fees generally cover the
+  // whole family funnel stage.
+  return leadPayment;
 }
 
 function extractStudent(
