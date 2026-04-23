@@ -69,12 +69,26 @@ export function LoginForm() {
 
     await setSession(result.accessToken);
 
-    if (result.redirectTo) {
-      // window.location.assign() instead of `href = …` so the
-      // react-hooks/immutability rule doesn't flag this as mutating
-      // an external binding. Semantically identical (hard nav).
-      window.location.assign(result.redirectTo);
+    // Admin-only accounts (e.g. a school staff email added to
+    // ADMIN_EMAILS but never filled an EOI) have no Lead under
+    // their User. Sending them to /parent/dashboard would show the
+    // "No lead found" error panel. Probe /api/me after the session
+    // is set; if it 404s, the user is admin-only and belongs on
+    // /admin/admissions. Everyone else follows the standard path.
+    let target = result.redirectTo ?? "/parent/dashboard";
+    try {
+      const me = await fetch("/api/me", { cache: "no-store" });
+      if (me.status === 404) {
+        target = "/admin/admissions";
+      }
+    } catch {
+      // Network blip — fall through to the standard target. The
+      // parent dashboard's own error panel handles the edge case.
     }
+    // window.location.assign() instead of `href = …` so the
+    // react-hooks/immutability rule doesn't flag this as mutating
+    // an external binding. Semantically identical (hard nav).
+    window.location.assign(target);
   });
 
   const onGoogleSignIn = async () => {

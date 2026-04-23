@@ -1318,5 +1318,7 @@
   "parent.error.cant_load_title": "Something went wrong loading your family",
   "parent.error.cant_load_body": "We couldn't reach our admissions system. Please try again in a moment.",
   "parent.error.retry": "Try again",
-  "parent.error.to_login": "Sign in again"
+  "parent.error.to_login": "Sign in again",
+  "parent.error.admin_only_body": "This account doesn't have a parent profile — looks like an admin account. Open the admin panel to continue.",
+  "parent.error.to_admin": "Open admin panel"
 }

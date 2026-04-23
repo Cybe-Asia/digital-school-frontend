@@ -1318,5 +1318,7 @@
   "parent.error.cant_load_title": "Maaf, data keluarga Anda belum bisa dimuat",
   "parent.error.cant_load_body": "Sistem admissions tidak bisa dijangkau. Coba lagi sebentar lagi ya.",
   "parent.error.retry": "Coba lagi",
-  "parent.error.to_login": "Masuk ulang"
+  "parent.error.to_login": "Masuk ulang",
+  "parent.error.admin_only_body": "Akun ini tidak punya data orang tua — tampaknya akun admin. Buka panel admin untuk melanjutkan.",
+  "parent.error.to_admin": "Buka panel admin"
 }

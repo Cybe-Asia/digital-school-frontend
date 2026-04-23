@@ -175,6 +175,9 @@ async function renderParentDashboardError(meResult: MeResult) {
   const status = meResult.kind === "error" ? meResult.status : 0;
   const detail = meResult.kind === "error" ? meResult.detail : "No parent context returned";
   const isAuth = status === 401 || status === 403;
+  // 404 here usually means "admin-only account with no Lead". Give
+  // them a direct link out instead of a generic 'try again'.
+  const looksLikeAdminOnly = status === 404 && detail.toLowerCase().includes("lead");
 
   return (
     <Screen>
@@ -183,14 +186,28 @@ async function renderParentDashboardError(meResult: MeResult) {
           {t("parent.error.cant_load_title")}
         </p>
         <h1 className="parent-text-serif mt-3 text-[clamp(26px,5vw,34px)] leading-tight text-[color:var(--ink-900)]">
-          {t("parent.error.cant_load_body")}
+          {looksLikeAdminOnly
+            ? t("parent.error.admin_only_body")
+            : t("parent.error.cant_load_body")}
         </h1>
         <p className="mt-3 font-mono text-[11px] text-[color:var(--ink-400)]">
           {status || "n/a"} · {detail}
         </p>
         <div className="mt-6">
-          <BigButton href={isAuth ? "/login" : "/parent/dashboard"}>
-            {isAuth ? t("parent.error.to_login") : t("parent.error.retry")}
+          <BigButton
+            href={
+              looksLikeAdminOnly
+                ? "/admin/admissions"
+                : isAuth
+                  ? "/login"
+                  : "/parent/dashboard"
+            }
+          >
+            {looksLikeAdminOnly
+              ? t("parent.error.to_admin")
+              : isAuth
+                ? t("parent.error.to_login")
+                : t("parent.error.retry")}
           </BigButton>
         </div>
         <div className="mt-3 text-center">
