@@ -140,21 +140,21 @@ function formatBirthDate(value: string | undefined, language: string): string | 
 }
 
 function getStudentPortalHref(
-  admissionsContext: NonNullable<DashboardConfig["admissionsContext"]>,
+  _admissionsContext: NonNullable<DashboardConfig["admissionsContext"]>,
   studentCard: ParentPortalExperience["studentCards"][number],
   index: number,
 ) {
   const applicationId = buildParentApplicationId(studentCard.studentName, index);
 
   if (studentCard.status === "attention_needed") {
-    return getParentApplicationSectionHref(admissionsContext, applicationId, "documents");
+    return getParentApplicationSectionHref(applicationId, "documents");
   }
 
   if (studentCard.status === "excellent") {
-    return getParentApplicationSectionHref(admissionsContext, applicationId, "schedule");
+    return getParentApplicationSectionHref(applicationId, "schedule");
   }
 
-  return getParentApplicationDetailHref(admissionsContext, applicationId);
+  return getParentApplicationDetailHref(applicationId);
 }
 
 export default async function DashboardShell({ config }: DashboardShellProps) {
@@ -172,14 +172,12 @@ export default async function DashboardShell({ config }: DashboardShellProps) {
   const firstApplicationHref =
     admissionsContext && admissionsContext.students[0]
       ? getParentApplicationDetailHref(
-          admissionsContext,
           buildParentApplicationId(admissionsContext.students[0].studentName, 0),
         )
       : null;
   const firstPaymentHref =
     admissionsContext && admissionsContext.students[0]
       ? getParentApplicationSectionHref(
-          admissionsContext,
           buildParentApplicationId(admissionsContext.students[0].studentName, 0),
           "payment",
         )

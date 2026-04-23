@@ -11,9 +11,24 @@ vi.mock("next/navigation", () => ({
   }),
 }));
 
+function stubFetch(impl: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>) {
+  vi.stubGlobal("fetch", vi.fn(impl));
+}
+
+function jsonResponse(status: number, body: unknown): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { "Content-Type": "application/json" },
+  });
+}
+
 describe("EOIForm", () => {
   beforeEach(() => {
     routerPush.mockReset();
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
   });
 
   it("shows validation errors for invalid submission", async () => {
@@ -54,8 +69,20 @@ describe("EOIForm", () => {
     expect(await screen.findByText("Enter the number of children currently enrolled.")).toBeInTheDocument();
   });
 
-  it("shows the mocked duplicate email error", async () => {
+  it("surfaces the backend duplicate-email error", async () => {
     const user = userEvent.setup();
+    stubFetch(async () =>
+      // submitAdmission returns the envelope shape. A duplicate email is
+      // a 409 with a structured responseError holding a fieldErrors bag.
+      jsonResponse(409, {
+        responseCode: 409,
+        responseMessage: "exists",
+        responseError: {
+          fieldErrors: { email: "response.eoi.exists" },
+        },
+        data: null,
+      }),
+    );
 
     render(
       <QueryProvider>
@@ -80,6 +107,16 @@ describe("EOIForm", () => {
 
   it("routes to the dedicated success page after submit", async () => {
     const user = userEvent.setup();
+    stubFetch(async () =>
+      jsonResponse(200, {
+        responseCode: 200,
+        responseMessage: "success",
+        data: {
+          lead_id: "lead-123",
+          email: "parent@example.com",
+        },
+      }),
+    );
 
     render(
       <QueryProvider>

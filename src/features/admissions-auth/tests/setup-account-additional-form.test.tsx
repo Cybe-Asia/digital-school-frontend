@@ -12,11 +12,50 @@ vi.mock("next/navigation", () => ({
   }),
 }));
 
+function jsonResponse(status: number, body: unknown): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { "Content-Type": "application/json" },
+  });
+}
+
 describe("SetupAccountAdditionalForm", () => {
   beforeEach(() => {
     routerPush.mockReset();
     sessionStorage.clear();
     sessionStorage.setItem("setup-access-token:admission:valid-token", "mock-jwt-token");
+    // The additional-details form reads the EOI setup context from the
+    // sessionStorage cache populated by verifyEmail on a prior page.
+    sessionStorage.setItem(
+      "admissions-setup-context-cache",
+      JSON.stringify({
+        "valid-token": {
+          parentName: "Siti Rahmawati",
+          email: "parent@example.com",
+          whatsapp: "+62 812 3456 7890",
+          locationSuburb: "South Jakarta",
+          occupation: "Entrepreneur",
+          hasExistingStudents: "no",
+          heardFrom: "social-media",
+          school: "iihs",
+        },
+      }),
+    );
+    // admission-service /students endpoint — returns 200 on success.
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () =>
+        jsonResponse(200, {
+          responseCode: 200,
+          responseMessage: "success",
+          data: { submitted: true },
+        }),
+      ),
+    );
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
   });
 
   it("shows missing token state", () => {
@@ -75,8 +114,8 @@ describe("SetupAccountAdditionalForm", () => {
     await user.click(screen.getByRole("button", { name: /save and continue/i }));
 
     // After submitting the students form, parents now go to the payment
-     // step (not the dashboard). Real profile data is loaded on the
-     // dashboard from the backend /me endpoint, so no params are passed.
+    // step (not the dashboard). Real profile data is loaded on the
+    // dashboard from the backend /me endpoint, so no params are passed.
     await waitFor(() => {
       expect(routerPush).toHaveBeenCalledWith(getSetupPaymentHref("valid-token"));
     });

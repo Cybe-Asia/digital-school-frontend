@@ -1,6 +1,38 @@
 import Link from "next/link";
 import { getServerI18n } from "@/i18n/server";
-import { dashboardData, dashboardRoles } from "@/lib/dashboard-data";
+
+/**
+ * Role entry-points on the landing page. Labels + destinations are the
+ * only things we're confident about; per-role "sample metrics" were
+ * dropped when the mock dashboardData fixtures were deleted — we would
+ * rather link plainly to each persona than show invented numbers on a
+ * public marketing page.
+ */
+const ROLE_ENTRIES: Array<{
+  href: string;
+  roleLabelKey: string;
+  titleKey: string;
+  subtitleKey: string;
+}> = [
+  {
+    href: "/dashboard/student",
+    roleLabelKey: "dashboard.student.role_label",
+    titleKey: "dashboard.student.title",
+    subtitleKey: "dashboard.student.subtitle",
+  },
+  {
+    href: "/parent/dashboard",
+    roleLabelKey: "dashboard.parent.role_label",
+    titleKey: "dashboard.parent.title",
+    subtitleKey: "dashboard.parent.subtitle",
+  },
+  {
+    href: "/admin/admissions",
+    roleLabelKey: "dashboard.staff.role_label",
+    titleKey: "dashboard.staff.title",
+    subtitleKey: "dashboard.staff.subtitle",
+  },
+];
 
 export default async function HomePageContent() {
   const { t } = await getServerI18n();
@@ -26,7 +58,7 @@ export default async function HomePageContent() {
               {t("home.hero.student_cta")}
             </Link>
             <Link
-              href="/dashboard/parent"
+              href="/parent/dashboard"
               className="rounded-xl border border-[var(--ds-border)] bg-[var(--ds-surface)] px-5 py-2.5 text-sm font-semibold text-[var(--ds-text-primary)]"
             >
               {t("home.hero.parent_cta")}
@@ -41,37 +73,21 @@ export default async function HomePageContent() {
         </section>
 
         <section className="mt-7 grid gap-4 md:grid-cols-3">
-          {dashboardRoles.map((role) => {
-            const data = dashboardData[role];
-
-            const roleHref = role === "staff" ? "/admin/admissions" : `/dashboard/${role}`;
-
-            return (
-              <article key={role} className="surface-card rounded-3xl p-5 sm:p-6">
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--ds-text-secondary)]">
-                  {t(data.roleLabelKey)}
-                </p>
-                <h2 className="mt-2 text-xl font-semibold text-[var(--ds-text-primary)]">{t(data.titleKey)}</h2>
-                <p className="mt-2 text-sm leading-relaxed text-[var(--ds-text-secondary)]">{t(data.subtitleKey)}</p>
-                <div className="mt-5 space-y-2">
-                  {data.metrics.slice(0, 3).map((metric) => (
-                    <div key={metric.labelKey} className="flex items-center justify-between rounded-xl bg-[var(--ds-soft)] px-3 py-2">
-                      <span className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--ds-text-secondary)]">
-                        {t(metric.labelKey)}
-                      </span>
-                      <span className="text-sm font-semibold text-[var(--ds-text-primary)]">{metric.value}</span>
-                    </div>
-                  ))}
-                </div>
-                <Link
-                  href={roleHref}
-                  className="mt-6 inline-flex rounded-xl bg-[var(--ds-primary)] px-4 py-2 text-sm font-semibold text-[var(--ds-on-primary)] transition hover:bg-[var(--ds-cta-fill-2)]"
-                >
-                  {t("home.role.view", { role: t(data.roleLabelKey) })}
-                </Link>
-              </article>
-            );
-          })}
+          {ROLE_ENTRIES.map((entry) => (
+            <article key={entry.roleLabelKey} className="surface-card rounded-3xl p-5 sm:p-6">
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--ds-text-secondary)]">
+                {t(entry.roleLabelKey)}
+              </p>
+              <h2 className="mt-2 text-xl font-semibold text-[var(--ds-text-primary)]">{t(entry.titleKey)}</h2>
+              <p className="mt-2 text-sm leading-relaxed text-[var(--ds-text-secondary)]">{t(entry.subtitleKey)}</p>
+              <Link
+                href={entry.href}
+                className="mt-6 inline-flex rounded-xl bg-[var(--ds-primary)] px-4 py-2 text-sm font-semibold text-[var(--ds-on-primary)] transition hover:bg-[var(--ds-cta-fill-2)]"
+              >
+                {t("home.role.view", { role: t(entry.roleLabelKey) })}
+              </Link>
+            </article>
+          ))}
         </section>
       </main>
     </div>

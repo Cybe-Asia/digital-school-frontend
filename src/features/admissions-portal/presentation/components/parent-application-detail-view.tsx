@@ -177,23 +177,22 @@ function getJourneyStageDetailKey(id: "registration" | "payment" | "schedule" | 
 }
 
 function getJourneyStageHref(
-  context: AdmissionsPortalContext,
   application: ApplicationDetail,
   id: "registration" | "payment" | "schedule" | "result" | "documents",
 ) {
   if (id === "registration") {
-    return getParentApplicationDetailHref(context, application.id);
+    return getParentApplicationDetailHref(application.id);
   }
 
   if (id === "payment") {
-    return getParentApplicationSectionHref(context, application.id, "payment");
+    return getParentApplicationSectionHref(application.id, "payment");
   }
 
   if (id === "documents") {
-    return getParentApplicationSectionHref(context, application.id, "documents");
+    return getParentApplicationSectionHref(application.id, "documents");
   }
 
-  return getParentApplicationSectionHref(context, application.id, "schedule");
+  return getParentApplicationSectionHref(application.id, "schedule");
 }
 
 function formatDate(value: string | undefined, language: string): string {
@@ -235,12 +234,12 @@ function getSchoolShortName(school: AdmissionsPortalContext["school"]) {
   return school === "iihs" ? "IIHS" : "IISS";
 }
 
-function getSectionHref(context: AdmissionsPortalContext, applicationId: string, section: ParentApplicationSection) {
+function getSectionHref(applicationId: string, section: ParentApplicationSection) {
   if (section === "overview") {
-    return getParentApplicationDetailHref(context, applicationId);
+    return getParentApplicationDetailHref(applicationId);
   }
 
-  return getParentApplicationSectionHref(context, applicationId, section);
+  return getParentApplicationSectionHref(applicationId, section);
 }
 
 function getDocumentActionLabelKey(
@@ -293,29 +292,28 @@ function getReadinessLabelKey(
 }
 
 function getReadinessActionHref(
-  context: AdmissionsPortalContext,
   application: ApplicationDetail,
   gate: "payment" | "documents" | "assessment",
 ) {
   if (gate === "payment") {
-    return getParentApplicationSectionHref(context, application.id, "payment");
+    return getParentApplicationSectionHref(application.id, "payment");
   }
 
   if (gate === "assessment") {
     return isAssessmentBookingLocked(application)
-      ? getParentApplicationSectionHref(context, application.id, "payment")
-      : getParentApplicationSectionHref(context, application.id, "schedule");
+      ? getParentApplicationSectionHref(application.id, "payment")
+      : getParentApplicationSectionHref(application.id, "schedule");
   }
 
   if (isAssessmentBookingLocked(application)) {
-    return getParentApplicationSectionHref(context, application.id, "payment");
+    return getParentApplicationSectionHref(application.id, "payment");
   }
 
   if (isDocumentUploadLocked(application)) {
-    return getParentApplicationSectionHref(context, application.id, "schedule");
+    return getParentApplicationSectionHref(application.id, "schedule");
   }
 
-  return getParentApplicationSectionHref(context, application.id, "documents");
+  return getParentApplicationSectionHref(application.id, "documents");
 }
 
 function getReadinessActionLabelKey(application: ApplicationDetail, gate: "payment" | "documents" | "assessment") {
@@ -367,9 +365,9 @@ function getCurrentJourneyDetailKey(
   return "admissions.portal.journey.step.registration.detail";
 }
 
-function getPaymentPrimaryActionHref(context: AdmissionsPortalContext, application: ApplicationDetail) {
+function getPaymentPrimaryActionHref(application: ApplicationDetail) {
   if (application.payment.status === "paid") {
-    return getParentApplicationSectionHref(context, application.id, "schedule");
+    return getParentApplicationSectionHref(application.id, "schedule");
   }
 
   return "#payment-methods";
@@ -405,13 +403,13 @@ function getSchedulePrimaryActionLabelKey(application: ApplicationDetail) {
   return "admissions.portal.schedule.primary_action.choose_slot";
 }
 
-function getSchedulePrimaryActionHref(context: AdmissionsPortalContext, application: ApplicationDetail) {
+function getSchedulePrimaryActionHref(application: ApplicationDetail) {
   if (isAssessmentBookingLocked(application)) {
-    return getParentApplicationSectionHref(context, application.id, "payment");
+    return getParentApplicationSectionHref(application.id, "payment");
   }
 
   if (application.assessment.status === "completed" && application.assessment.resultStatus === "passed") {
-    return getParentApplicationSectionHref(context, application.id, "documents");
+    return getParentApplicationSectionHref(application.id, "documents");
   }
 
   if (application.assessment.status === "completed") {
@@ -422,16 +420,15 @@ function getSchedulePrimaryActionHref(context: AdmissionsPortalContext, applicat
 }
 
 function getCurrentActionHref(
-  context: AdmissionsPortalContext,
   application: ApplicationDetail,
   journeyStageId: "registration" | "payment" | "schedule" | "result" | "documents",
 ) {
   if (journeyStageId === "payment") {
-    return getPaymentPrimaryActionHref(context, application);
+    return getPaymentPrimaryActionHref(application);
   }
 
   if (journeyStageId === "schedule") {
-    return getSchedulePrimaryActionHref(context, application);
+    return getSchedulePrimaryActionHref(application);
   }
 
   if (journeyStageId === "result") {
@@ -439,10 +436,10 @@ function getCurrentActionHref(
   }
 
   if (journeyStageId === "documents") {
-    return getParentApplicationSectionHref(context, application.id, "documents");
+    return getParentApplicationSectionHref(application.id, "documents");
   }
 
-  return getParentApplicationDetailHref(context, application.id);
+  return getParentApplicationDetailHref(application.id);
 }
 
 function getCurrentActionLabelKey(
@@ -527,10 +524,10 @@ export async function ParentApplicationDetailView({
   const assessmentGateDetailKey = assessmentBookingLocked ? getAssessmentPaymentGateKey(application.payment.status) : null;
   const documentGateDetailKey = documentUploadLocked ? getDocumentUploadGateKey(application) : null;
   const documentGateActionHref = assessmentBookingLocked
-    ? getParentApplicationSectionHref(context, application.id, "payment")
-    : getParentApplicationSectionHref(context, application.id, "schedule");
+    ? getParentApplicationSectionHref(application.id, "payment")
+    : getParentApplicationSectionHref(application.id, "schedule");
   const documentGateActionLabelKey = assessmentBookingLocked ? application.payment.ctaLabelKey : application.assessment.ctaLabelKey;
-  const primaryActionHref = getCurrentActionHref(context, application, currentJourneyStage.id);
+  const primaryActionHref = getCurrentActionHref(application, currentJourneyStage.id);
   const primaryActionLabelKey = getCurrentActionLabelKey(application, currentJourneyStage.id);
   const currentJourneyTitleKey = getJourneyStageTitleKey(currentJourneyStage.id);
   const currentJourneyDetailKey = getCurrentJourneyDetailKey(application, currentJourneyStage.id);
@@ -653,7 +650,7 @@ export async function ParentApplicationDetailView({
               {journeyStages.map((stage, index) => (
                 <Link
                   key={stage.id}
-                  href={getJourneyStageHref(context, application, stage.id)}
+                  href={getJourneyStageHref(application, stage.id)}
                   className={`group rounded-[24px] border p-3.5 transition-transform duration-200 hover:-translate-y-0.5 ${journeyStateClassName(stage.state)}`}
                 >
                   <div className="flex items-center justify-between gap-3">
@@ -715,7 +712,7 @@ export async function ParentApplicationDetailView({
                   return (
                     <Link
                       key={section.id}
-                      href={getSectionHref(context, application.id, section.id as ParentApplicationSection)}
+                      href={getSectionHref(application.id, section.id as ParentApplicationSection)}
                       className={cn(
                         "block rounded-2xl border px-4 py-3 transition duration-200",
                         portalSectionClassName(section.state, isActive),
@@ -763,7 +760,7 @@ export async function ParentApplicationDetailView({
                 {applications.map((item) => (
                   <Link
                     key={item.id}
-                    href={getParentApplicationDetailHref(context, item.id)}
+                    href={getParentApplicationDetailHref(item.id)}
                     className={`block rounded-2xl border px-4 py-3 transition ${
                       item.id === application.id
                         ? "border-[var(--ds-primary)] bg-[var(--ds-soft)]"
@@ -814,7 +811,7 @@ export async function ParentApplicationDetailView({
                       title={t(getReadinessLabelKey(application, gate, uploadedDocuments))}
                       action={
                         <Link
-                          href={getReadinessActionHref(context, application, gate)}
+                          href={getReadinessActionHref(application, gate)}
                           className="inline-flex rounded-xl border border-[var(--ds-border)] bg-[var(--ds-soft)] px-4 py-2 text-sm font-semibold text-[var(--ds-text-primary)]"
                         >
                           {t(getReadinessActionLabelKey(application, gate))}
@@ -857,7 +854,7 @@ export async function ParentApplicationDetailView({
                     detail={`${t("admissions.portal.payment.due_date_label")}: ${dueDateLabel}`}
                     action={
                       <Link
-                        href={getPaymentPrimaryActionHref(context, application)}
+                        href={getPaymentPrimaryActionHref(application)}
                         className={getPaymentPrimaryActionVariant(application)}
                       >
                         {t(getPaymentPrimaryActionLabelKey(application))}
@@ -1041,7 +1038,7 @@ export async function ParentApplicationDetailView({
                     title={t(application.assessment.statusLabelKey)}
                     detail={application.assessment.scheduleLabel ?? t(application.assessment.helperKey)}
                     action={
-                      <Link href={getSchedulePrimaryActionHref(context, application)} className="inline-flex cta-primary rounded-xl px-4 py-2.5 text-sm font-semibold">
+                      <Link href={getSchedulePrimaryActionHref(application)} className="inline-flex cta-primary rounded-xl px-4 py-2.5 text-sm font-semibold">
                         {t(getSchedulePrimaryActionLabelKey(application))}
                       </Link>
                     }
@@ -1100,7 +1097,7 @@ export async function ParentApplicationDetailView({
                         </p>
                       </div>
                       <Link
-                        href={getParentApplicationSectionHref(context, application.id, "payment")}
+                        href={getParentApplicationSectionHref(application.id, "payment")}
                         className="inline-flex shrink-0 items-center justify-center rounded-xl border border-[var(--ds-border)] bg-[var(--ds-surface)] px-4 py-2.5 text-sm font-semibold text-[var(--ds-text-primary)]"
                       >
                         {t(application.payment.ctaLabelKey)}

@@ -14,13 +14,13 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 ## Admissions Auth Environment
 
-Copy `.env.example` to `.env.local` and choose the admissions mode:
+Copy `.env.example` to `.env.local` and point the app at your backend gateway:
 
-- `NEXT_PUBLIC_ADMISSIONS_API_MODE=mock` uses the local mock repository and should be the default for local development.
-- `NEXT_PUBLIC_ADMISSIONS_API_MODE=real` uses the Next.js app as a same-origin proxy for admissions submission.
-- `ADMISSIONS_API_BASE_URL` is the preferred backend base URL for the proxy route.
-- `NEXT_PUBLIC_ADMISSIONS_API_BASE_URL` can mirror the backend URL when you want the local debug indicator to display it.
-- Preview and production environments should use `real`.
+- `NEXT_PUBLIC_API_GATEWAY_URL` (browser) and `API_GATEWAY_URL` (server) are the shared gateway URL.
+- `ADMISSIONS_API_BASE_URL` / `NEXT_PUBLIC_ADMISSIONS_API_BASE_URL` are kept as legacy fallbacks.
+- Per-service overrides (`NEXT_PUBLIC_ADMISSION_SERVICE_URL`, `NEXT_PUBLIC_AUTH_SERVICE_URL`, etc.) work for local dev.
+
+The mock mode has been removed — every form talks to the real backend through the gateway.
 
 Routes:
 
@@ -31,17 +31,18 @@ Routes:
 - Setup access method (post-OTP): `/auth/setup-account/method?token=...`
 - Google callback placeholder: `/auth/google/callback`
 
-Expected backend endpoints when `NEXT_PUBLIC_ADMISSIONS_API_MODE=real`:
+Backend endpoints called by the app:
 
 - `POST /api/v1/submitAdmission` (proxied through the frontend route at the same path)
-- `POST /admissions/auth/login`
-- `POST /admissions/auth/google/start`
-- `POST /admissions/auth/request-password-reset`
-- `GET /admissions/auth/setup-context?token=...`
-- `POST /admissions/auth/setup/send-otp`
-- `POST /admissions/auth/setup/verify-otp`
-- `POST /admissions/auth/setup-account`
-- `GET /admissions/eoi/leads` (prepared for future admissions admin UI)
+- `POST {auth}/login`
+- `POST {auth}/googleLogin`
+- `POST {auth}/request-password-reset`
+- `POST {auth}/createPassword`
+- `GET {auth}/accountStatus?email=...`
+- `GET {admission}/verifyEmail/{token}`
+- `GET {admission}/isVerify?lead_id=...`
+- `POST {admission}/students`
+- `POST {otp}/sendOTP`, `POST {otp}/verifyOTP`
 
 ## Quality Gate
 

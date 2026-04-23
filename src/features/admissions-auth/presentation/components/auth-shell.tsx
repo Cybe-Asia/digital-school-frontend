@@ -1,9 +1,7 @@
 import Link from "next/link";
-import { readAdmissionsAuthRuntimeConfig } from "@/features/admissions-auth/infrastructure/admissions-auth-runtime-config";
 import { getServerI18n } from "@/i18n/server";
 import { Card } from "@/shared/ui/card";
 import type { ReactNode } from "react";
-import { AdmissionsRuntimeIndicator } from "./admissions-runtime-indicator";
 import { AuthShellEffects } from "./auth-shell-effects";
 
 type AuthShellProps = {
@@ -26,8 +24,6 @@ export async function AuthShell({
   footerHref,
 }: AuthShellProps) {
   const { t } = await getServerI18n();
-  const runtimeConfig = readAdmissionsAuthRuntimeConfig();
-  const showRuntimeIndicator = process.env.NODE_ENV !== "production";
 
   return (
     <div className="auth-shell min-h-screen">
@@ -48,9 +44,6 @@ export async function AuthShell({
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--ds-primary)]">{t(eyebrow)}</p>
           <h2 className="mt-2 text-xl font-semibold text-[var(--ds-text-primary)] sm:text-2xl">{t(title)}</h2>
           <p className="mt-3 text-sm leading-relaxed text-[var(--ds-text-secondary)]">{t(description)}</p>
-          {showRuntimeIndicator ? (
-            <AdmissionsRuntimeIndicator mode={runtimeConfig.mode} baseUrl={runtimeConfig.baseUrl} />
-          ) : null}
           <div className="mt-5 sm:mt-6">{children}</div>
           {footerPrompt && footerLinkLabel && footerHref ? (
             <p className="mt-6 text-center text-sm leading-relaxed text-[var(--ds-text-secondary)] sm:mt-8">

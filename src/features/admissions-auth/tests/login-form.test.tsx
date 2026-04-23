@@ -3,7 +3,32 @@ import userEvent from "@testing-library/user-event";
 import { QueryProvider } from "@/components/query-provider";
 import { LoginForm } from "@/features/admissions-auth/presentation/components/login-form";
 
+function stubFetch(impl: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>) {
+  const fetchMock = vi.fn(impl);
+  vi.stubGlobal("fetch", fetchMock);
+  return fetchMock;
+}
+
+function jsonResponse(status: number, body: unknown): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { "Content-Type": "application/json" },
+  });
+}
+
 describe("LoginForm", () => {
+  beforeEach(() => {
+    // Prevent real navigation when the form succeeds.
+    Object.defineProperty(window, "location", {
+      configurable: true,
+      value: { assign: vi.fn(), href: "" },
+    });
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
   it("shows Google and reset-password options", () => {
     render(
       <QueryProvider>
@@ -31,8 +56,16 @@ describe("LoginForm", () => {
     expect(screen.queryByRole("combobox")).not.toBeInTheDocument();
   });
 
-  it("shows the mocked locked account error", async () => {
+  it("surfaces the backend locked-account error", async () => {
     const user = userEvent.setup();
+    stubFetch(async () =>
+      jsonResponse(403, {
+        responseCode: 403,
+        responseMessage: "locked",
+        responseError: { formError: "response.login.locked" },
+        data: null,
+      }),
+    );
 
     render(
       <QueryProvider>
@@ -45,14 +78,30 @@ describe("LoginForm", () => {
     await user.click(screen.getByRole("button", { name: /sign in to admissions/i }));
 
     await waitFor(() => {
-      expect(screen.getByText("This account needs help from admissions before it can sign in.")).toBeInTheDocument();
+      expect(
+        screen.getByText("This account needs help from admissions before it can sign in."),
+      ).toBeInTheDocument();
     });
-
-    expect(screen.queryByText("Sign-in simulated successfully.")).not.toBeInTheDocument();
   });
 
-  it("shows the mocked success state", async () => {
+  it("shows the success banner when the backend accepts credentials", async () => {
     const user = userEvent.setup();
+    stubFetch(async (input) => {
+      const url = String(input);
+      if (url.endsWith("/login")) {
+        return jsonResponse(200, {
+          responseCode: 200,
+          responseMessage: "success",
+          data: {
+            jwtAccessToken: "test-access-token",
+            refreshToken: "test-refresh-token",
+          },
+        });
+      }
+      // session-api POST /api/auth/session — return OK so the form
+      // can continue into the redirect branch.
+      return jsonResponse(200, { authenticated: true });
+    });
 
     render(
       <QueryProvider>

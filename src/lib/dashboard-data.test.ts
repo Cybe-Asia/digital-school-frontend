@@ -105,5 +105,20 @@ describe("dashboardData admissions context", () => {
     expect(config?.parentPortal?.sisToday).toEqual([]);
     expect(config?.parentPortal?.sisAbsencesToday).toBe(0);
     expect(config?.parentPortal?.hasUnpaidPayment).toBe(true);
+    // Tuition amount is no longer a hardcoded IDR value — it's an
+    // em-dash placeholder until the parent billing endpoint exists.
+    expect(config?.parentPortal?.paymentSummary.amount).toBe("—");
+    // Unread updates count is zero now that we no longer hardcode 3.
+    expect(config?.parentPortal?.unreadUpdates).toBe(0);
+  });
+
+  it("returns null for the parent role when no admissions context is supplied", () => {
+    expect(getDashboardConfig("parent", null)).toBeNull();
+    expect(getDashboardConfig("parent", undefined)).toBeNull();
+  });
+
+  it("returns null for the student and staff roles (no real API yet / redirected)", () => {
+    expect(getDashboardConfig("student")).toBeNull();
+    expect(getDashboardConfig("staff")).toBeNull();
   });
 });

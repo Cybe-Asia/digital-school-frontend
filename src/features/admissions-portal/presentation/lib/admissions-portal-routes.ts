@@ -1,5 +1,3 @@
-import type { AdmissionsPortalContext } from "@/features/admissions-portal/domain/types";
-
 export type ParentApplicationSection = "overview" | "payment" | "documents" | "schedule" | "decision";
 
 export function buildParentApplicationId(studentName: string, index: number): string {
@@ -12,35 +10,24 @@ export function buildParentApplicationId(studentName: string, index: number): st
   return `student-${index + 1}${normalized ? `-${normalized}` : ""}`;
 }
 
-export function getParentApplicationDetailHref(context: AdmissionsPortalContext, applicationId: string): string {
-  return `/dashboard/parent/applications/${encodeURIComponent(applicationId)}?${buildAdmissionsContextSearchParams(context).toString()}`;
+/**
+ * Build the canonical URL for a parent's application detail page. The
+ * destination page hydrates its own context from the `ds-session` cookie
+ * via the admission-service `/me` endpoint, so we no longer round-trip the
+ * admissions context through the query string.
+ */
+export function getParentApplicationDetailHref(applicationId: string): string {
+  return `/dashboard/parent/applications/${encodeURIComponent(applicationId)}`;
 }
 
+/**
+ * Build the canonical URL for a parent's application subsection (payment,
+ * documents, schedule, decision). See `getParentApplicationDetailHref` for
+ * why we no longer serialise context into the URL.
+ */
 export function getParentApplicationSectionHref(
-  context: AdmissionsPortalContext,
   applicationId: string,
   section: Exclude<ParentApplicationSection, "overview">,
 ): string {
-  return `/dashboard/parent/applications/${encodeURIComponent(applicationId)}/${section}?${buildAdmissionsContextSearchParams(context).toString()}`;
-}
-
-function buildAdmissionsContextSearchParams(context: AdmissionsPortalContext): URLSearchParams {
-  const params = new URLSearchParams({
-    parentName: context.parentName,
-    email: context.email,
-    school: context.school,
-    hasExistingStudents: context.hasExistingStudents,
-    locationSuburb: context.locationSuburb,
-    students: JSON.stringify(context.students),
-  });
-
-  if (context.existingChildrenCount !== undefined) {
-    params.set("existingChildrenCount", String(context.existingChildrenCount));
-  }
-
-  if (context.notes?.trim()) {
-    params.set("notes", context.notes.trim());
-  }
-
-  return params;
+  return `/dashboard/parent/applications/${encodeURIComponent(applicationId)}/${section}`;
 }

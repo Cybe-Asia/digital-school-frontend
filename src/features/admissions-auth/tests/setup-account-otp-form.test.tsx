@@ -12,6 +12,54 @@ vi.mock("next/navigation", () => ({
   }),
 }));
 
+function jsonResponse(status: number, body: unknown): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { "Content-Type": "application/json" },
+  });
+}
+
+/**
+ * Stubs fetch to return successful envelopes for the OTP endpoints. The
+ * exact URL shape depends on which OTP endpoint is being hit — sendOTP
+ * returns `{ otp, phoneNumber, expiredIn }`, verifyOTP returns
+ * `{ accessToken, admissionId, phoneNumber }`. Any other call (e.g. the
+ * session cookie POST) falls through to a plain 200.
+ */
+function stubHappyPathOtp() {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.endsWith("/sendOTP")) {
+        return jsonResponse(200, {
+          responseCode: 200,
+          responseMessage: "success",
+          data: {
+            phoneNumber: "628123456789",
+            otp: "1234",
+            expiredIn: 300,
+          },
+        });
+      }
+      if (url.endsWith("/verifyOTP")) {
+        return jsonResponse(200, {
+          responseCode: 200,
+          responseMessage: "success",
+          data: {
+            status: "verified",
+            accessToken: "mock-access",
+            admissionId: "valid-token",
+            phoneNumber: "628123456789",
+            jwtSessionToken: null,
+          },
+        });
+      }
+      return jsonResponse(200, { authenticated: true });
+    }),
+  );
+}
+
 describe("SetupAccountOtpForm", () => {
   beforeEach(() => {
     routerPush.mockReset();
@@ -20,6 +68,7 @@ describe("SetupAccountOtpForm", () => {
 
   afterEach(() => {
     vi.useRealTimers();
+    vi.unstubAllGlobals();
   });
 
   it("shows missing token state when no phoneNumber", () => {
@@ -34,6 +83,7 @@ describe("SetupAccountOtpForm", () => {
   });
 
   it("auto sends otp on page open and re-enables resend after 60 seconds", async () => {
+    stubHappyPathOtp();
     vi.useFakeTimers();
 
     render(
@@ -42,8 +92,10 @@ describe("SetupAccountOtpForm", () => {
       </QueryProvider>,
     );
 
+    // Let the auto-send OTP promise resolve so the component flips into
+    // the cooldown state before we start counting down.
     await act(async () => {
-      await vi.advanceTimersByTimeAsync(450);
+      await vi.advanceTimersByTimeAsync(0);
     });
 
     expect(screen.getByRole("button", { name: /resend available in 60s/i })).toBeDisabled();
@@ -58,6 +110,7 @@ describe("SetupAccountOtpForm", () => {
   });
 
   it("verifies otp and moves to the next page", async () => {
+    stubHappyPathOtp();
     const user = userEvent.setup();
 
     render(
@@ -81,6 +134,7 @@ describe("SetupAccountOtpForm", () => {
   });
 
   it("supports pasting the otp into the first slot", async () => {
+    stubHappyPathOtp();
     const user = userEvent.setup();
 
     render(

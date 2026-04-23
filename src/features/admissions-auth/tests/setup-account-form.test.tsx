@@ -10,9 +10,25 @@ vi.mock("next/navigation", () => ({
   }),
 }));
 
+function stubFetch(impl: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>) {
+  vi.stubGlobal("fetch", vi.fn(impl));
+}
+
+function jsonResponse(status: number, body: unknown): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { "Content-Type": "application/json" },
+  });
+}
+
 describe("SetupAccountForm", () => {
   beforeEach(() => {
     routerPush.mockReset();
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    sessionStorage.clear();
   });
 
   it("shows missing token state when neither token nor admissionId is provided", () => {
@@ -27,10 +43,15 @@ describe("SetupAccountForm", () => {
   });
 
   it("shows error state for invalid token", async () => {
-    // The mock repository rejects `invalid-token` (and empty token).
-    // `expired-token` is not in the rejection list — it returns the
-    // happy-path admission payload, which is why the previous test
-    // name was misleading and the assertion never matched.
+    stubFetch(async () =>
+      jsonResponse(400, {
+        responseCode: 400,
+        responseMessage: "invalid token",
+        responseError: { formError: "response.verification.invalid_token" },
+        data: null,
+      }),
+    );
+
     render(
       <QueryProvider>
         <SetupAccountForm token="invalid-token" admissionId="" />
@@ -43,6 +64,28 @@ describe("SetupAccountForm", () => {
   });
 
   it("shows the continue button when verification succeeds", async () => {
+    stubFetch(async () =>
+      jsonResponse(200, {
+        responseCode: 200,
+        responseMessage: "success",
+        data: {
+          admissionId: "adm-1",
+          email: "parent@example.com",
+          parentName: "Siti Rahmawati",
+          whatsappNumber: "+62 812 3456 7890",
+          schoolSelection: "IIHS",
+          location: "South Jakarta",
+          occupation: "Engineer",
+          hearAboutSchool: "Social Media",
+          referralCode: null,
+          existingStudents: 0,
+          isVerified: true,
+          createdAt: "2026-01-01T00:00:00Z",
+          updatedAt: "2026-01-01T00:00:00Z",
+        },
+      }),
+    );
+
     render(
       <QueryProvider>
         <SetupAccountForm token="valid-token" admissionId="" />
