@@ -404,13 +404,14 @@ function buildPayment(
     methods: [...PAYMENT_METHODS],
     lineItems: buildPaymentLineItems(payment),
     updates: buildPaymentUpdates(status),
+    hostedInvoiceUrl: payment?.hostedInvoiceUrl ?? null,
   };
 }
 
 function formatAmount(
   raw: number | string | null | undefined,
   currency: string | null | undefined,
-  school: SchoolCode,
+  _school: SchoolCode,
 ): string {
   const numeric = typeof raw === "number" ? raw : raw ? Number(raw) : NaN;
   if (Number.isFinite(numeric) && numeric > 0) {
@@ -419,9 +420,9 @@ function formatAmount(
     const prefix = currency && currency !== "IDR" ? currency : "Rp";
     return `${prefix} ${formatter.format(numeric)}`;
   }
-  // Fallback to registration defaults when the backend hasn't issued an
-  // invoice yet — keeps the summary legible instead of blank.
-  return school === "iihs" ? "Rp 2.400.000" : "Rp 2.100.000";
+  // No invoice yet — render an em-dash. The UI must branch on this
+  // (e.g. 'No invoice yet') instead of showing a fabricated default.
+  return "—";
 }
 
 /**

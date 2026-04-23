@@ -17,12 +17,14 @@ import {
 import { ParentScheduleBooking } from "@/features/admissions-portal/presentation/components/parent-schedule-booking";
 import { ParentDocumentUpload } from "@/features/admissions-portal/presentation/components/parent-document-upload";
 import { WarnLinkClient } from "@/components/parent-ui/warn-link-client";
+import { PayButtonClient } from "@/components/parent-ui/pay-button-client";
 import { KidAvatar, Screen, Tile, BigButton } from "@/components/parent-ui";
 import {
   ArrowIcon,
   CalendarIcon,
   CheckCircleIcon,
   DocIcon,
+  LockIcon,
   WalletIcon,
 } from "@/components/parent-ui/icons";
 import { getServerI18n } from "@/i18n/server";
@@ -80,6 +82,7 @@ export async function ParentApplicationDetailView({
           t={t}
           application={application}
           firstName={firstName}
+          admissionId={context.admissionId}
         />
       ) : null}
 
@@ -306,17 +309,22 @@ function OverviewScreen({
 
       <div className="space-y-3">
         {cards.map((c) => {
+          const locked = Boolean(c.warn);
           const body = (
-            <div className="flex items-center gap-3">
+            <div className={`flex items-center gap-3 ${locked ? "opacity-60" : ""}`}>
               <span
                 className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${
                   c.done
                     ? "bg-[color:var(--brand-soft)] text-[color:var(--brand-strong)]"
-                    : "bg-[color:var(--cream-100)] text-[color:var(--ink-500)]"
+                    : locked
+                      ? "bg-[color:var(--ink-100,#f0ece6)] text-[color:var(--ink-500)]"
+                      : "bg-[color:var(--cream-100)] text-[color:var(--ink-500)]"
                 }`}
                 aria-hidden="true"
               >
-                <span className="h-5 w-5">{c.icon}</span>
+                <span className="h-5 w-5">
+                  {locked ? <LockIcon /> : c.icon}
+                </span>
               </span>
               <div className="min-w-0 flex-1">
                 <p className="parent-text-serif text-[18px] leading-tight text-[color:var(--ink-900)]">
@@ -327,7 +335,11 @@ function OverviewScreen({
                 </p>
               </div>
               <span
-                className="text-[color:var(--ink-400)] group-hover:text-[color:var(--brand)]"
+                className={`${
+                  locked
+                    ? "text-[color:var(--ink-400)]"
+                    : "text-[color:var(--ink-400)] group-hover:text-[color:var(--brand)]"
+                }`}
                 aria-hidden="true"
               >
                 <span className="inline-block h-5 w-5">
@@ -340,8 +352,10 @@ function OverviewScreen({
             <WarnLinkClient
               key={c.id}
               href={c.href}
-              className="parent-tile group block"
-              warn={Boolean(c.warn)}
+              className={`parent-tile group block ${
+                locked ? "parent-tile--locked" : ""
+              }`}
+              warn={locked}
               warnTitle={c.warn?.title ?? ""}
               warnBody={c.warn?.body ?? ""}
               confirmLabel={t("parent.detail.warn.confirm")}
@@ -362,26 +376,37 @@ function PaymentScreen({
   t,
   application,
   firstName,
+  admissionId,
 }: {
   t: (key: string, values?: Record<string, string | number>) => string;
   application: ApplicationDetail;
   firstName: string;
+  admissionId: string | undefined;
 }) {
   const payment = application.payment;
   const paid = payment.status === "paid";
+  const hasRealAmount = payment.amount && payment.amount !== "—";
 
   return (
     <>
-      <StudentHeader
-        t={t}
-        studentName={application.studentName}
-        firstName={firstName}
-        stageKey={
-          paid
-            ? "parent.detail.card.payment_body_paid"
-            : "parent.detail.card.payment_body_unpaid"
-        }
-      />
+      <header className="mb-6 flex items-center gap-4">
+        <KidAvatar name={application.studentName} size={56} />
+        <div className="min-w-0 flex-1">
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[color:var(--brand-strong)]">
+            {t("parent.detail.status_eyebrow", { name: firstName })}
+          </p>
+          <h1 className="parent-text-serif mt-1 text-[clamp(24px,4.5vw,30px)] leading-tight text-[color:var(--ink-900)]">
+            {paid
+              ? t("parent.detail.payment.header_paid", { name: firstName })
+              : hasRealAmount
+                ? t("parent.detail.payment.header_due", {
+                    name: firstName,
+                    amount: payment.amount,
+                  })
+                : t("parent.detail.payment.header_none", { name: firstName })}
+          </h1>
+        </div>
+      </header>
 
       {paid ? (
         <Tile variant="celebrate">
@@ -403,47 +428,39 @@ function PaymentScreen({
             </p>
           </div>
         </Tile>
+      ) : !hasRealAmount ? (
+        <Tile variant="flat">
+          <p className="text-[15px] leading-relaxed text-[color:var(--ink-500)]">
+            {t("parent.detail.payment.none_body", { name: firstName })}
+          </p>
+        </Tile>
       ) : (
-        <>
-          <Tile variant="hero">
-            <p className="parent-focus__eyebrow">
-              {t("admissions.portal.payment.amount_label")}
-            </p>
-            <p className="parent-text-serif mt-1 text-[clamp(36px,7vw,52px)] leading-none text-[color:var(--ink-900)]">
-              {payment.amount}
-            </p>
-            <p className="mt-3 text-[15px] leading-relaxed text-[color:var(--ink-500)]">
-              {t(payment.helperKey)}
-            </p>
-            <div className="mt-6">
-              <BigButton href="#pay-methods">
-                {t("parent.detail.payment.pay_now")}
-                <span className="h-4 w-4">
-                  <ArrowIcon />
-                </span>
-              </BigButton>
-            </div>
-          </Tile>
-
-          <h3
-            id="pay-methods"
-            className="parent-text-serif mt-8 text-[20px] text-[color:var(--ink-900)]"
-          >
-            {t("parent.detail.payment.method_heading")}
-          </h3>
-          <div className="mt-3 space-y-3">
-            {payment.methods.map((m) => (
-              <Tile key={m.id}>
-                <p className="parent-text-serif text-[17px] text-[color:var(--ink-900)]">
-                  {t(m.labelKey)}
-                </p>
-                <p className="mt-1 text-sm text-[color:var(--ink-500)]">
-                  {t(m.descriptionKey)}
-                </p>
-              </Tile>
-            ))}
+        <Tile variant="hero">
+          <p className="parent-focus__eyebrow">
+            {t("admissions.portal.payment.amount_label")}
+          </p>
+          <p className="parent-text-serif mt-1 text-[clamp(36px,7vw,52px)] leading-none text-[color:var(--ink-900)]">
+            {payment.amount}
+          </p>
+          <p className="mt-3 text-[15px] leading-relaxed text-[color:var(--ink-500)]">
+            {t(payment.helperKey)}
+          </p>
+          <div className="mt-6">
+            {admissionId ? (
+              <PayButtonClient
+                admissionId={admissionId}
+                existingInvoiceUrl={payment.hostedInvoiceUrl}
+              />
+            ) : (
+              <p className="text-sm text-[color:var(--ink-500)]">
+                {t("parent.detail.payment.xendit_missing_lead")}
+              </p>
+            )}
           </div>
-        </>
+          <p className="mt-4 text-xs text-[color:var(--ink-500)]">
+            {t("parent.detail.payment.xendit_disclosure")}
+          </p>
+        </Tile>
       )}
     </>
   );

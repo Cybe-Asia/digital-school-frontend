@@ -73,5 +73,6 @@ function toPortalContext(
     existingChildrenCount: context.existingChildrenCount,
     locationSuburb: context.locationSuburb,
     notes: context.notes,
+    admissionId: payload?.lead?.admissionId,
   };
 }

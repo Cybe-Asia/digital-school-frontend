@@ -859,6 +859,20 @@ a.parent-tile:hover {
   border-color: color-mix(in srgb, var(--brand) 40%, var(--line));
 }
 
+/* Locked-tile treatment: upstream stage not complete. The parent can
+   still tap (a warn dialog then explains), but the tile reads as
+   unavailable — dashed border, muted surface, no hover lift. */
+.parent-tile--locked {
+  border-style: dashed;
+  border-color: color-mix(in srgb, var(--ink-300, #d0cabe) 80%, transparent);
+  background: color-mix(in srgb, var(--cream-100, #f6f1e6) 70%, transparent);
+}
+a.parent-tile--locked:hover {
+  transform: none;
+  box-shadow: none;
+  border-color: color-mix(in srgb, var(--ink-300, #d0cabe) 80%, transparent);
+}
+
 .parent-big-btn {
   display: inline-flex;
   align-items: center;

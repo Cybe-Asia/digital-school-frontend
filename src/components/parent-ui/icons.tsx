@@ -93,6 +93,13 @@ export const ArrowIcon = () => (
   </Ic>
 );
 
+export const LockIcon = () => (
+  <Ic>
+    <rect x="4" y="11" width="16" height="10" rx="2" />
+    <path d="M8 11V7a4 4 0 1 1 8 0v4" />
+  </Ic>
+);
+
 export const LogoutIcon = () => (
   <Ic>
     <path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3" />

@@ -29,6 +29,10 @@ export type AdmissionsPortalContext = {
   existingChildrenCount?: number;
   locationSuburb: string;
   notes?: string;
+  /** Lead admissionId (e.g. LEAD-DEMO-001). Required for the Xendit
+   *  invoice-create flow — payment-service uses it to find the lead
+   *  and the active FeeStructure. */
+  admissionId?: string;
 };
 
 export type ApplicationSummary = {
@@ -89,6 +93,11 @@ export type ApplicationPayment = {
   methods: ApplicationPaymentMethod[];
   lineItems: ApplicationPaymentLineItem[];
   updates: ApplicationPaymentUpdate[];
+  /** When the Xendit invoice has already been created, this is the
+   *  hosted checkout URL the parent should be sent to. Null when no
+   *  invoice exists yet (the PayButtonClient will call the backend to
+   *  create one). */
+  hostedInvoiceUrl?: string | null;
 };
 
 export type ApplicationDocument = {
