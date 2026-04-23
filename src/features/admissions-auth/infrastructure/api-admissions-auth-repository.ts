@@ -484,8 +484,18 @@ function toHeardAboutSchool(value: EOIInput["heardFrom"]): string {
   return HEARD_FROM_LABELS[value] ?? value;
 }
 
-function toSchoolSelection(value: SchoolCode): Uppercase<SchoolCode> {
-  return value.toUpperCase() as Uppercase<SchoolCode>;
+/**
+ * Map the client enum ("iihs" | "iiss") to the canonical backend
+ * school code ("SCH-IIHS" | "SCH-IISS"). The `SCH-` prefix is what
+ * every downstream service stores and looks up on — payment-service
+ * matches it against School.school_code to resolve the FeeStructure,
+ * and admission-service stores it verbatim on Lead.target_school_
+ * preference. Sending just "IIHS"/"IISS" would cause a 404 on
+ * /api/v1/payments/preview because no School node has that as its
+ * school_code.
+ */
+function toSchoolSelection(value: SchoolCode): `SCH-${Uppercase<SchoolCode>}` {
+  return `SCH-${value.toUpperCase() as Uppercase<SchoolCode>}`;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
