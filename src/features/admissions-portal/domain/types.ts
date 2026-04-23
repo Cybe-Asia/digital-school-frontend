@@ -59,9 +59,15 @@ export type ApplicationPaymentMethod = {
 
 export type ApplicationPaymentLineItem = {
   id: string;
-  labelKey: string;
+  /** i18n key for the line-item label. Optional so items coming from the
+   *  backend (`label`) can render their own description verbatim. */
+  labelKey?: string;
+  /** Literal line-item label, taken directly from the backend invoice.
+   *  When set, the UI renders this instead of `labelKey`. */
+  label?: string;
   amount: string;
-  helperKey: string;
+  /** Optional helper copy. Backend-sourced items normally omit it. */
+  helperKey?: string;
 };
 
 export type ApplicationPaymentUpdate = {

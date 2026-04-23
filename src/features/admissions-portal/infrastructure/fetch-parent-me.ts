@@ -35,6 +35,13 @@ export type ParentMeRawPayment = {
   dueAt?: string | null;
   invoiceNumber?: string | null;
   referenceNumber?: string | null;
+  /** Real per-invoice line items from the admission-service. Each entry
+   *  is rendered verbatim — description text is backend-owned. */
+  lineItems?: Array<{
+    description: string;
+    amount: number;
+    currency: string;
+  }>;
 };
 
 export type ParentMeApplication = {

@@ -351,7 +351,7 @@ function buildPayment(
     helperKey,
     ctaLabelKey,
     methods: [...PAYMENT_METHODS],
-    lineItems: buildPaymentLineItems(context.school),
+    lineItems: buildPaymentLineItems(payment),
     updates: buildPaymentUpdates(status),
   };
 }
@@ -373,53 +373,31 @@ function formatAmount(
   return school === "iihs" ? "Rp 2.400.000" : "Rp 2.100.000";
 }
 
-function buildPaymentLineItems(school: SchoolCode): ApplicationPaymentLineItem[] {
-  // TODO(admissions-portal): the backend doesn't break the invoice into line
-  // items yet, so we synthesise defaults matching the price sheet. Remove
-  // once Payment-service returns itemised rows.
-  if (school === "iihs") {
-    return [
-      {
-        id: "registration",
-        labelKey: "admissions.portal.payment.line.registration",
-        amount: "Rp 1.800.000",
-        helperKey: "admissions.portal.payment.line.registration_helper",
-      },
-      {
-        id: "assessment",
-        labelKey: "admissions.portal.payment.line.assessment",
-        amount: "Rp 400.000",
-        helperKey: "admissions.portal.payment.line.assessment_helper",
-      },
-      {
-        id: "onboarding",
-        labelKey: "admissions.portal.payment.line.onboarding",
-        amount: "Rp 200.000",
-        helperKey: "admissions.portal.payment.line.onboarding_helper",
-      },
-    ];
-  }
+/**
+ * Map the backend-provided invoice line items into the UI shape. Returns
+ * an empty array when the backend hasn't itemised the invoice — the UI
+ * surfaces a "breakdown not available" empty state rather than fabricated
+ * defaults.
+ */
+function buildPaymentLineItems(
+  payment: ParentMeRawPayment | null,
+): ApplicationPaymentLineItem[] {
+  const items = payment?.lineItems ?? [];
+  if (items.length === 0) return [];
 
-  return [
-    {
-      id: "registration",
-      labelKey: "admissions.portal.payment.line.registration",
-      amount: "Rp 1.600.000",
-      helperKey: "admissions.portal.payment.line.registration_helper",
-    },
-    {
-      id: "assessment",
-      labelKey: "admissions.portal.payment.line.assessment",
-      amount: "Rp 300.000",
-      helperKey: "admissions.portal.payment.line.assessment_helper",
-    },
-    {
-      id: "onboarding",
-      labelKey: "admissions.portal.payment.line.onboarding",
-      amount: "Rp 200.000",
-      helperKey: "admissions.portal.payment.line.onboarding_helper",
-    },
-  ];
+  return items.map((item, index) => ({
+    id: `line-${index + 1}`,
+    label: item.description,
+    amount: formatLineItemAmount(item.amount, item.currency),
+  }));
+}
+
+function formatLineItemAmount(amount: number, currency: string): string {
+  const numeric = Number.isFinite(amount) ? amount : 0;
+  const locale = currency === "IDR" || !currency ? "id-ID" : "en-US";
+  const formatter = new Intl.NumberFormat(locale, { maximumFractionDigits: 0 });
+  const prefix = currency && currency !== "IDR" ? currency : "Rp";
+  return `${prefix} ${formatter.format(numeric)}`;
 }
 
 function buildPaymentUpdates(status: PaymentStatus): ApplicationPayment["updates"] {

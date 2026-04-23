@@ -2,6 +2,35 @@ import type { AdmissionsStudentProfile, SchoolCode } from "@/features/admissions
 import { getSingleSearchParam, type SearchParamsRecord } from "@/shared/lib/search-params";
 
 export type DashboardRole = "student" | "parent" | "staff";
+
+/**
+ * Real message record surfaced on the parent "updates" feed. Populated by
+ * the admission-service /me/messages endpoint (proxied via
+ * /api/me/messages). The `title` and `body` strings originate from the
+ * backend and are rendered as-is — they are the only user-facing strings
+ * on the updates card that intentionally bypass i18n.
+ */
+export type ParentMessage = {
+  messageId: string;
+  title: string;
+  body: string;
+  category: "admissions" | "school" | "family" | string;
+  isRead: boolean;
+  createdAt: string;
+  readAt?: string | null;
+};
+
+/**
+ * Invoice line item surfaced on both the parent dashboard payment card and
+ * the per-application payment detail. Populated by the admission-service
+ * /me response (latestPayment.lineItems / applications[].latestPayment.
+ * lineItems). Description comes from the backend and renders verbatim.
+ */
+export type ParentPaymentLineItem = {
+  description: string;
+  amount: number;
+  currency: string;
+};
 export type PriorityId = "high" | "medium" | "low";
 export type StatusId =
   | "excellent"
@@ -138,10 +167,18 @@ export type ParentPortalExperience = {
     ctaLabelKey: string;
   };
   updates: Array<{
-    titleKey: string;
-    detailKey: string;
+    /** Fallback i18n key for the update title. Optional so rows can be
+     *  populated directly from backend-owned strings via `title`. */
+    titleKey: string | null;
+    detailKey: string | null;
     detailValues?: TranslationValues;
     tagKey: string;
+    /** Literal title (e.g. from backend message record). When set, the
+     *  shell prefers it over `titleKey`. */
+    title?: string;
+    /** Literal detail body (e.g. from backend message record). When set,
+     *  the shell prefers it over `detailKey`. */
+    detail?: string;
   }>;
   /** Per-kid SIS snapshot shown inside the "SIS today" section. Empty
    *  array when no kid is enrolled yet — the section simply hides. */
@@ -268,6 +305,8 @@ export function getDashboardConfig(
   admissionsContext?: ParentAdmissionsContext | null,
   sisSnapshot?: ParentSisSnapshot | null,
   latestPayment?: ParentMePayload["latestPayment"] | null,
+  messages?: ParentMessage[],
+  unreadMessageCount?: number | null,
 ): DashboardConfig | null {
   // The student persona dashboard still needs a real API. Until a backend
   // persona/student endpoint lands, return null and let the route render
@@ -292,7 +331,13 @@ export function getDashboardConfig(
     if (!admissionsContext) {
       return null;
     }
-    return createParentAdmissionsDashboard(admissionsContext, sisSnapshot ?? null, latestPayment ?? null);
+    return createParentAdmissionsDashboard(
+      admissionsContext,
+      sisSnapshot ?? null,
+      latestPayment ?? null,
+      messages ?? [],
+      unreadMessageCount ?? null,
+    );
   }
 
   return null;
@@ -335,7 +380,11 @@ export type ParentMePayload = {
     currency?: string | null;
     hostedInvoiceUrl?: string | null;
     paidAt?: string | null;
+    lineItems?: ParentPaymentLineItem[];
   } | null;
+  /** Sum of unread messages across all leads this parent owns. Used as
+   *  the authoritative unread badge on the updates nav item. */
+  unreadMessageCount?: number;
 };
 
 /**
@@ -434,13 +483,22 @@ function createParentAdmissionsDashboard(
   context: ParentAdmissionsContext,
   sis: ParentSisSnapshot | null,
   latestPayment?: ParentMePayload["latestPayment"] | null,
+  messages: ParentMessage[] = [],
+  unreadMessageCount: number | null = null,
 ): DashboardConfig {
   const primaryStudent = context.students[0];
   const linkedStudents = context.hasExistingStudents === "yes"
     ? (context.existingChildrenCount ?? 0) + context.students.length
     : context.students.length;
   const schoolName = context.school === "iihs" ? "IIHS" : "IISS";
-  const parentPortal = buildParentPortalExperience(context, schoolName, sis, latestPayment);
+  const parentPortal = buildParentPortalExperience(
+    context,
+    schoolName,
+    sis,
+    latestPayment,
+    messages,
+    unreadMessageCount,
+  );
 
   // --- Real SIS rollups (fall back to zeros / admissions-stage text when no
   //     SIS data is present yet, e.g. kid still in test/docs stage).
@@ -761,6 +819,8 @@ function buildParentPortalExperience(
   schoolShortName: string,
   sis: ParentSisSnapshot | null,
   latestPayment?: ParentMePayload["latestPayment"] | null,
+  messages: ParentMessage[] = [],
+  unreadMessageCount: number | null = null,
 ): ParentPortalExperience {
   const todayIso = new Date().toISOString().slice(0, 10);
   const attendance = sis?.attendance ?? [];
@@ -997,13 +1057,10 @@ function buildParentPortalExperience(
         href: "#admissions-timeline",
       };
 
-  // Payment card. Uses the real latestPayment from /me when present.
-  // Recurring monthly tuition doesn't have a parent-scoped endpoint yet,
-  // so anything past the admissions-stage fee is still blank — but as
-  // long as the last admissions payment is known, we surface its real
-  // amount + status instead of a placeholder.
-  // TODO(real API): once a recurring billing endpoint ships, merge
-  // monthly tuition with the admissions-stage fee into a single queue.
+  // Payment card. Reflects the admissions-stage invoice returned by /me
+  // (`latestPayment`). During admissions this is the right figure to
+  // surface; once the child is enrolled and a separate billing surface
+  // exists, the card will be reworked rather than guessed at here.
   const paymentStatus = latestPayment?.status ?? null;
   const paymentIsUnpaid =
     paymentStatus === "pending" || paymentStatus === "expired" || paymentStatus === "failed";
@@ -1117,33 +1174,47 @@ function buildParentPortalExperience(
       helperValues: { school: schoolShortName },
       ctaLabelKey: "dashboard.parent.portal.payments.cta",
     },
-    updates: [
-      {
-        titleKey: "dashboard.parent.portal.updates.orientation.title",
-        detailKey: "dashboard.parent.portal.updates.orientation.detail",
-        detailValues: { school: schoolShortName },
-        tagKey: "dashboard.parent.portal.updates.tag.school",
-      },
-      {
-        titleKey: "dashboard.parent.portal.updates.documents.title",
-        detailKey: "dashboard.parent.portal.updates.documents.detail",
-        detailValues: { count: context.students.length },
-        tagKey: "dashboard.parent.portal.updates.tag.admissions",
-      },
-      {
-        titleKey: "dashboard.parent.portal.updates.contact.title",
-        detailKey: "dashboard.parent.portal.updates.contact.detail",
-        detailValues: { email: context.email },
-        tagKey: "dashboard.parent.portal.updates.tag.family",
-      },
-    ],
+    // Updates feed is populated from the real /me/messages inbox. When
+    // no messages exist yet we render a single empty-state row so the
+    // card doesn't look broken.
+    updates: buildUpdatesFeed(messages),
     sisToday,
     sisAbsencesToday,
-    // TODO: real API — unread-updates count needs a messages/inbox
-    // endpoint; for now we surface zero rather than a canned "3".
-    unreadUpdates: 0,
+    // Unread count reflects /me's authoritative `unreadMessageCount`
+    // (summed across every lead this parent owns). Falls back to the
+    // list-side count if the field hasn't been returned.
+    unreadUpdates:
+      typeof unreadMessageCount === "number" && unreadMessageCount >= 0
+        ? unreadMessageCount
+        : messages.filter((m) => !m.isRead).length,
     hasUnpaidPayment,
   };
+}
+
+/**
+ * Build the parent-facing updates feed from real messages. Sorts newest
+ * first, caps to the top 5, and renders an empty-state row when the
+ * inbox is empty.
+ */
+function buildUpdatesFeed(messages: ParentMessage[]): ParentPortalExperience["updates"] {
+  if (messages.length === 0) {
+    return [
+      {
+        titleKey: "dashboard.parent.portal.updates.empty",
+        detailKey: null,
+        tagKey: "dashboard.parent.portal.updates.tag.school",
+      },
+    ];
+  }
+
+  const sorted = [...messages].sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
+  return sorted.slice(0, 5).map((m) => ({
+    titleKey: null,
+    title: m.title,
+    detailKey: null,
+    detail: m.body,
+    tagKey: `dashboard.parent.portal.updates.tag.${m.category}`,
+  }));
 }
 
 function buildParentPortalNavItems(

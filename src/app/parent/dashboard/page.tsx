@@ -9,6 +9,7 @@ import {
   getParentAdmissionsContextFromMePayload,
   getParentAdmissionsContextFromSearchParams,
   type ParentMePayload,
+  type ParentMessage,
   type ParentSisSnapshot,
 } from "@/lib/dashboard-data";
 import en from "@/i18n/translations/en.json";
@@ -63,6 +64,30 @@ async function loadParentMe(): Promise<MeResult> {
   }
 }
 
+/**
+ * Fetch the parent's inbox from the admission-service. Returns [] on any
+ * failure so a messages-system outage can never blank the rest of the
+ * dashboard — the updates card falls back to its empty-state row.
+ */
+async function loadParentMessages(): Promise<ParentMessage[]> {
+  const cookieStore = await cookies();
+  const token = cookieStore.get(SESSION_COOKIE_NAME)?.value;
+  if (!token) return [];
+  const { admission } = getServerServiceEndpoints();
+  try {
+    const res = await fetch(`${admission}/me/messages`, {
+      method: "GET",
+      headers: { Authorization: `Bearer ${token}` },
+      cache: "no-store",
+    });
+    if (!res.ok) return [];
+    const body = (await res.json().catch(() => null)) as { data?: unknown } | null;
+    return Array.isArray(body?.data) ? (body!.data as ParentMessage[]) : [];
+  } catch {
+    return [];
+  }
+}
+
 async function loadParentSisSnapshot(): Promise<ParentSisSnapshot> {
   const cookieStore = await cookies();
   const token = cookieStore.get(SESSION_COOKIE_NAME)?.value;
@@ -111,7 +136,11 @@ export default async function ParentDashboardPage({ searchParams }: ParentDashbo
     redirect("/login");
   }
 
-  const [meResult, sisSnap] = await Promise.all([loadParentMe(), loadParentSisSnapshot()]);
+  const [meResult, sisSnap, messages] = await Promise.all([
+    loadParentMe(),
+    loadParentSisSnapshot(),
+    loadParentMessages(),
+  ]);
 
   const meContext =
     meResult.kind === "ok" ? getParentAdmissionsContextFromMePayload(meResult.payload) : null;
@@ -122,7 +151,18 @@ export default async function ParentDashboardPage({ searchParams }: ParentDashbo
   }
 
   const latestPayment = meResult.kind === "ok" ? meResult.payload.latestPayment ?? null : null;
-  const config = getDashboardConfig("parent", context, sisSnap, latestPayment);
+  const unreadMessageCount =
+    meResult.kind === "ok" && typeof meResult.payload.unreadMessageCount === "number"
+      ? meResult.payload.unreadMessageCount
+      : null;
+  const config = getDashboardConfig(
+    "parent",
+    context,
+    sisSnap,
+    latestPayment,
+    messages,
+    unreadMessageCount,
+  );
   if (!config) notFound();
 
   return <DashboardShell config={config} />;

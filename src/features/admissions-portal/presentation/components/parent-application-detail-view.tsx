@@ -899,15 +899,29 @@ export async function ParentApplicationDetailView({
                     {t("admissions.portal.compact.invoice_breakdown")}
                   </summary>
                   <div className="mt-4 divide-y divide-[var(--ds-border)] rounded-2xl border border-[var(--ds-border)]">
-                    {application.payment.lineItems.map((lineItem) => (
-                      <div key={lineItem.id} className="grid gap-2 px-4 py-4 sm:grid-cols-[1fr_auto]">
-                        <div>
-                          <p className="text-sm font-semibold text-[var(--ds-text-primary)]">{t(lineItem.labelKey)}</p>
-                          <p className="mt-1 text-sm text-[var(--ds-text-secondary)]">{t(lineItem.helperKey)}</p>
-                        </div>
-                        <p className="text-sm font-semibold text-[var(--ds-text-primary)]">{lineItem.amount}</p>
+                    {application.payment.lineItems.length === 0 ? (
+                      <div className="px-4 py-4">
+                        <p className="text-sm text-[var(--ds-text-secondary)]">
+                          {t("admissions.portal.payment.breakdown.empty")}
+                        </p>
                       </div>
-                    ))}
+                    ) : (
+                      application.payment.lineItems.map((lineItem) => {
+                        const labelText = lineItem.label ?? (lineItem.labelKey ? t(lineItem.labelKey) : "");
+                        const helperText = lineItem.helperKey ? t(lineItem.helperKey) : null;
+                        return (
+                          <div key={lineItem.id} className="grid gap-2 px-4 py-4 sm:grid-cols-[1fr_auto]">
+                            <div>
+                              <p className="text-sm font-semibold text-[var(--ds-text-primary)]">{labelText}</p>
+                              {helperText ? (
+                                <p className="mt-1 text-sm text-[var(--ds-text-secondary)]">{helperText}</p>
+                              ) : null}
+                            </div>
+                            <p className="text-sm font-semibold text-[var(--ds-text-primary)]">{lineItem.amount}</p>
+                          </div>
+                        );
+                      })
+                    )}
                   </div>
                 </details>
 

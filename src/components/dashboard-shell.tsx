@@ -717,17 +717,26 @@ export default async function DashboardShell({ config }: DashboardShellProps) {
                         {t("dashboard.parent.portal.updates.heading")}
                       </h3>
                       <div className="mt-5 space-y-3">
-                        {parentPortal.updates.map((update, index) => (
-                          <div key={`${update.titleKey}-${index}`} className="rounded-2xl border border-[var(--ds-border)] bg-[var(--ds-soft)]/35 p-4">
-                            <div className="flex items-center justify-between gap-3">
-                              <p className="text-sm font-semibold text-[var(--ds-text-primary)]">{t(update.titleKey)}</p>
-                              <span className="rounded-full bg-[var(--ds-surface)] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--ds-text-secondary)]">
-                                {t(update.tagKey)}
-                              </span>
+                        {parentPortal.updates.map((update, index) => {
+                          const displayTitle =
+                            update.title ?? (update.titleKey ? t(update.titleKey) : "");
+                          const displayDetail =
+                            update.detail ?? (update.detailKey ? t(update.detailKey, update.detailValues) : "");
+                          const rowKey = `${update.titleKey ?? update.title ?? "update"}-${index}`;
+                          return (
+                            <div key={rowKey} className="rounded-2xl border border-[var(--ds-border)] bg-[var(--ds-soft)]/35 p-4">
+                              <div className="flex items-center justify-between gap-3">
+                                <p className="text-sm font-semibold text-[var(--ds-text-primary)]">{displayTitle}</p>
+                                <span className="rounded-full bg-[var(--ds-surface)] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--ds-text-secondary)]">
+                                  {t(update.tagKey)}
+                                </span>
+                              </div>
+                              {displayDetail ? (
+                                <p className="mt-2 text-sm leading-relaxed text-[var(--ds-text-secondary)]">{displayDetail}</p>
+                              ) : null}
                             </div>
-                            <p className="mt-2 text-sm leading-relaxed text-[var(--ds-text-secondary)]">{t(update.detailKey, update.detailValues)}</p>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     </article>
 
