@@ -225,6 +225,8 @@
   "dashboard.parent.portal.payments.description": "Keep an eye on enrollment fees so admissions can move into the final confirmation stage without delay.",
   "dashboard.parent.portal.payments.amount_label": "Current amount due",
   "dashboard.parent.portal.payments.status.pending": "Pending payment",
+  "dashboard.parent.portal.payments.status.paid": "Paid",
+  "dashboard.parent.portal.payments.status.none": "No invoice",
   "dashboard.parent.portal.payments.helper": "Registration invoice prepared for {school}.",
   "dashboard.parent.portal.payments.cta": "Review payment details",
   "dashboard.parent.portal.updates.title": "Updates & Notes",

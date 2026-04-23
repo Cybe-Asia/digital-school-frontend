@@ -121,7 +121,8 @@ export default async function ParentDashboardPage({ searchParams }: ParentDashbo
     return <ParentDashboardError meResult={meResult} />;
   }
 
-  const config = getDashboardConfig("parent", context, sisSnap);
+  const latestPayment = meResult.kind === "ok" ? meResult.payload.latestPayment ?? null : null;
+  const config = getDashboardConfig("parent", context, sisSnap, latestPayment);
   if (!config) notFound();
 
   return <DashboardShell config={config} />;

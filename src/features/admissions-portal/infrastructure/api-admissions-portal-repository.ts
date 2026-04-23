@@ -118,14 +118,17 @@ function buildApplicationRecords(
     nested.forEach((app, index) => {
       const student = extractStudent(app.students, app.student, payload.students, index);
       if (!student) return;
-      records.push(buildRecord(context, student, index, app.latestPayment ?? null));
+      // Per-application lead overrides top-level lead for the owner/intake
+      // fields (an admin may assign different officers per application).
+      const leadForApp = { ...payload.lead, ...(app.lead ?? {}) } as ParentMeRichPayload["lead"];
+      records.push(buildRecord(context, student, index, app.latestPayment ?? null, leadForApp));
     });
     if (records.length > 0) return records;
   }
 
   // Fallback: every student gets the same latestPayment (shared invoice).
   return (payload.students ?? []).map((student, index) =>
-    buildRecord(context, student, index, payload.latestPayment ?? null),
+    buildRecord(context, student, index, payload.latestPayment ?? null, payload.lead),
   );
 }
 
@@ -146,9 +149,16 @@ function buildRecord(
   student: ParentMeRawStudent,
   index: number,
   payment: ParentMeRawPayment | null,
+  lead: ParentMeRichPayload["lead"],
 ): ApplicationRecord {
   const studentName = student.fullName?.trim() || `Student ${index + 1}`;
   const summary: ApplicationSummary = buildSummary(student, studentName, index, payment);
+  // Prefer real backend values; fall back to per-school defaults only
+  // when the lead hasn't been picked up yet, so the UI label is never
+  // blank. Any admin assignment overrides the fallback.
+  const admissionsOwner =
+    lead?.assignedAdminName?.trim() || admissionsOwnerFor(context.school);
+  const intakeLabel = lead?.intakeLabel?.trim() || intakeLabelFor(context.school);
   const detail: ApplicationDetail = {
     ...summary,
     parentName: context.parentName,
@@ -157,8 +167,8 @@ function buildRecord(
     locationSuburb: context.locationSuburb,
     submittedAt: "",
     lastUpdatedAt: payment?.paidAt ?? "",
-    admissionsOwner: admissionsOwnerFor(context.school),
-    intakeLabel: intakeLabelFor(context.school),
+    admissionsOwner,
+    intakeLabel,
     studentBirthDate: student.dateOfBirth,
     familyNotes: context.notes,
     payment: buildPayment(context, payment),
@@ -196,13 +206,12 @@ function buildSummary(
 
 /**
  * Translate the backend signals (applicantStatus + payment.status) into the
- * UI enums the admissions-portal domain expects. This is intentionally
- * defensive — unknown states collapse to the earliest unfinished step so
- * parents are never shown the wrong "you're done" screen.
+ * UI enums the admissions-portal domain expects.
  *
- * TODO(admissions-portal): align this with the admission-service state
- * machine once it stabilises. Current mapping covers: lead, payment review,
- * awaiting payment, awaiting documents, under review, offer, accepted.
+ * This mirrors the full 16-state machine declared in admission-services'
+ * `models/student_model.rs` (STUDENT_DRAFT … STUDENT_WITHDRAWN). Defensive
+ * fallback (`lead_received`) catches any status the backend adds later —
+ * parents see "application is still with us" rather than a false "done".
  */
 function deriveSummarySignals(
   applicantStatus: string | undefined,
@@ -218,11 +227,35 @@ function deriveSummarySignals(
   const paymentPending = paymentStatus === "pending" || paymentStatus === "pending_verification";
   const normalised = (applicantStatus ?? "").toLowerCase();
 
+  // Terminal / post-decision states — drawn first so a "rejected" stays
+  // "rejected" even if the payment status happens to be "paid".
+  if (normalised === "rejected" || normalised === "offer_declined" || normalised === "test_failed") {
+    return build("rejected", "admissions.portal.application.status.rejected", 0, "track_payment");
+  }
+  if (normalised === "withdrawn") {
+    return build("withdrawn", "admissions.portal.application.status.withdrawn", 0, "track_payment");
+  }
+
+  // Post-admissions: student has been handed off to SIS (enrolled in a
+  // Section). This is Ahmad's status in the seed — progress is 100%.
+  if (normalised === "handed_to_sis") {
+    return build("enroled", "admissions.portal.application.status.enroled", 100, "track_payment");
+  }
   if (normalised === "enrolment_paid" || normalised === "accepted" || normalised === "enroled") {
-    return build("accepted", "admissions.portal.application.status.offer_released", 100, "track_payment");
+    return build("accepted", "admissions.portal.application.status.offer_released", 95, "track_payment");
+  }
+
+  // Offer stage
+  if (normalised === "offer_accepted") {
+    return build("accepted", "admissions.portal.application.status.offer_released", 90, "track_payment");
   }
   if (normalised === "offer_issued" || normalised === "offer_released") {
-    return build("offer_released", "admissions.portal.application.status.offer_released", 90, "upload_documents");
+    return build("offer_released", "admissions.portal.application.status.offer_released", 85, "upload_documents");
+  }
+
+  // Review stage
+  if (normalised === "documents_verified") {
+    return build("under_review", "admissions.portal.application.status.under_review", 80, "track_payment");
   }
   if (normalised === "documents_pending" || normalised === "documents_review") {
     return build("awaiting_documents", "admissions.portal.application.status.awaiting_documents", 74, "upload_documents");
@@ -230,20 +263,33 @@ function deriveSummarySignals(
   if (normalised === "test_approved" || normalised === "under_review" || normalised === "assessment_completed") {
     return build("under_review", "admissions.portal.application.status.under_review", 68, "upload_documents");
   }
-  if (normalised === "test_pending" || normalised === "assessment_scheduled") {
-    return build("assessment_scheduled", "admissions.portal.application.status.under_review", 55, "book_assessment");
+  if (normalised === "test_completed") {
+    return build("under_review", "admissions.portal.application.status.under_review", 62, "upload_documents");
   }
+  if (normalised === "test_scheduled") {
+    return build("assessment_scheduled", "admissions.portal.application.status.assessment_scheduled", 58, "book_assessment");
+  }
+  if (normalised === "test_pending" || normalised === "assessment_scheduled") {
+    return build("assessment_scheduled", "admissions.portal.application.status.under_review", 50, "book_assessment");
+  }
+
+  // Payment stage
   if (paymentPending) {
     return build("payment_review", "admissions.portal.application.status.payment_review", 38, "track_payment");
   }
   if (paid) {
-    return build("under_review", "admissions.portal.application.status.under_review", 50, "book_assessment");
+    return build("under_review", "admissions.portal.application.status.under_review", 45, "book_assessment");
   }
+
+  // Submission stage
   if (normalised === "submitted" || normalised === "application_in_progress") {
     return build("awaiting_payment", "admissions.portal.application.status.payment_review", 25, "track_payment");
   }
+  if (normalised === "draft") {
+    return build("lead_received", "admissions.portal.application.status.lead_received", 10, "track_payment");
+  }
 
-  return build("lead_received", "admissions.portal.application.status.payment_review", 15, "track_payment");
+  return build("lead_received", "admissions.portal.application.status.lead_received", 15, "track_payment");
 
   function build(
     status: ApplicationStatus,

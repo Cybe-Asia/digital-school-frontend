@@ -225,6 +225,8 @@
   "dashboard.parent.portal.payments.description": "Pantau biaya enrollment agar admissions bisa lanjut ke tahap konfirmasi akhir tanpa tertunda.",
   "dashboard.parent.portal.payments.amount_label": "Jumlah tagihan saat ini",
   "dashboard.parent.portal.payments.status.pending": "Menunggu pembayaran",
+  "dashboard.parent.portal.payments.status.paid": "Sudah lunas",
+  "dashboard.parent.portal.payments.status.none": "Tidak ada tagihan",
   "dashboard.parent.portal.payments.helper": "Invoice registrasi sudah disiapkan untuk {school}.",
   "dashboard.parent.portal.payments.cta": "Tinjau detail pembayaran",
   "dashboard.parent.portal.updates.title": "Update & Catatan",

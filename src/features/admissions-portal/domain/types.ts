@@ -9,7 +9,10 @@ export type ApplicationStatus =
   | "assessment_scheduled"
   | "under_review"
   | "offer_released"
-  | "accepted";
+  | "accepted"
+  | "enroled"
+  | "rejected"
+  | "withdrawn";
 
 export type PaymentStatus = "unpaid" | "pending_verification" | "paid";
 export type DocumentStatus = "missing" | "uploaded" | "verified";

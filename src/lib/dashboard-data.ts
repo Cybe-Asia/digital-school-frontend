@@ -267,6 +267,7 @@ export function getDashboardConfig(
   role: string,
   admissionsContext?: ParentAdmissionsContext | null,
   sisSnapshot?: ParentSisSnapshot | null,
+  latestPayment?: ParentMePayload["latestPayment"] | null,
 ): DashboardConfig | null {
   // The student persona dashboard still needs a real API. Until a backend
   // persona/student endpoint lands, return null and let the route render
@@ -291,7 +292,7 @@ export function getDashboardConfig(
     if (!admissionsContext) {
       return null;
     }
-    return createParentAdmissionsDashboard(admissionsContext, sisSnapshot ?? null);
+    return createParentAdmissionsDashboard(admissionsContext, sisSnapshot ?? null, latestPayment ?? null);
   }
 
   return null;
@@ -313,6 +314,11 @@ export type ParentMePayload = {
     occupation?: string | null;
     isVerified: boolean;
     existingStudents?: number | null;
+    /** Assigned admissions officer — null until admin picks up the lead. */
+    assignedAdminName?: string | null;
+    assignedAdminEmail?: string | null;
+    /** Intake cohort label — null until assigned. */
+    intakeLabel?: string | null;
   };
   students: Array<{
     studentId: string;
@@ -325,7 +331,10 @@ export type ParentMePayload = {
   }>;
   latestPayment?: {
     status: "pending" | "paid" | "expired" | "failed" | string;
+    amount?: number | null;
+    currency?: string | null;
     hostedInvoiceUrl?: string | null;
+    paidAt?: string | null;
   } | null;
 };
 
@@ -424,13 +433,14 @@ export function getParentAdmissionsContextFromSearchParams(searchParams: Dashboa
 function createParentAdmissionsDashboard(
   context: ParentAdmissionsContext,
   sis: ParentSisSnapshot | null,
+  latestPayment?: ParentMePayload["latestPayment"] | null,
 ): DashboardConfig {
   const primaryStudent = context.students[0];
   const linkedStudents = context.hasExistingStudents === "yes"
     ? (context.existingChildrenCount ?? 0) + context.students.length
     : context.students.length;
   const schoolName = context.school === "iihs" ? "IIHS" : "IISS";
-  const parentPortal = buildParentPortalExperience(context, schoolName, sis);
+  const parentPortal = buildParentPortalExperience(context, schoolName, sis, latestPayment);
 
   // --- Real SIS rollups (fall back to zeros / admissions-stage text when no
   //     SIS data is present yet, e.g. kid still in test/docs stage).
@@ -750,6 +760,7 @@ function buildParentPortalExperience(
   context: ParentAdmissionsContext,
   schoolShortName: string,
   sis: ParentSisSnapshot | null,
+  latestPayment?: ParentMePayload["latestPayment"] | null,
 ): ParentPortalExperience {
   const todayIso = new Date().toISOString().slice(0, 10);
   const attendance = sis?.attendance ?? [];
@@ -986,15 +997,22 @@ function buildParentPortalExperience(
         href: "#admissions-timeline",
       };
 
-  // Payment card. Recurring tuition billing is not live yet — we don't
-  // have a per-kid billing endpoint that returns an amount for the parent
-  // dashboard, only admission-stage payments through the admissions
-  // portal. Until that lands we render an em-dash placeholder and flag
-  // the payment as unpaid so the "Pay" quick action remains visible.
-  // TODO: real API — wire `paymentAmount` and `hasUnpaidPayment` to a
-  // parent-scoped billing endpoint once finance stands one up.
-  const paymentAmount = "—";
-  const hasUnpaidPayment = true;
+  // Payment card. Uses the real latestPayment from /me when present.
+  // Recurring monthly tuition doesn't have a parent-scoped endpoint yet,
+  // so anything past the admissions-stage fee is still blank — but as
+  // long as the last admissions payment is known, we surface its real
+  // amount + status instead of a placeholder.
+  // TODO(real API): once a recurring billing endpoint ships, merge
+  // monthly tuition with the admissions-stage fee into a single queue.
+  const paymentStatus = latestPayment?.status ?? null;
+  const paymentIsUnpaid =
+    paymentStatus === "pending" || paymentStatus === "expired" || paymentStatus === "failed";
+  const paymentIsPaid = paymentStatus === "paid";
+  const paymentAmountRaw = (latestPayment as { amount?: number } | null | undefined)?.amount;
+  const paymentAmount = typeof paymentAmountRaw === "number" && paymentAmountRaw > 0
+    ? `Rp ${paymentAmountRaw.toLocaleString("id-ID")}`
+    : "—";
+  const hasUnpaidPayment = paymentIsUnpaid;
   const paymentCard: ParentPortalSummaryCard = {
     labelKey: "dashboard.parent.portal.summary.tuition.label",
     value: "",
@@ -1085,12 +1103,16 @@ function buildParentPortalExperience(
         state: "upcoming",
       },
     ],
-    // TODO: real API — bill-of-materials / billing endpoint is not live
-    // for parents yet, so the amount stays as an em-dash and the pill
-    // says "pending" rather than quoting a fabricated IDR value.
+    // Real payment status pill. Recurring tuition isn't live yet, so
+    // this reflects the admissions-stage payment until the billing
+    // endpoint ships.
     paymentSummary: {
       amount: paymentAmount,
-      statusKey: "dashboard.parent.portal.payments.status.pending",
+      statusKey: paymentIsPaid
+        ? "dashboard.parent.portal.payments.status.paid"
+        : paymentIsUnpaid
+          ? "dashboard.parent.portal.payments.status.pending"
+          : "dashboard.parent.portal.payments.status.none",
       helperKey: "dashboard.parent.portal.payments.helper",
       helperValues: { school: schoolShortName },
       ctaLabelKey: "dashboard.parent.portal.payments.cta",
