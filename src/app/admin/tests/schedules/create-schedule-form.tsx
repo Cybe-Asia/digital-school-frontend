@@ -66,7 +66,16 @@ export function CreateScheduleForm({ defaultSchoolId }: Props) {
       // Reset the common fields so the admin can enter another date fast.
       setScheduledDate("");
       setTestLocation("");
-      startTransition(() => router.refresh());
+      // Switch the list view to the school we just created under.
+      // Admin creates an IIHS schedule → list tab flips to IIHS so
+      // the new row is visible without hunting.
+      startTransition(() => {
+        if (schoolId !== defaultSchoolId) {
+          router.push(`/admin/tests/schedules?schoolId=${encodeURIComponent(schoolId)}`);
+        } else {
+          router.refresh();
+        }
+      });
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     }

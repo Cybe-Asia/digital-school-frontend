@@ -49,13 +49,19 @@ export default async function AdminTestSchedulesPage({ searchParams }: PageProps
   }
 
   const { admission } = getServerServiceEndpoints();
-  const res = await fetch(
-    `${admission}/admin/tests/schedules?schoolId=${encodeURIComponent(schoolId)}&include_inactive=true`,
-    {
-      headers: { Authorization: `Bearer ${token}` },
-      cache: "no-store",
-    },
-  );
+  // Fetch both schools in parallel so the header tabs can show
+  // a schedule-count chip per school ('IIHS · 3' / 'IISS · 1'),
+  // not just the active one. Makes it obvious where the newly
+  // created row went without having to click through.
+  const fetchSchool = (id: string) =>
+    fetch(
+      `${admission}/admin/tests/schedules?schoolId=${encodeURIComponent(id)}&include_inactive=true`,
+      { headers: { Authorization: `Bearer ${token}` }, cache: "no-store" },
+    );
+  const [res, otherRes] = await Promise.all([
+    fetchSchool(schoolId),
+    fetchSchool(schoolId === "SCH-IIHS" ? "SCH-IISS" : "SCH-IIHS"),
+  ]);
   if (res.status === 403) {
     return (
       <div className="mx-auto max-w-3xl px-6 py-10 text-sm">
@@ -64,7 +70,11 @@ export default async function AdminTestSchedulesPage({ searchParams }: PageProps
     );
   }
   const body = (await res.json().catch(() => null)) as ApiEnvelope<Schedule[]> | null;
+  const otherBody = (await otherRes.json().catch(() => null)) as ApiEnvelope<Schedule[]> | null;
   const schedules = body?.data ?? [];
+  const otherSchedules = otherBody?.data ?? [];
+  const iihsCount = schoolId === "SCH-IIHS" ? schedules.length : otherSchedules.length;
+  const iissCount = schoolId === "SCH-IISS" ? schedules.length : otherSchedules.length;
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
@@ -85,23 +95,41 @@ export default async function AdminTestSchedulesPage({ searchParams }: PageProps
           <div className="inline-flex rounded-2xl border border-[var(--ds-border)] bg-[var(--ds-soft)] p-1 text-sm">
             <Link
               href="/admin/tests/schedules?schoolId=SCH-IIHS"
-              className={`rounded-xl px-4 py-1.5 text-xs font-bold uppercase tracking-[0.1em] transition ${
+              className={`inline-flex items-center gap-2 rounded-xl px-4 py-1.5 text-xs font-bold uppercase tracking-[0.1em] transition ${
                 schoolId === "SCH-IIHS"
                   ? "bg-[var(--ds-primary)] text-[var(--ds-on-primary)] shadow-sm"
                   : "text-[var(--ds-text-primary)] hover:bg-[var(--ds-surface)]"
               }`}
             >
               IIHS
+              <span
+                className={`rounded-full px-2 py-0.5 text-[10px] font-bold tabular-nums ${
+                  schoolId === "SCH-IIHS"
+                    ? "bg-[var(--ds-on-primary)]/20"
+                    : "bg-[var(--ds-surface)] text-[var(--ds-text-secondary)]"
+                }`}
+              >
+                {iihsCount}
+              </span>
             </Link>
             <Link
               href="/admin/tests/schedules?schoolId=SCH-IISS"
-              className={`rounded-xl px-4 py-1.5 text-xs font-bold uppercase tracking-[0.1em] transition ${
+              className={`inline-flex items-center gap-2 rounded-xl px-4 py-1.5 text-xs font-bold uppercase tracking-[0.1em] transition ${
                 schoolId === "SCH-IISS"
                   ? "bg-[var(--ds-primary)] text-[var(--ds-on-primary)] shadow-sm"
                   : "text-[var(--ds-text-primary)] hover:bg-[var(--ds-surface)]"
               }`}
             >
               IISS
+              <span
+                className={`rounded-full px-2 py-0.5 text-[10px] font-bold tabular-nums ${
+                  schoolId === "SCH-IISS"
+                    ? "bg-[var(--ds-on-primary)]/20"
+                    : "bg-[var(--ds-surface)] text-[var(--ds-text-secondary)]"
+                }`}
+              >
+                {iissCount}
+              </span>
             </Link>
           </div>
         </div>
