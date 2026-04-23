@@ -91,8 +91,19 @@ describe("dashboardData admissions context", () => {
     // The concrete default is "submitted" for a freshly-built context.
     expect(config?.tableRows[0]?.columnB).toBe("Admissions stage");
     expect(config?.parentPortal?.studentCards).toHaveLength(2);
-    expect(config?.parentPortal?.summaryCards[0]?.value).toBe("2");
+    // Summary cards are now sentence-style. The first card covers today's
+    // attendance — with no SIS data it falls back to a contextual
+    // "no data yet" message that mentions the primary student by name.
+    expect(config?.parentPortal?.summaryCards[0]?.titleKey).toBe(
+      "dashboard.parent.portal.summary.attendance.title_no_data",
+    );
+    expect(config?.parentPortal?.summaryCards[0]?.titleValues?.student).toBe("Aisha Rahma");
+    expect(config?.parentPortal?.summaryCards[0]?.tone).toBe("neutral");
     expect(config?.parentPortal?.actions[0]?.titleKey).toBe("dashboard.parent.portal.student.action.book_assessment");
     expect(config?.parentPortal?.timeline[3]?.state).toBe("active");
+    // New sisToday snapshot defaults to empty until a kid has a studentId.
+    expect(config?.parentPortal?.sisToday).toEqual([]);
+    expect(config?.parentPortal?.sisAbsencesToday).toBe(0);
+    expect(config?.parentPortal?.hasUnpaidPayment).toBe(true);
   });
 });

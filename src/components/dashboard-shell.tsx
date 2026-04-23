@@ -6,7 +6,10 @@ import {
 } from "@/features/admissions-portal/presentation/lib/admissions-portal-routes";
 import ParentPortalScrollNav from "@/features/admissions-portal/presentation/components/parent-portal-scroll-nav";
 import ParentPortalStickyHeader from "@/features/admissions-portal/presentation/components/parent-portal-sticky-header";
+import ParentMobileActionBar from "@/features/admissions-portal/presentation/components/parent-mobile-action-bar";
 import { AddAnotherChildButton } from "@/features/admissions-auth/presentation/components/add-another-child-button";
+import { LogoutButton } from "@/features/admissions-auth/presentation/components/logout-button";
+import LanguageToggle from "@/components/language-toggle";
 import { ParentOffersCard } from "@/features/admissions-auth/presentation/components/parent-offers-card";
 import { ParentSectionsCard } from "@/features/admissions-auth/presentation/components/parent-sections-card";
 import { StatusBadge, StudentStatusStepper } from "@/features/admissions-common/status-badge";
@@ -65,6 +68,12 @@ function statusClassName(status: StatusId): string {
   }
 
   return "status-pill status-neutral";
+}
+
+function priorityOrderValue(priority: PriorityId): number {
+  if (priority === "high") return 0;
+  if (priority === "medium") return 1;
+  return 2;
 }
 
 function priorityClassName(priority: PriorityId): string {
@@ -177,23 +186,24 @@ export default async function DashboardShell({ config }: DashboardShellProps) {
       : null;
 
   return (
-    <div className="dashboard-bg min-h-screen pb-10">
+    <div className={`dashboard-bg min-h-screen ${isParentPortal ? "pb-28 lg:pb-10" : "pb-10"}`}>
       <div className="mx-auto max-w-[1320px] px-4 pt-6 sm:px-6 lg:px-8">
         {isParentPortal ? (
           <ParentPortalStickyHeader
             brandLabel={t("common.brand.twsi")}
-            title={t("dashboard.parent.portal.header.title")}
+            title={t("dashboard.parent.portal.header.greeting", {
+              parent: admissionsContext?.parentName ?? "",
+            })}
             subtitle={t("dashboard.parent.portal.header.subtitle", {
+              parent: admissionsContext?.parentName ?? "",
               count: admissionsContext?.students.length ?? 0,
               school: parentPortal?.schoolShortName ?? "",
             })}
             actions={
-              <Link
-                href="/"
-                className="rounded-full border border-[var(--ds-border)] bg-[var(--ds-surface)] px-4 py-2 text-sm font-semibold text-[var(--ds-text-primary)] transition hover:border-[var(--ds-primary)]"
-              >
-                {t("common.navigation.home")}
-              </Link>
+              <>
+                <LanguageToggle />
+                <LogoutButton />
+              </>
             }
           />
         ) : (
@@ -337,59 +347,106 @@ export default async function DashboardShell({ config }: DashboardShellProps) {
             {config.role === "parent" && admissionsContext && parentPortal ? (
               <>
                 <section className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
-                  {parentPortal.summaryCards.map((card) => (
-                    <article key={card.labelKey} className="surface-card rounded-2xl p-4 sm:p-5">
-                      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--ds-text-secondary)]">
-                        {t(card.labelKey)}
-                      </p>
-                      <p className="mt-2 text-2xl font-semibold text-[var(--ds-text-primary)]">{card.value}</p>
-                      <p className="mt-2 text-sm text-[var(--ds-primary)]">{t(card.helperKey, card.helperValues)}</p>
-                    </article>
-                  ))}
+                  {parentPortal.summaryCards.map((card, index) => {
+                    const hasSentence = Boolean(card.titleKey);
+                    const toneAccent =
+                      card.tone === "positive"
+                        ? "border-l-4 border-l-[#22c55e]"
+                        : card.tone === "warning"
+                          ? "border-l-4 border-l-[#ef4444]"
+                          : card.tone === "info"
+                            ? "border-l-4 border-l-[var(--ds-primary)]"
+                            : "border-l-4 border-l-[var(--ds-border)]";
+
+                    const inner = hasSentence ? (
+                      <>
+                        <p className="text-base font-semibold leading-snug text-[var(--ds-text-primary)]">
+                          {t(card.titleKey!, card.titleValues)}
+                        </p>
+                        {card.subtitleKey ? (
+                          <p className="mt-1 text-sm text-[var(--ds-text-secondary)]">
+                            {t(card.subtitleKey, card.subtitleValues)}
+                          </p>
+                        ) : null}
+                      </>
+                    ) : (
+                      <>
+                        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--ds-text-secondary)]">
+                          {t(card.labelKey)}
+                        </p>
+                        <p className="mt-2 text-2xl font-semibold text-[var(--ds-text-primary)]">{card.value}</p>
+                        <p className="mt-2 text-sm text-[var(--ds-primary)]">{t(card.helperKey, card.helperValues)}</p>
+                      </>
+                    );
+
+                    const classes = `surface-card block rounded-2xl p-4 sm:p-5 transition hover:shadow-[var(--ds-shadow-soft)] ${toneAccent}`;
+
+                    return card.href ? (
+                      <Link
+                        key={`${card.titleKey ?? card.labelKey}-${index}`}
+                        href={card.href}
+                        className={classes}
+                      >
+                        {inner}
+                      </Link>
+                    ) : (
+                      <article
+                        key={`${card.titleKey ?? card.labelKey}-${index}`}
+                        className={classes}
+                      >
+                        {inner}
+                      </article>
+                    );
+                  })}
                 </section>
 
-                <section className="grid gap-6 xl:grid-cols-[1.35fr_0.95fr]">
-                  <div className="space-y-6">
-                    <article id="family-overview" className="parent-portal-section surface-card scroll-mt-28 rounded-3xl p-5 sm:p-6">
-                      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--ds-primary)]">
-                        {t("dashboard.parent.portal.family.title")}
-                      </p>
-                      <h3 className="mt-2 text-lg font-semibold text-[var(--ds-text-primary)]">
-                        {t("dashboard.parent.portal.family.heading", { parent: admissionsContext.parentName })}
-                      </h3>
-                      <div className="mt-5 grid gap-3 sm:grid-cols-2">
-                        <div>
-                          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--ds-text-secondary)]">{t("auth.eoi.email_label")}</p>
-                          <p className="mt-1 text-sm font-semibold text-[var(--ds-text-primary)]">{admissionsContext.email}</p>
-                        </div>
-                        <div>
-                          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--ds-text-secondary)]">{t("auth.eoi.location_label")}</p>
-                          <p className="mt-1 text-sm font-semibold text-[var(--ds-text-primary)]">{admissionsContext.locationSuburb}</p>
-                        </div>
-                        <div>
-                          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--ds-text-secondary)]">{t("auth.eoi.school_label")}</p>
-                          <p className="mt-1 text-sm font-semibold text-[var(--ds-text-primary)]">{t(`auth.eoi.school.${admissionsContext.school}`)}</p>
-                        </div>
-                        <div>
-                          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--ds-text-secondary)]">{t("dashboard.parent.portal.family.registered_label")}</p>
-                          <p className="mt-1 text-sm font-semibold text-[var(--ds-text-primary)]">
-                            {t("dashboard.parent.portal.family.registered_value", { count: admissionsContext.students.length })}
-                          </p>
-                        </div>
-                      </div>
-                    </article>
+                <section className="space-y-6">
+                  {/* 1. Action items — highest-priority first. Parents should
+                         see what needs doing before they see anything else. */}
+                  <article id="action-items" className="parent-portal-section surface-card scroll-mt-28 rounded-3xl p-5 sm:p-6">
+                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--ds-primary)]">
+                      {t("dashboard.parent.portal.actions.title")}
+                    </p>
+                    <h3 className="mt-2 text-lg font-semibold text-[var(--ds-text-primary)]">
+                      {t("dashboard.parent.portal.actions.heading")}
+                    </h3>
+                    <div className="mt-5 grid gap-3 lg:grid-cols-2">
+                      {[...parentPortal.actions]
+                        .sort((a, b) => priorityOrderValue(a.priority) - priorityOrderValue(b.priority))
+                        .map((action, index) => (
+                          <div key={`${action.titleKey}-${index}`} className="rounded-2xl border border-[var(--ds-border)] bg-[var(--ds-soft)]/35 p-4">
+                            <div className="flex items-center justify-between gap-3">
+                              <p className="text-sm font-semibold text-[var(--ds-text-primary)]">{t(action.titleKey, action.titleValues)}</p>
+                              <span className={priorityClassName(action.priority)}>{t(priorityLabelMap[action.priority])}</span>
+                            </div>
+                            <p className="mt-2 text-sm leading-relaxed text-[var(--ds-text-secondary)]">{t(action.detailKey, action.detailValues)}</p>
+                            <Link
+                              href={
+                                index < parentPortal.studentCards.length
+                                  ? getStudentPortalHref(admissionsContext, parentPortal.studentCards[index], index)
+                                  : "#registered-students"
+                              }
+                              className="mt-4 inline-flex rounded-xl border border-[var(--ds-border)] bg-[var(--ds-surface)] px-4 py-2 text-sm font-semibold text-[var(--ds-text-primary)]"
+                            >
+                              {t(action.ctaLabelKey)}
+                            </Link>
+                          </div>
+                        ))}
+                    </div>
+                  </article>
 
-                    {/* Offer + enrolment card — self-hides when neither
-                        applies for any of the parent's kids. Client-side
-                        fetch to /api/me/offers so it picks up Accept/
-                        Decline state changes without a full page reload. */}
-                    <ParentOffersCard />
+                  {/* Offer + enrolment card — self-hides when neither
+                      applies for any of the parent's kids. Client-side
+                      fetch to /api/me/offers so it picks up Accept/
+                      Decline state changes without a full page reload. */}
+                  <ParentOffersCard />
 
-                    {/* SIS — "my child at school" card. Self-hides until
-                        admin assigns the kid to a Section. */}
-                    <ParentSectionsCard />
+                  {/* SIS — "my child at school" card. Self-hides until
+                      admin assigns the kid to a Section. */}
+                  <ParentSectionsCard />
 
-                    <article id="registered-students" className="parent-portal-section surface-card scroll-mt-28 rounded-3xl p-5 sm:p-6">
+                  {/* 2. My children cards — condensed when SIS is live. */}
+                  <article id="registered-students" className="parent-portal-section surface-card scroll-mt-28 rounded-3xl p-5 sm:p-6">
                       <div className="flex items-start justify-between gap-3">
                         <div>
                           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--ds-primary)]">
@@ -554,69 +611,78 @@ export default async function DashboardShell({ config }: DashboardShellProps) {
                       </div>
                     </article>
 
-                    <article id="admissions-timeline" className="parent-portal-section surface-card scroll-mt-28 rounded-3xl p-5 sm:p-6">
+                  {/* 3. SIS today — attendance + latest grade per kid. Only
+                         renders when at least one kid has a studentId. */}
+                  {parentPortal.sisToday.length > 0 ? (
+                    <article id="sis-today" className="parent-portal-section surface-card scroll-mt-28 rounded-3xl p-5 sm:p-6">
                       <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--ds-primary)]">
-                        {t("dashboard.parent.portal.timeline.title")}
+                        {t("dashboard.parent.portal.sis_today.title")}
                       </p>
                       <h3 className="mt-2 text-lg font-semibold text-[var(--ds-text-primary)]">
-                        {t("dashboard.parent.portal.timeline.heading")}
+                        {t("dashboard.parent.portal.sis_today.heading")}
                       </h3>
-                      <div className="mt-5 space-y-4">
-                        {parentPortal.timeline.map((step, index) => (
-                          <div key={`${step.titleKey}-${index}`} className="flex gap-3">
-                            <div className="flex w-8 flex-col items-center">
-                              <span className={`mt-1 h-3 w-3 rounded-full ${timelineStateClassName(step.state)}`} />
-                              {index < parentPortal.timeline.length - 1 ? (
-                                <span className={`mt-2 h-full min-h-8 w-px ${timelineLineClassName(step.state)}`} aria-hidden="true" />
-                              ) : null}
-                            </div>
-                            <div className="flex-1 rounded-2xl border border-[var(--ds-border)] bg-[var(--ds-soft)]/35 p-4">
-                              <div className="flex flex-wrap items-center justify-between gap-2">
-                                <p className="text-sm font-semibold text-[var(--ds-text-primary)]">{t(step.titleKey, step.titleValues)}</p>
-                                <span className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--ds-text-secondary)]">
-                                  {t(`dashboard.parent.portal.timeline.state.${step.state}`)}
-                                </span>
+                      <div className="mt-5 grid gap-4 md:grid-cols-2">
+                        {parentPortal.sisToday.map((kid, idx) => {
+                          const tone =
+                            kid.attendanceStatus === "present" || kid.attendanceStatus === "late"
+                              ? "border-l-4 border-l-[#22c55e]"
+                              : kid.attendanceStatus === "absent"
+                                ? "border-l-4 border-l-[#ef4444]"
+                                : "border-l-4 border-l-[var(--ds-border)]";
+                          return (
+                            <div key={`${kid.studentName}-${idx}`} className={`rounded-2xl border border-[var(--ds-border)] bg-[var(--ds-soft)]/35 p-4 ${tone}`}>
+                              <div className="flex items-start justify-between gap-3">
+                                <div>
+                                  <p className="text-sm font-semibold text-[var(--ds-text-primary)]">{kid.studentName}</p>
+                                  {kid.sectionName ? (
+                                    <p className="mt-0.5 text-xs text-[var(--ds-text-secondary)]">{kid.sectionName}</p>
+                                  ) : null}
+                                </div>
+                                {kid.homeroomTeacherName ? (
+                                  <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--ds-text-secondary)]">
+                                    {kid.homeroomTeacherName}
+                                  </span>
+                                ) : null}
                               </div>
-                              <p className="mt-2 text-sm text-[var(--ds-text-secondary)]">{t(step.detailKey, step.detailValues)}</p>
+
+                              <div className="mt-3">
+                                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--ds-text-secondary)]">
+                                  {t("dashboard.parent.portal.sis_today.attendance_label")}
+                                </p>
+                                <p className="mt-1 text-sm font-semibold text-[var(--ds-text-primary)]">
+                                  {t(kid.attendanceLabelKey)}
+                                </p>
+                                <p className="mt-1 text-xs text-[var(--ds-text-secondary)]">
+                                  {t(kid.attendanceDetailKey, kid.attendanceDetailValues)}
+                                </p>
+                              </div>
+
+                              {kid.latestGrade ? (
+                                <div className="mt-3">
+                                  <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--ds-text-secondary)]">
+                                    {t("dashboard.parent.portal.sis_today.grade_label")}
+                                  </p>
+                                  <p className="mt-1 text-sm font-semibold text-[var(--ds-text-primary)]">
+                                    {kid.latestGrade.subject} · {kid.latestGrade.scoreText} ({kid.latestGrade.percentage}%)
+                                  </p>
+                                  <p className="mt-0.5 text-xs text-[var(--ds-text-secondary)]">
+                                    {kid.latestGrade.term}
+                                  </p>
+                                </div>
+                              ) : (
+                                <p className="mt-3 text-xs text-[var(--ds-text-secondary)]">
+                                  {t("dashboard.parent.portal.sis_today.no_grades_yet")}
+                                </p>
+                              )}
                             </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     </article>
-                  </div>
+                  ) : null}
 
-                  <div className="space-y-6">
-                    <article id="next-actions" className="parent-portal-section surface-card scroll-mt-28 rounded-3xl p-5 sm:p-6">
-                      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--ds-primary)]">
-                        {t("dashboard.parent.portal.actions.title")}
-                      </p>
-                      <h3 className="mt-2 text-lg font-semibold text-[var(--ds-text-primary)]">
-                        {t("dashboard.parent.portal.actions.heading")}
-                      </h3>
-                      <div className="mt-5 space-y-3">
-                        {parentPortal.actions.map((action, index) => (
-                          <div key={`${action.titleKey}-${index}`} className="rounded-2xl border border-[var(--ds-border)] bg-[var(--ds-soft)]/35 p-4">
-                            <div className="flex items-center justify-between gap-3">
-                              <p className="text-sm font-semibold text-[var(--ds-text-primary)]">{t(action.titleKey, action.titleValues)}</p>
-                              <span className={priorityClassName(action.priority)}>{t(priorityLabelMap[action.priority])}</span>
-                            </div>
-                            <p className="mt-2 text-sm leading-relaxed text-[var(--ds-text-secondary)]">{t(action.detailKey, action.detailValues)}</p>
-                            <Link
-                              href={
-                                index < parentPortal.studentCards.length
-                                  ? getStudentPortalHref(admissionsContext, parentPortal.studentCards[index], index)
-                                  : "#family-overview"
-                              }
-                              className="mt-4 inline-flex rounded-xl border border-[var(--ds-border)] bg-[var(--ds-surface)] px-4 py-2 text-sm font-semibold text-[var(--ds-text-primary)]"
-                            >
-                              {t(action.ctaLabelKey)}
-                            </Link>
-                          </div>
-                        ))}
-                      </div>
-                    </article>
-
-                    <article id="payments-center" className="parent-portal-section surface-card scroll-mt-28 rounded-3xl p-5 sm:p-6">
+                  {/* 4. Payments center. */}
+                  <article id="payments-center" className="parent-portal-section surface-card scroll-mt-28 rounded-3xl p-5 sm:p-6">
                       <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--ds-primary)]">
                         {t("dashboard.parent.portal.payments.title")}
                       </p>
@@ -667,48 +733,117 @@ export default async function DashboardShell({ config }: DashboardShellProps) {
                       </div>
                     </article>
 
-                    <article id="contact-desk" className="parent-portal-section surface-card scroll-mt-28 rounded-3xl p-5 sm:p-6">
-                      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--ds-primary)]">
-                        {t("dashboard.parent.portal.contact.title")}
-                      </p>
-                      <h3 className="mt-2 text-lg font-semibold text-[var(--ds-text-primary)]">
-                        {t("dashboard.parent.portal.contact.heading")}
-                      </h3>
-                      <div className="mt-5 grid gap-3">
-                        <div className="rounded-2xl border border-[var(--ds-border)] bg-[var(--ds-soft)]/35 p-4">
-                          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--ds-text-secondary)]">
-                            {t("dashboard.parent.portal.contact.primary_contact")}
-                          </p>
-                          <p className="mt-1 text-sm font-semibold text-[var(--ds-text-primary)]">
-                            {t("dashboard.parent.portal.contact.primary_contact_value", { school: parentPortal.schoolShortName })}
-                          </p>
-                        </div>
-                        <div className="rounded-2xl border border-[var(--ds-border)] bg-[var(--ds-soft)]/35 p-4">
-                          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--ds-text-secondary)]">
-                            {t("dashboard.parent.portal.contact.family_email")}
-                          </p>
-                          <p className="mt-1 text-sm font-semibold text-[var(--ds-text-primary)]">{admissionsContext.email}</p>
-                        </div>
-                        <div className="rounded-2xl border border-[var(--ds-border)] bg-[var(--ds-soft)]/35 p-4">
-                          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--ds-text-secondary)]">
-                            {t("dashboard.parent.portal.contact.response_window")}
-                          </p>
-                          <p className="mt-1 text-sm font-semibold text-[var(--ds-text-primary)]">
-                            {t("dashboard.parent.portal.contact.response_window_value")}
-                          </p>
-                        </div>
-                        <div className="rounded-2xl border border-[var(--ds-border)] bg-[var(--ds-soft)]/35 p-4">
-                          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--ds-text-secondary)]">
-                            {t("auth.additional.notes_label")}
-                          </p>
-                          <p className="mt-1 text-sm leading-relaxed text-[var(--ds-text-primary)]">
-                            {admissionsContext.notes?.trim() || t("dashboard.parent.portal.contact.notes_empty")}
-                          </p>
-                        </div>
+                  {/* 6. Admissions timeline — collapsed for enrolled kids
+                         because it's mostly historical context by then. */}
+                  <details id="admissions-timeline" className="parent-portal-section surface-card scroll-mt-28 rounded-3xl p-5 sm:p-6">
+                    <summary className="flex cursor-pointer items-center justify-between gap-3 list-none">
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--ds-primary)]">
+                          {t("dashboard.parent.portal.timeline.title")}
+                        </p>
+                        <h3 className="mt-2 text-lg font-semibold text-[var(--ds-text-primary)]">
+                          {t("dashboard.parent.portal.timeline.heading")}
+                        </h3>
                       </div>
-                    </article>
-                  </div>
+                      <span aria-hidden="true" className="text-xs font-semibold text-[var(--ds-text-secondary)]">
+                        {t("dashboard.parent.portal.collapsible.expand_hint")}
+                      </span>
+                    </summary>
+                    <div className="mt-5 space-y-4">
+                      {parentPortal.timeline.map((step, index) => (
+                        <div key={`${step.titleKey}-${index}`} className="flex gap-3">
+                          <div className="flex w-8 flex-col items-center">
+                            <span className={`mt-1 h-3 w-3 rounded-full ${timelineStateClassName(step.state)}`} />
+                            {index < parentPortal.timeline.length - 1 ? (
+                              <span className={`mt-2 h-full min-h-8 w-px ${timelineLineClassName(step.state)}`} aria-hidden="true" />
+                            ) : null}
+                          </div>
+                          <div className="flex-1 rounded-2xl border border-[var(--ds-border)] bg-[var(--ds-soft)]/35 p-4">
+                            <div className="flex flex-wrap items-center justify-between gap-2">
+                              <p className="text-sm font-semibold text-[var(--ds-text-primary)]">{t(step.titleKey, step.titleValues)}</p>
+                              <span className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--ds-text-secondary)]">
+                                {t(`dashboard.parent.portal.timeline.state.${step.state}`)}
+                              </span>
+                            </div>
+                            <p className="mt-2 text-sm text-[var(--ds-text-secondary)]">{t(step.detailKey, step.detailValues)}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </details>
+
+                  {/* 7. Family info + contact — merged into one collapsible
+                         footer. Rarely opened once onboarding is done. */}
+                  <details id="contact-desk" className="parent-portal-section surface-card scroll-mt-28 rounded-3xl p-5 sm:p-6">
+                    <summary className="flex cursor-pointer items-center justify-between gap-3 list-none">
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--ds-primary)]">
+                          {t("dashboard.parent.portal.family_footer.title")}
+                        </p>
+                        <h3 className="mt-2 text-lg font-semibold text-[var(--ds-text-primary)]">
+                          {t("dashboard.parent.portal.family_footer.heading")}
+                        </h3>
+                      </div>
+                      <span aria-hidden="true" className="text-xs font-semibold text-[var(--ds-text-secondary)]">
+                        {t("dashboard.parent.portal.collapsible.expand_hint")}
+                      </span>
+                    </summary>
+
+                    <div id="family-overview" className="mt-5 grid gap-3 sm:grid-cols-2">
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--ds-text-secondary)]">{t("auth.eoi.email_label")}</p>
+                        <p className="mt-1 text-sm font-semibold text-[var(--ds-text-primary)]">{admissionsContext.email}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--ds-text-secondary)]">{t("auth.eoi.location_label")}</p>
+                        <p className="mt-1 text-sm font-semibold text-[var(--ds-text-primary)]">{admissionsContext.locationSuburb}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--ds-text-secondary)]">{t("auth.eoi.school_label")}</p>
+                        <p className="mt-1 text-sm font-semibold text-[var(--ds-text-primary)]">{t(`auth.eoi.school.${admissionsContext.school}`)}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--ds-text-secondary)]">{t("dashboard.parent.portal.family.registered_label")}</p>
+                        <p className="mt-1 text-sm font-semibold text-[var(--ds-text-primary)]">
+                          {t("dashboard.parent.portal.family.registered_value", { count: admissionsContext.students.length })}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="mt-5 grid gap-3">
+                      <div className="rounded-2xl border border-[var(--ds-border)] bg-[var(--ds-soft)]/35 p-4">
+                        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--ds-text-secondary)]">
+                          {t("dashboard.parent.portal.contact.primary_contact")}
+                        </p>
+                        <p className="mt-1 text-sm font-semibold text-[var(--ds-text-primary)]">
+                          {t("dashboard.parent.portal.contact.primary_contact_value", { school: parentPortal.schoolShortName })}
+                        </p>
+                      </div>
+                      <div className="rounded-2xl border border-[var(--ds-border)] bg-[var(--ds-soft)]/35 p-4">
+                        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--ds-text-secondary)]">
+                          {t("dashboard.parent.portal.contact.response_window")}
+                        </p>
+                        <p className="mt-1 text-sm font-semibold text-[var(--ds-text-primary)]">
+                          {t("dashboard.parent.portal.contact.response_window_value")}
+                        </p>
+                      </div>
+                      <div className="rounded-2xl border border-[var(--ds-border)] bg-[var(--ds-soft)]/35 p-4">
+                        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--ds-text-secondary)]">
+                          {t("auth.additional.notes_label")}
+                        </p>
+                        <p className="mt-1 text-sm leading-relaxed text-[var(--ds-text-primary)]">
+                          {admissionsContext.notes?.trim() || t("dashboard.parent.portal.contact.notes_empty")}
+                        </p>
+                      </div>
+                    </div>
+                  </details>
                 </section>
+
+                {/* Mobile-only action bar. Pinned to the viewport bottom. */}
+                <ParentMobileActionBar
+                  payHref={firstPaymentHref ?? "#payments-center"}
+                  payBadge={parentPortal.hasUnpaidPayment}
+                />
               </>
             ) : (
               <>

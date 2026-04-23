@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { cookies } from "next/headers";
 import { getServerServiceEndpoints } from "@/features/admissions-auth/infrastructure/service-endpoints";
+import AdminShellHeader from "@/app/admin/_components/admin-shell-header";
 
 export const metadata: Metadata = {
   title: "Admissions Dashboard | Admin",
@@ -23,6 +24,16 @@ type FunnelResponse = {
   weeklyNewLeads: number;
   weeklyEnrolled: number;
   computedAt: string;
+};
+
+type AuditEvent = {
+  eventId: string;
+  actorLeadId: string;
+  actorEmail?: string | null;
+  action: string;
+  targetType: string;
+  targetId: string;
+  createdAt: string;
 };
 
 /**
@@ -50,13 +61,26 @@ export default async function AdminAdmissionsDashboardPage() {
   const { admission } = getServerServiceEndpoints();
   let payload: ApiEnvelope<FunnelResponse> | null = null;
   let httpStatus = 0;
+  let auditEvents: AuditEvent[] = [];
   try {
-    const res = await fetch(`${admission}/admin/funnel`, {
-      headers: { Authorization: `Bearer ${token}` },
-      cache: "no-store",
-    });
-    httpStatus = res.status;
-    payload = (await res.json().catch(() => null)) as ApiEnvelope<FunnelResponse> | null;
+    const [funnelRes, auditRes] = await Promise.all([
+      fetch(`${admission}/admin/funnel`, {
+        headers: { Authorization: `Bearer ${token}` },
+        cache: "no-store",
+      }),
+      fetch(`${admission}/admin/audit?limit=10&offset=0`, {
+        headers: { Authorization: `Bearer ${token}` },
+        cache: "no-store",
+      }).catch(() => null),
+    ]);
+    httpStatus = funnelRes.status;
+    payload = (await funnelRes.json().catch(() => null)) as ApiEnvelope<FunnelResponse> | null;
+    if (auditRes && auditRes.ok) {
+      const auditBody = (await auditRes.json().catch(() => null)) as
+        | ApiEnvelope<AuditEvent[]>
+        | null;
+      auditEvents = auditBody?.data ?? [];
+    }
   } catch {
     // upstream down — payload stays null
   }
@@ -93,6 +117,7 @@ export default async function AdminAdmissionsDashboardPage() {
 
   return (
     <div className="mx-auto max-w-6xl px-6 py-8">
+      <AdminShellHeader />
       <header className="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--ds-primary)]">
@@ -171,7 +196,100 @@ export default async function AdminAdmissionsDashboardPage() {
           }}
         />
       </section>
+
+      <section className="mt-6">
+        <h2 className="text-sm font-semibold uppercase tracking-wider text-[var(--ds-text-secondary)]">
+          Quick actions
+        </h2>
+        <div className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <QuickActionTile
+            icon="📝"
+            title="Review applications terbaru"
+            description="Proses pendaftar yang menunggu review."
+            href="/admin/admissions/applications?status=pending"
+          />
+          <QuickActionTile
+            icon="📄"
+            title="Verifikasi dokumen"
+            description="Antrian dokumen yang belum diverifikasi."
+            href="/admin/admissions/documents?status=pending"
+          />
+          <QuickActionTile
+            icon="✉️"
+            title="Generate offer letter"
+            description="Buat offer baru dan kirim ke orang tua."
+            href="/admin/admissions/offers"
+          />
+          <QuickActionTile
+            icon="🏫"
+            title="Tambah section / kelas"
+            description="Atur kelas dan wali kelas baru di SIS."
+            href="/admin/sis/sections"
+          />
+        </div>
+      </section>
+
+      <section className="mt-6">
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-[var(--ds-text-secondary)]">
+            Recent admin activity
+          </h2>
+          <Link
+            href="/admin/admissions/audit"
+            className="text-xs font-semibold text-[var(--ds-primary)] hover:underline"
+          >
+            View full log →
+          </Link>
+        </div>
+        {auditEvents.length === 0 ? (
+          <p className="mt-2 rounded-2xl border border-[var(--ds-border)] bg-[var(--ds-surface)] p-4 text-sm text-[var(--ds-text-secondary)]">
+            No admin activity recorded in this window.
+          </p>
+        ) : (
+          <ol className="mt-2 divide-y divide-[var(--ds-border)] overflow-hidden rounded-2xl border border-[var(--ds-border)] bg-[var(--ds-surface)]">
+            {auditEvents.slice(0, 10).map((e) => (
+              <li key={e.eventId} className="flex flex-wrap items-center gap-2 px-4 py-3 text-sm">
+                <span className="font-mono text-xs text-[var(--ds-primary)]">{e.action}</span>
+                <span className="text-[var(--ds-text-secondary)]">{e.targetType}</span>
+                <span className="truncate font-mono text-xs text-[var(--ds-text-primary)]">
+                  {e.targetId}
+                </span>
+                <span className="ml-auto text-xs text-[var(--ds-text-secondary)]">
+                  {e.actorEmail ?? e.actorLeadId} · {formatDate(e.createdAt)}
+                </span>
+              </li>
+            ))}
+          </ol>
+        )}
+      </section>
     </div>
+  );
+}
+
+function QuickActionTile({
+  icon,
+  title,
+  description,
+  href,
+}: {
+  icon: string;
+  title: string;
+  description: string;
+  href: string;
+}) {
+  return (
+    <Link
+      href={href}
+      className="group rounded-2xl border border-[var(--ds-border)] bg-[var(--ds-surface)] p-4 transition hover:border-[var(--ds-primary)] hover:shadow-[var(--ds-shadow-soft)]"
+    >
+      <p aria-hidden="true" className="text-2xl leading-none">
+        {icon}
+      </p>
+      <p className="mt-3 text-sm font-semibold text-[var(--ds-text-primary)] group-hover:text-[var(--ds-primary)]">
+        {title}
+      </p>
+      <p className="mt-1 text-xs leading-relaxed text-[var(--ds-text-secondary)]">{description}</p>
+    </Link>
   );
 }
 

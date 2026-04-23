@@ -17,6 +17,40 @@ function getSectionIdFromHref(href: string | undefined): string | null {
   return href.slice(1) || null;
 }
 
+/**
+ * Renders a numeric badge (preferred) or a legacy string badge beside a
+ * nav item. Hidden when the count is zero so nav items don't shout
+ * "0 new".
+ */
+function renderNavBadge(
+  badgeCount: number | undefined,
+  badge: string | undefined,
+  isActive: boolean,
+) {
+  const numericLabel = typeof badgeCount === "number" && badgeCount > 0 ? String(badgeCount) : null;
+  const label = numericLabel ?? (badge && badge.length > 0 ? badge : null);
+  if (!label) return null;
+
+  // Warning-style red pill when a numeric count surfaces something the
+  // parent probably wants to notice (absences, unpaid, urgent actions).
+  // The neutral style matches the previous pill.
+  const isUrgent = numericLabel !== null && (badgeCount ?? 0) > 0;
+
+  return (
+    <span
+      className={`flex h-5 items-center justify-center rounded-full px-2 text-[10px] font-semibold ${
+        isActive
+          ? "bg-[var(--ds-on-primary)]/18 text-[var(--ds-on-primary)]"
+          : isUrgent
+            ? "bg-[#fee9e9] text-[#8b1f1f]"
+            : "bg-[var(--ds-soft)] text-[var(--ds-text-primary)]"
+      }`}
+    >
+      {label}
+    </span>
+  );
+}
+
 export default function ParentPortalScrollNav({ items }: ParentPortalScrollNavProps) {
   const { t } = useI18n();
   const sectionIds = useMemo(
@@ -90,17 +124,7 @@ export default function ParentPortalScrollNav({ items }: ParentPortalScrollNavPr
             }`}
           >
             <p className="whitespace-nowrap">{t(item.labelKey, item.descriptionValues)}</p>
-            {item.badge ? (
-              <span
-                className={`flex h-5 items-center justify-center rounded-full px-2 text-[10px] font-semibold ${
-                  isActive
-                    ? "bg-[var(--ds-on-primary)]/18 text-[var(--ds-on-primary)]"
-                    : "bg-[var(--ds-soft)] text-[var(--ds-text-primary)]"
-                }`}
-              >
-                {item.badge}
-              </span>
-            ) : null}
+            {renderNavBadge(item.badgeCount, item.badge, isActive)}
           </Link>
         );
       })}

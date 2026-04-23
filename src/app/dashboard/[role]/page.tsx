@@ -1,83 +1,8 @@
 import type { Metadata } from "next";
-import { cookies } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import DashboardShell from "@/components/dashboard-shell";
-import { getServerServiceEndpoints } from "@/features/admissions-auth/infrastructure/service-endpoints";
-import {
-  getDashboardConfig,
-  getParentAdmissionsContextFromMePayload,
-  getParentAdmissionsContextFromSearchParams,
-  type ParentMePayload,
-  type ParentSisSnapshot,
-} from "@/lib/dashboard-data";
+import { getDashboardConfig } from "@/lib/dashboard-data";
 import en from "@/i18n/translations/en.json";
-
-const SESSION_COOKIE_NAME = "ds-session";
-
-/**
- * Fetch the authenticated parent's profile + students + latest payment from
- * the admission-service. Returns null if the call fails — the dashboard then
- * falls back to the legacy URL-param path so existing deep-links keep
- * working while we roll this out.
- */
-async function loadParentMe(): Promise<ParentMePayload | null> {
-  const cookieStore = await cookies();
-  const token = cookieStore.get(SESSION_COOKIE_NAME)?.value;
-  if (!token) return null;
-
-  const { admission } = getServerServiceEndpoints();
-  try {
-    const res = await fetch(`${admission}/me`, {
-      method: "GET",
-      headers: { Authorization: `Bearer ${token}` },
-      cache: "no-store",
-    });
-    if (!res.ok) return null;
-    const body = (await res.json().catch(() => null)) as
-      | { responseCode?: number; data?: ParentMePayload }
-      | null;
-    return body?.data ?? null;
-  } catch {
-    return null;
-  }
-}
-
-/**
- * Parent-scoped SIS snapshot: sections + attendance + grades for every
- * kid the current parent owns. Each sub-call downgrades to [] on
- * failure — the dashboard renders partial data rather than blanking
- * out when only one call is flaky.
- */
-async function loadParentSisSnapshot(): Promise<ParentSisSnapshot> {
-  const cookieStore = await cookies();
-  const token = cookieStore.get(SESSION_COOKIE_NAME)?.value;
-  if (!token) return { sections: [], attendance: [], grades: [] };
-
-  const { admission } = getServerServiceEndpoints();
-  const headers = { Authorization: `Bearer ${token}` };
-  const fetchJson = async (path: string) => {
-    try {
-      const res = await fetch(`${admission}${path}`, { headers, cache: "no-store" });
-      if (!res.ok) return [];
-      const body = (await res.json().catch(() => null)) as { data?: unknown } | null;
-      return Array.isArray(body?.data) ? body!.data : [];
-    } catch {
-      return [];
-    }
-  };
-
-  const [sections, attendance, grades] = await Promise.all([
-    fetchJson("/me/sections"),
-    fetchJson("/me/attendance"),
-    fetchJson("/me/grades"),
-  ]);
-
-  return {
-    sections: sections as ParentSisSnapshot["sections"],
-    attendance: attendance as ParentSisSnapshot["attendance"],
-    grades: grades as ParentSisSnapshot["grades"],
-  };
-}
 
 type DashboardPageProps = {
   params: Promise<{ role: string }>;
@@ -118,20 +43,21 @@ export default async function DashboardPage({ params, searchParams }: DashboardP
     redirect("/admin/admissions");
   }
 
-  const query = await searchParams;
-  // Prefer the authoritative profile from /me (cookie-authenticated) over
-  // URL params. Falls back to the legacy URL path if the /me call fails or
-  // returns partial data.
-  let parentAdmissionsContext = null;
-  let parentSisSnapshot: ParentSisSnapshot | null = null;
+  // Canonical parent path lives at /parent/dashboard. Preserve any
+  // query string (legacy deep-links that carry admissionsContext in the
+  // URL) so /dashboard/parent?...&... still resolves.
   if (role === "parent") {
-    const [mePayload, sisSnap] = await Promise.all([loadParentMe(), loadParentSisSnapshot()]);
-    parentAdmissionsContext =
-      getParentAdmissionsContextFromMePayload(mePayload) ??
-      getParentAdmissionsContextFromSearchParams(query);
-    parentSisSnapshot = sisSnap;
+    const query = await searchParams;
+    const qs = new URLSearchParams();
+    for (const [key, value] of Object.entries(query)) {
+      if (typeof value === "string") qs.set(key, value);
+      else if (Array.isArray(value)) value.forEach((v) => qs.append(key, v));
+    }
+    const suffix = qs.toString();
+    redirect(suffix ? `/parent/dashboard?${suffix}` : "/parent/dashboard");
   }
-  const config = getDashboardConfig(role, parentAdmissionsContext, parentSisSnapshot);
+
+  const config = getDashboardConfig(role);
 
   if (!config) {
     notFound();

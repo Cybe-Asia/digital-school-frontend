@@ -20,6 +20,9 @@ export type NavItem = {
   descriptionKey?: string;
   descriptionValues?: TranslationValues;
   badge?: string;
+  /** Numeric badge count. When > 0, renders a highlighted pill beside
+   *  the label. Set to 0 to explicitly suppress the badge. */
+  badgeCount?: number;
 };
 
 export type Metric = {
@@ -60,10 +63,25 @@ export type TableRow = {
 export type TranslationValues = Record<string, string | number>;
 
 export type ParentPortalSummaryCard = {
+  /** @deprecated legacy eyebrow label — kept to avoid breaking old
+   *  consumers. New renderers prefer titleKey + subtitleKey. */
   labelKey: string;
+  /** @deprecated legacy large number — new cards use sentence title. */
   value: string;
+  /** @deprecated legacy helper line. */
   helperKey: string;
+  /** @deprecated */
   helperValues?: TranslationValues;
+  /** Sentence-style card title, e.g. "Ahmad hadir hari ini ✓". */
+  titleKey?: string;
+  titleValues?: TranslationValues;
+  /** Short supporting copy under the title. */
+  subtitleKey?: string;
+  subtitleValues?: TranslationValues;
+  /** Left-border tone. Drives the accent color. */
+  tone?: "positive" | "warning" | "neutral" | "info";
+  /** Optional anchor/URL the whole card jumps to on click. */
+  href?: string;
 };
 
 export type ParentPortalStudentCard = {
@@ -125,6 +143,31 @@ export type ParentPortalExperience = {
     detailValues?: TranslationValues;
     tagKey: string;
   }>;
+  /** Per-kid SIS snapshot shown inside the "SIS today" section. Empty
+   *  array when no kid is enrolled yet — the section simply hides. */
+  sisToday: Array<{
+    studentName: string;
+    attendanceStatus?: "present" | "late" | "absent" | "excused" | "unknown";
+    attendanceLabelKey: string;
+    attendanceDetailKey: string;
+    attendanceDetailValues?: TranslationValues;
+    latestGrade?: {
+      subject: string;
+      term: string;
+      scoreText: string;
+      percentage: number;
+    };
+    sectionName?: string;
+    homeroomTeacherName?: string;
+  }>;
+  /** Count of today's absences across all kids — feeds the nav badge. */
+  sisAbsencesToday: number;
+  /** Count of unread family updates — feeds the nav badge. We don't
+   *  have read-state yet so every update counts as unread. */
+  unreadUpdates: number;
+  /** True when the outstanding payment is non-zero. Drives payments
+   *  nav badge + the mobile "Pay" button destination. */
+  hasUnpaidPayment: boolean;
 };
 
 export type DashboardConfig = {
@@ -519,7 +562,7 @@ function createParentAdmissionsDashboard(
     ? (context.existingChildrenCount ?? 0) + context.students.length
     : context.students.length;
   const schoolName = context.school === "iihs" ? "IIHS" : "IISS";
-  const parentPortal = buildParentPortalExperience(context, schoolName);
+  const parentPortal = buildParentPortalExperience(context, schoolName, sis);
 
   // --- Real SIS rollups (fall back to zeros / admissions-stage text when no
   //     SIS data is present yet, e.g. kid still in test/docs stage).
@@ -712,7 +755,7 @@ function createParentAdmissionsDashboard(
 
   return {
     ...dashboardData.parent,
-    navItems: buildParentPortalNavItems(context),
+    navItems: buildParentPortalNavItems(context, parentPortal),
     subtitleKey: buildAdmissionsSubtitle(primaryStudent.studentName, context.students.length),
     metrics,
     progress: progress.length > 0
@@ -838,7 +881,75 @@ function buildAdmissionsSubtitle(primaryStudentName: string, studentCount: numbe
 function buildParentPortalExperience(
   context: ParentAdmissionsContext,
   schoolShortName: string,
+  sis: ParentSisSnapshot | null,
 ): ParentPortalExperience {
+  const todayIso = new Date().toISOString().slice(0, 10);
+  const attendance = sis?.attendance ?? [];
+  const grades = sis?.grades ?? [];
+  const sections = sis?.sections ?? [];
+
+  // Build per-kid SIS "today" snapshot — attendance (if a row exists
+  // for today) + the most recent graded subject. Kids without a
+  // studentId (pre-/me deep link) are skipped.
+  const sisToday: ParentPortalExperience["sisToday"] = context.students
+    .filter((s) => Boolean(s.studentId))
+    .map((student) => {
+      const sid = student.studentId!;
+      const todayRow = attendance.find((a) => a.applicantStudentId === sid && a.date === todayIso);
+      const kidSection = sections.find((sec) => sec.applicantStudentId === sid);
+      const kidGrades = grades
+        .filter((g) => g.applicantStudentId === sid)
+        .sort((a, b) => (a.recordedAt < b.recordedAt ? 1 : -1));
+      const latestGrade = kidGrades[0];
+      const status = (todayRow?.status as
+        | "present"
+        | "late"
+        | "absent"
+        | "excused"
+        | undefined) ?? "unknown";
+
+      const attendanceLabelKey =
+        status === "present"
+          ? "dashboard.parent.portal.sis_today.attendance.present"
+          : status === "late"
+            ? "dashboard.parent.portal.sis_today.attendance.late"
+            : status === "absent"
+              ? "dashboard.parent.portal.sis_today.attendance.absent"
+              : status === "excused"
+                ? "dashboard.parent.portal.sis_today.attendance.excused"
+                : "dashboard.parent.portal.sis_today.attendance.unknown";
+      const attendanceDetailKey =
+        status === "unknown"
+          ? "dashboard.parent.portal.sis_today.attendance.unknown_detail"
+          : "dashboard.parent.portal.sis_today.attendance.detail";
+
+      return {
+        studentName: student.studentName,
+        attendanceStatus: status,
+        attendanceLabelKey,
+        attendanceDetailKey,
+        attendanceDetailValues: {
+          section: kidSection?.sectionName ?? "",
+        },
+        latestGrade: latestGrade
+          ? {
+              subject: latestGrade.subject,
+              term: latestGrade.term,
+              scoreText: `${latestGrade.score}/${latestGrade.maxScore}`,
+              percentage:
+                latestGrade.maxScore > 0
+                  ? Math.round((latestGrade.score / latestGrade.maxScore) * 100)
+                  : 0,
+            }
+          : undefined,
+        sectionName: kidSection?.sectionName,
+        homeroomTeacherName: kidSection?.homeroomTeacherName ?? undefined,
+      };
+    });
+
+  const sisAbsencesToday = attendance.filter(
+    (a) => a.date === todayIso && a.status === "absent",
+  ).length;
   const studentCards = context.students.map((student, index) => {
     const templates = [
       {
@@ -925,34 +1036,142 @@ function buildParentPortalExperience(
         },
   );
 
+  // --- Sentence-style summary cards. Each card rewrites the old
+  //     label/value pair into a full parent-friendly sentence, and
+  //     falls back to contextual copy when SIS data isn't there yet
+  //     (pre-enrolled kid) — never fakes numbers.
+  const primaryKidName = context.students[0]?.studentName ?? context.parentName;
+  const primaryKidToday = sisToday[0];
+  const attendanceCard: ParentPortalSummaryCard = primaryKidToday
+    ? primaryKidToday.attendanceStatus === "present" || primaryKidToday.attendanceStatus === "late"
+      ? {
+          labelKey: "dashboard.parent.portal.summary.attendance.label",
+          value: "",
+          helperKey: "dashboard.parent.portal.summary.attendance.helper_present",
+          titleKey: "dashboard.parent.portal.summary.attendance.title_present",
+          titleValues: { student: primaryKidToday.studentName },
+          subtitleKey: "dashboard.parent.portal.summary.attendance.subtitle_present",
+          subtitleValues: { section: primaryKidToday.sectionName ?? "" },
+          tone: "positive",
+          href: "#sis-today",
+        }
+      : primaryKidToday.attendanceStatus === "absent"
+        ? {
+            labelKey: "dashboard.parent.portal.summary.attendance.label",
+            value: "",
+            helperKey: "dashboard.parent.portal.summary.attendance.helper_absent",
+            titleKey: "dashboard.parent.portal.summary.attendance.title_absent",
+            titleValues: { student: primaryKidToday.studentName },
+            subtitleKey: "dashboard.parent.portal.summary.attendance.subtitle_absent",
+            tone: "warning",
+            href: "#sis-today",
+          }
+        : {
+            labelKey: "dashboard.parent.portal.summary.attendance.label",
+            value: "",
+            helperKey: "dashboard.parent.portal.summary.attendance.helper_pending",
+            titleKey: "dashboard.parent.portal.summary.attendance.title_pending",
+            titleValues: { student: primaryKidToday.studentName },
+            subtitleKey: "dashboard.parent.portal.summary.attendance.subtitle_pending",
+            tone: "neutral",
+            href: "#sis-today",
+          }
+    : {
+        labelKey: "dashboard.parent.portal.summary.attendance.label",
+        value: "",
+        helperKey: "dashboard.parent.portal.summary.attendance.helper_no_data",
+        titleKey: "dashboard.parent.portal.summary.attendance.title_no_data",
+        titleValues: { student: primaryKidName },
+        subtitleKey: "dashboard.parent.portal.summary.attendance.subtitle_no_data",
+        tone: "neutral",
+        href: "#registered-students",
+      };
+
+  // Average grade across all kids with grade data — drops to contextual
+  // copy when no grades exist yet.
+  const allGraded = grades.filter((g) => g.maxScore > 0);
+  const gradeAvg = allGraded.length > 0
+    ? Math.round(
+        allGraded.reduce((acc, g) => acc + (g.score / g.maxScore) * 100, 0) / allGraded.length,
+      )
+    : null;
+  const gradeCard: ParentPortalSummaryCard = gradeAvg != null
+    ? {
+        labelKey: "dashboard.parent.portal.summary.grades.label",
+        value: "",
+        helperKey: "dashboard.parent.portal.summary.grades.helper",
+        titleKey: "dashboard.parent.portal.summary.grades.title",
+        titleValues: { average: gradeAvg },
+        subtitleKey: "dashboard.parent.portal.summary.grades.subtitle",
+        subtitleValues: { count: allGraded.length },
+        tone: gradeAvg >= 85 ? "positive" : gradeAvg >= 70 ? "info" : "warning",
+        href: "#sis-today",
+      }
+    : {
+        labelKey: "dashboard.parent.portal.summary.grades.label",
+        value: "",
+        helperKey: "dashboard.parent.portal.summary.grades.helper_empty",
+        titleKey: "dashboard.parent.portal.summary.grades.title_empty",
+        titleValues: { student: primaryKidName },
+        subtitleKey: "dashboard.parent.portal.summary.grades.subtitle_empty",
+        tone: "neutral",
+        href: "#admissions-timeline",
+      };
+
+  // Payment card — right now paymentSummary is a static mock. We still
+  // surface the amount, but the copy is parent-friendly.
+  const paymentAmount = context.school === "iihs" ? "Rp 2.400.000" : "Rp 2.100.000";
+  const hasUnpaidPayment = true; // Static mock until billing is live.
+  const paymentCard: ParentPortalSummaryCard = {
+    labelKey: "dashboard.parent.portal.summary.tuition.label",
+    value: "",
+    helperKey: "dashboard.parent.portal.summary.tuition.helper",
+    titleKey: "dashboard.parent.portal.summary.tuition.title",
+    titleValues: { amount: paymentAmount },
+    subtitleKey: "dashboard.parent.portal.summary.tuition.subtitle",
+    tone: "info",
+    href: "#payments-center",
+  };
+
+  // Actions card — counts high-priority items only (avoids "4 tasks" when
+  // three are low-priority filler).
+  const highPriorityActionCount = actions.filter((a) => a.priority === "high").length;
+  const anyActionCount = actions.length;
+  const actionsCard: ParentPortalSummaryCard = highPriorityActionCount > 0
+    ? {
+        labelKey: "dashboard.parent.portal.summary.actions.label",
+        value: "",
+        helperKey: "dashboard.parent.portal.summary.actions.helper_pending",
+        titleKey: "dashboard.parent.portal.summary.actions.title_pending",
+        titleValues: { count: highPriorityActionCount },
+        subtitleKey: "dashboard.parent.portal.summary.actions.subtitle_pending",
+        tone: "warning",
+        href: "#action-items",
+      }
+    : anyActionCount > 0
+      ? {
+          labelKey: "dashboard.parent.portal.summary.actions.label",
+          value: "",
+          helperKey: "dashboard.parent.portal.summary.actions.helper_light",
+          titleKey: "dashboard.parent.portal.summary.actions.title_light",
+          titleValues: { count: anyActionCount },
+          subtitleKey: "dashboard.parent.portal.summary.actions.subtitle_light",
+          tone: "info",
+          href: "#action-items",
+        }
+      : {
+          labelKey: "dashboard.parent.portal.summary.actions.label",
+          value: "",
+          helperKey: "dashboard.parent.portal.summary.actions.helper_clear",
+          titleKey: "dashboard.parent.portal.summary.actions.title_clear",
+          subtitleKey: "dashboard.parent.portal.summary.actions.subtitle_clear",
+          tone: "positive",
+          href: "#action-items",
+        };
+
   return {
     schoolShortName,
-    summaryCards: [
-      {
-        labelKey: "dashboard.parent.portal.summary.registered_students.label",
-        value: String(context.students.length),
-        helperKey: "dashboard.parent.portal.summary.registered_students.helper",
-        helperValues: { school: schoolShortName },
-      },
-      {
-        labelKey: "dashboard.parent.portal.summary.active_applications.label",
-        value: String(studentCards.length),
-        helperKey: "dashboard.parent.portal.summary.active_applications.helper",
-        helperValues: { count: studentCards.length },
-      },
-      {
-        labelKey: "dashboard.parent.portal.summary.next_actions.label",
-        value: String(actions.length),
-        helperKey: "dashboard.parent.portal.summary.next_actions.helper",
-        helperValues: { student: context.students[0]?.studentName ?? context.parentName },
-      },
-      {
-        labelKey: "dashboard.parent.portal.summary.family_completion.label",
-        value: `${averageProgress}%`,
-        helperKey: "dashboard.parent.portal.summary.family_completion.helper",
-        helperValues: { school: schoolShortName },
-      },
-    ],
+    summaryCards: [attendanceCard, gradeCard, paymentCard, actionsCard],
     studentCards,
     actions,
     timeline: [
@@ -1020,46 +1239,56 @@ function buildParentPortalExperience(
         tagKey: "dashboard.parent.portal.updates.tag.family",
       },
     ],
+    sisToday,
+    sisAbsencesToday,
+    // We don't track read state yet — every update counts as unread.
+    unreadUpdates: 3,
+    hasUnpaidPayment,
   };
 }
 
-function buildParentPortalNavItems(context: ParentAdmissionsContext): NavItem[] {
+function buildParentPortalNavItems(
+  context: ParentAdmissionsContext,
+  portal: ParentPortalExperience,
+): NavItem[] {
+  const highPriorityActionCount = portal.actions.filter((a) => a.priority === "high").length;
+  const sisBadge = portal.sisAbsencesToday;
   return [
     {
-      labelKey: "dashboard.parent.portal.nav.overview.label",
-      descriptionKey: "dashboard.parent.portal.nav.overview.description",
-      href: "#family-overview",
-      active: true,
+      labelKey: "dashboard.parent.portal.nav.actions.label",
+      descriptionKey: "dashboard.parent.portal.nav.actions.description",
+      href: "#action-items",
+      badgeCount: highPriorityActionCount,
     },
     {
       labelKey: "dashboard.parent.portal.nav.students.label",
       descriptionKey: "dashboard.parent.portal.nav.students.description",
       descriptionValues: { count: context.students.length },
       href: "#registered-students",
-      badge: String(context.students.length),
+      badgeCount: context.students.length,
     },
     {
-      labelKey: "dashboard.parent.portal.nav.timeline.label",
-      descriptionKey: "dashboard.parent.portal.nav.timeline.description",
-      href: "#admissions-timeline",
-      badge: "6",
-    },
-    {
-      labelKey: "dashboard.parent.portal.nav.actions.label",
-      descriptionKey: "dashboard.parent.portal.nav.actions.description",
-      href: "#next-actions",
-      badge: String(Math.min(context.students.length + 1, 4)),
+      labelKey: "dashboard.parent.portal.nav.sis_today.label",
+      descriptionKey: "dashboard.parent.portal.nav.sis_today.description",
+      href: "#sis-today",
+      badgeCount: sisBadge,
     },
     {
       labelKey: "dashboard.parent.portal.nav.payments.label",
       descriptionKey: "dashboard.parent.portal.nav.payments.description",
       href: "#payments-center",
+      badgeCount: portal.hasUnpaidPayment ? 1 : 0,
     },
     {
       labelKey: "dashboard.parent.portal.nav.updates.label",
       descriptionKey: "dashboard.parent.portal.nav.updates.description",
       href: "#family-updates",
-      badge: "3",
+      badgeCount: portal.unreadUpdates,
+    },
+    {
+      labelKey: "dashboard.parent.portal.nav.timeline.label",
+      descriptionKey: "dashboard.parent.portal.nav.timeline.description",
+      href: "#admissions-timeline",
     },
     {
       labelKey: "dashboard.parent.portal.nav.messages.label",
