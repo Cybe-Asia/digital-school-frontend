@@ -23,6 +23,9 @@ export default function BottomNavClient({
   paymentsLabel: string;
   kidsLabel: string;
 }) {
+  // Each tab is a real route — not a hash anchor on the dashboard —
+  // so tapping feels like a native tab transition instead of a
+  // scroll-to-section jump.
   return (
     <BottomNav
       items={[
@@ -35,20 +38,20 @@ export default function BottomNavClient({
         {
           id: "kids",
           label: kidsLabel,
-          href: "/parent/dashboard#kids",
+          href: "/parent/kids",
           icon: <GraduateIcon />,
         },
         {
           id: "messages",
           label: messagesLabel,
-          href: "/parent/dashboard#messages",
+          href: "/parent/messages",
           icon: <MailIcon />,
           badge: unreadMessages,
         },
         {
           id: "payments",
           label: paymentsLabel,
-          href: "/parent/dashboard#payments",
+          href: "/parent/payments",
           icon: <WalletIcon />,
           badge: hasUnpaidPayment ? 1 : 0,
         },
