@@ -53,6 +53,7 @@ export function SetupAccountAdditionalForm({ admissionId }: SetupAccountAddition
           studentBirthDate: "",
           currentSchool: "",
           targetGrade: "",
+          targetSchool: "iiss",
           notes: "",
         },
       ],
@@ -83,6 +84,8 @@ export function SetupAccountAdditionalForm({ admissionId }: SetupAccountAddition
           dateOfBirth: s.studentBirthDate,
           currentSchool: s.currentSchool,
           targetGradeLevel: s.targetGrade,
+          // Admission-service expects the canonical SCH-* code.
+          targetSchool: `SCH-${s.targetSchool.toUpperCase()}`,
           notes: s.notes ?? "",
         })),
       });
@@ -288,6 +291,17 @@ export function SetupAccountAdditionalForm({ admissionId }: SetupAccountAddition
                     </FormField>
 
                     <FormField
+                      label="auth.additional.target_school_label"
+                      htmlFor={`students.${index}.targetSchool`}
+                      error={errors.students?.[index]?.targetSchool?.message}
+                    >
+                      <Select id={`students.${index}.targetSchool`} {...register(`students.${index}.targetSchool` as const)}>
+                        <option value="iihs">{t("auth.eoi.school.iihs")}</option>
+                        <option value="iiss">{t("auth.eoi.school.iiss")}</option>
+                      </Select>
+                    </FormField>
+
+                    <FormField
                       label="auth.additional.student_notes_label"
                       htmlFor={`students.${index}.notes`}
                       error={errors.students?.[index]?.notes?.message}
@@ -315,6 +329,7 @@ export function SetupAccountAdditionalForm({ admissionId }: SetupAccountAddition
                   studentBirthDate: "",
                   currentSchool: "",
                   targetGrade: "",
+                  targetSchool: "iiss",
                   notes: "",
                 });
                 setExpandedIndex(fields.length);

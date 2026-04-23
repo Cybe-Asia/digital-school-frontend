@@ -2,9 +2,14 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { useEOIMutation } from "@/features/admissions-auth/presentation/hooks/use-eoi-mutation";
-import { eoiSchema, type EOIFormValues } from "@/features/admissions-auth/schemas/eoi-schema";
+import {
+  MAX_PROSPECTIVE_CHILDREN,
+  eoiSchema,
+  type EOIFormValues,
+} from "@/features/admissions-auth/schemas/eoi-schema";
 import { useI18n } from "@/i18n";
 import { Button } from "@/shared/ui/button";
 import { Input } from "@/shared/ui/input";
@@ -33,6 +38,8 @@ export function EOIForm() {
     handleSubmit,
     setError,
     control,
+    setValue,
+    getValues,
     formState: { errors, isSubmitting },
   } = useForm<EOIFormValues>({
     resolver: zodResolver(eoiSchema),
@@ -44,6 +51,8 @@ export function EOIForm() {
       occupation: "",
       hasExistingStudents: "no",
       existingChildrenCount: undefined,
+      prospectiveChildrenCount: 1,
+      prospectiveChildren: [{ age: 5 }],
       referralCode: "",
       heardFrom: "social-media",
       school: "iihs",
@@ -53,6 +62,21 @@ export function EOIForm() {
     control,
     name: "hasExistingStudents",
   });
+  const prospectiveChildrenCount = useWatch({
+    control,
+    name: "prospectiveChildrenCount",
+  });
+  // Keep the prospectiveChildren array length in sync with the parent's
+  // chosen count. Growing the array preserves existing ages; shrinking
+  // drops the tail. We do NOT replace the whole array every render or
+  // the parent's partially-filled ages would reset on keystroke.
+  useEffect(() => {
+    const n = Math.max(1, Math.min(MAX_PROSPECTIVE_CHILDREN, Number(prospectiveChildrenCount) || 1));
+    const current = getValues("prospectiveChildren") ?? [];
+    if (current.length === n) return;
+    const next = Array.from({ length: n }, (_, i) => current[i] ?? { age: 5 });
+    setValue("prospectiveChildren", next, { shouldValidate: false, shouldDirty: true });
+  }, [prospectiveChildrenCount, getValues, setValue]);
 
   const onSubmit = handleSubmit(async (values) => {
     const result = await mutation.mutateAsync(values);
@@ -137,6 +161,48 @@ export function EOIForm() {
           />
         </FormField>
       ) : null}
+
+      <FormField
+        label="auth.eoi.prospective_count_label"
+        htmlFor="prospectiveChildrenCount"
+        error={errors.prospectiveChildrenCount?.message}
+      >
+        <Select
+          id="prospectiveChildrenCount"
+          {...register("prospectiveChildrenCount", {
+            setValueAs: (value) => (value === "" ? 1 : Number(value)),
+          })}
+        >
+          {Array.from({ length: MAX_PROSPECTIVE_CHILDREN }, (_, i) => i + 1).map((n) => (
+            <option key={n} value={n}>
+              {n}
+            </option>
+          ))}
+        </Select>
+      </FormField>
+
+      {Array.from({ length: Math.max(1, Math.min(MAX_PROSPECTIVE_CHILDREN, Number(prospectiveChildrenCount) || 1)) }).map((_, index) => (
+        <FormField
+          key={index}
+          label="auth.eoi.prospective_child_age_label"
+          labelValues={{ number: index + 1 }}
+          htmlFor={`prospectiveChildren.${index}.age`}
+          error={errors.prospectiveChildren?.[index]?.age?.message}
+        >
+          <Select
+            id={`prospectiveChildren.${index}.age`}
+            {...register(`prospectiveChildren.${index}.age` as const, {
+              setValueAs: (value) => (value === "" ? 0 : Number(value)),
+            })}
+          >
+            {Array.from({ length: 19 }, (_, age) => age).map((age) => (
+              <option key={age} value={age}>
+                {t("auth.eoi.prospective_child_age_option", { age })}
+              </option>
+            ))}
+          </Select>
+        </FormField>
+      ))}
 
       <FormField label="auth.eoi.referral_code_label" htmlFor="referralCode" error={errors.referralCode?.message}>
         <Input id="referralCode" placeholder={t("auth.eoi.referral_code_placeholder")} {...register("referralCode")} />

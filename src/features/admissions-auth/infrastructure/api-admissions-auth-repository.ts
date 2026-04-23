@@ -103,6 +103,9 @@ type SubmitEOIApiRequest = {
   hear_about_school?: string;
   referral_code?: string;
   existing_students?: number;
+  /** Per-child ages captured on the EOI form; matches the new
+   *  `Lead.prospective_children_ages` field in admission-service. */
+  prospective_children_ages?: number[];
 };
 
 type SubmitEOIApiData = {
@@ -439,6 +442,9 @@ export class ApiAdmissionsAuthRepository implements AdmissionsAuthRepository {
 
 function mapSubmitEOIRequest(input: EOIInput): SubmitEOIApiRequest {
   const referralCode = input.referralCode?.trim();
+  const ages = (input.prospectiveChildren ?? [])
+    .map((c) => c.age)
+    .filter((age) => Number.isFinite(age) && age >= 0 && age <= 18);
 
   return {
     parent_name: input.parentName,
@@ -450,6 +456,7 @@ function mapSubmitEOIRequest(input: EOIInput): SubmitEOIApiRequest {
     hear_about_school: toHeardAboutSchool(input.heardFrom) || undefined,
     referral_code: referralCode ? referralCode : undefined,
     existing_students: toExistingStudentsCount(input) || undefined,
+    prospective_children_ages: ages.length > 0 ? ages : undefined,
   };
 }
 

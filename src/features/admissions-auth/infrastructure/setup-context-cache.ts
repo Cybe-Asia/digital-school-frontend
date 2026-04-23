@@ -19,6 +19,9 @@ const HEARD_FROM_REVERSE: Record<string, string> = {
  */
 export function mapAdmissionToSetupContext(admission: AdmissionData): SetupContext {
   const existingCount = admission.existingStudents ?? 0;
+  const ages = Array.isArray(admission.prospectiveChildrenAges)
+    ? admission.prospectiveChildrenAges
+    : [];
 
   return {
     parentName: admission.parentName,
@@ -28,9 +31,11 @@ export function mapAdmissionToSetupContext(admission: AdmissionData): SetupConte
     occupation: admission.occupation ?? "",
     hasExistingStudents: existingCount > 0 ? "yes" : "no",
     existingChildrenCount: existingCount > 0 ? existingCount : undefined,
+    prospectiveChildrenCount: ages.length > 0 ? ages.length : 1,
+    prospectiveChildren: ages.length > 0 ? ages.map((age) => ({ age })) : [{ age: 5 }],
     referralCode: admission.referralCode ?? undefined,
     heardFrom: HEARD_FROM_REVERSE[admission.hearAboutSchool ?? ""] ?? "other",
-    school: (admission.schoolSelection?.toLowerCase() ?? "iiss") as "iihs" | "iiss",
+    school: (admission.schoolSelection?.toLowerCase().replace(/^sch-/, "") ?? "iiss") as "iihs" | "iiss",
   };
 }
 

@@ -13,6 +13,11 @@ export type EOIInput = {
   occupation: string;
   hasExistingStudents: "yes" | "no";
   existingChildrenCount?: number;
+  /** How many children the family intends to enrol. */
+  prospectiveChildrenCount: number;
+  /** Per-child ages (0-18) captured on the EOI form. Length must equal
+   *  prospectiveChildrenCount. Marketing signal. */
+  prospectiveChildren: Array<{ age: number }>;
   referralCode?: string;
   heardFrom: string;
   school: SchoolCode;
@@ -121,6 +126,7 @@ export type AdmissionData = {
   hearAboutSchool: string | null;
   referralCode: string | null;
   existingStudents: number | null;
+  prospectiveChildrenAges?: number[] | null;
   isVerified: boolean;
   createdAt: string;
   updatedAt: string;
@@ -172,6 +178,8 @@ export type SubmitStudentsInput = {
     dateOfBirth: string;
     currentSchool: string;
     targetGradeLevel: string;
+    /** Per-child target school — 'SCH-IIHS' or 'SCH-IISS'. */
+    targetSchool?: string;
     notes: string;
   }[];
 };

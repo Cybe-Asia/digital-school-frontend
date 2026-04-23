@@ -16,6 +16,8 @@ const submitEOIPayload = {
   locationSuburb: "South Jakarta",
   occupation: "Entrepreneur",
   hasExistingStudents: "no" as const,
+  prospectiveChildrenCount: 1,
+  prospectiveChildren: [{ age: 7 }],
   referralCode: "",
   heardFrom: "social-media",
   school: "iihs" as const,
@@ -29,6 +31,8 @@ const submitEOIPayloadWithExistingStudents = {
   occupation: "Engineer",
   hasExistingStudents: "yes" as const,
   existingChildrenCount: 2,
+  prospectiveChildrenCount: 2,
+  prospectiveChildren: [{ age: 9 }, { age: 12 }],
   referralCode: "  REF123  ",
   heardFrom: "friend-family",
   school: "iiss" as const,
@@ -228,6 +232,7 @@ describe("ApiAdmissionsAuthRepository", () => {
           location_suburb: "South Jakarta",
           occupation: "Entrepreneur",
           hear_about_school: "Social Media",
+          prospective_children_ages: [7],
         }),
       }),
     );
@@ -271,6 +276,7 @@ describe("ApiAdmissionsAuthRepository", () => {
           hear_about_school: "Friend / Family",
           referral_code: "REF123",
           existing_students: 2,
+          prospective_children_ages: [9, 12],
         }),
       }),
     );
