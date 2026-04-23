@@ -15,6 +15,7 @@ import {
   buildParentApplicationId,
 } from "@/features/admissions-portal/presentation/lib/admissions-portal-routes";
 import { ParentScheduleBooking } from "@/features/admissions-portal/presentation/components/parent-schedule-booking";
+import { ParentDocumentUpload } from "@/features/admissions-portal/presentation/components/parent-document-upload";
 import { KidAvatar, Screen, Tile, BigButton } from "@/components/parent-ui";
 import {
   ArrowIcon,
@@ -454,7 +455,14 @@ function DocumentsScreen({
         </p>
       </header>
 
-      <div className="space-y-3">
+      {/* Real document upload wired to /api/me/document-requests
+          multipart proxy. The static `application.documents` list below
+          is kept as a fallback visual summary when there is no real
+          DocumentRequest seeded yet (e.g. a kid whose application was
+          jump-started past the admissions stage in demo seed). */}
+      <ParentDocumentUpload studentId={application.studentId ?? undefined} />
+
+      <div className="mt-6 space-y-3">
         {application.documents.map((doc) => {
           const verified = doc.status === "verified";
           const uploaded = doc.status === "uploaded";

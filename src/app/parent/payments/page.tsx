@@ -4,9 +4,10 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getServerServiceEndpoints } from "@/features/admissions-auth/infrastructure/service-endpoints";
 import type { ParentMePayload } from "@/lib/dashboard-data";
-import { BigButton, Screen, Tile } from "@/components/parent-ui";
+import { Screen, Tile } from "@/components/parent-ui";
 import { WalletIcon } from "@/components/parent-ui/icons";
 import BottomNavClient from "@/components/parent-ui/bottom-nav-client";
+import { PayButtonClient } from "@/components/parent-ui/pay-button-client";
 import { getServerI18n } from "@/i18n/server";
 import en from "@/i18n/translations/en.json";
 
@@ -118,11 +119,12 @@ export default async function ParentPaymentsPage() {
                     ? t("parent.payments.pending_body")
                     : t("parent.payments.generic_body")}
               </p>
-              {isPending && payment?.hostedInvoiceUrl ? (
+              {isPending ? (
                 <div className="mt-5">
-                  <BigButton href={payment.hostedInvoiceUrl}>
-                    {t("parent.payments.pay_cta")}
-                  </BigButton>
+                  <PayButtonClient
+                    existingInvoiceUrl={payment?.hostedInvoiceUrl ?? null}
+                    admissionId={me.lead.admissionId}
+                  />
                 </div>
               ) : null}
             </Tile>
