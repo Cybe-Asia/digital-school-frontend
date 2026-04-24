@@ -3,9 +3,6 @@ import { cookies } from "next/headers";
 import { getServerServiceEndpoints } from "@/features/admissions-auth/infrastructure/service-endpoints";
 import { LogoutButton } from "@/features/admissions-auth/presentation/components/logout-button";
 import LanguageToggle from "@/components/language-toggle";
-import { RoleSwitcher } from "@/components/role-switcher";
-import { getSessionRoles } from "@/features/admissions-auth/infrastructure/session-roles";
-import { getServerI18n } from "@/i18n/server";
 
 const SESSION_COOKIE_NAME = "ds-session";
 
@@ -53,19 +50,14 @@ async function loadAdminIdentity(): Promise<AdminIdentity | null> {
 
 /**
  * Admin shell header. Mirrors the parent portal sticky header layout
- * (brand, title, actions). When the logged-in account is a hybrid
- * (has a Lead AND is in ADMIN_EMAILS), the RoleSwitcher renders a
- * two-pill toggle so the admin can jump to /parent/dashboard and
- * back without typing URLs. Admin-only accounts (no Lead) see no
- * switcher — going to /parent/dashboard would show the 'no lead'
- * error panel.
+ * (brand, title, actions). Admins are staff — the role fence in
+ * `/parent/layout.tsx` redirects them away from the parent tree, so
+ * there's no role-switcher here. If an admin genuinely needs to see
+ * the parent flow (e.g. the dev testing both sides), they use a
+ * separate account, not a view-toggle.
  */
 export default async function AdminShellHeader() {
-  const [identity, roles, { t }] = await Promise.all([
-    loadAdminIdentity(),
-    getSessionRoles(),
-    getServerI18n(),
-  ]);
+  const identity = await loadAdminIdentity();
 
   return (
     <header className="surface-card mb-6 flex flex-col gap-3 rounded-3xl p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
@@ -87,16 +79,6 @@ export default async function AdminShellHeader() {
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
-        <RoleSwitcher
-          roles={roles}
-          activeView="admin"
-          labels={{
-            parent: t("role_switcher.parent"),
-            admin: t("role_switcher.admin"),
-            switchToParent: t("role_switcher.switch_to_parent"),
-            switchToAdmin: t("role_switcher.switch_to_admin"),
-          }}
-        />
         <LanguageToggle />
         <Link
           href="/"
