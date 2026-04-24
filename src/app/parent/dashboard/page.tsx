@@ -144,6 +144,15 @@ export default async function ParentDashboardPage({ searchParams }: ParentDashbo
     loadParentMessages(),
   ]);
 
+  // Hard fence: staff (emails on ADMIN_EMAILS) must never see the
+  // parent tree, even if they also happen to have a Lead record from
+  // testing. Admins belong on /admin/admissions. We short-circuit as
+  // soon as /me confirms `isAdmin` so the downstream payload parsing
+  // can assume we're dealing with a real parent session.
+  if (meResult.kind === "ok" && meResult.payload.isAdmin === true) {
+    redirect("/admin/admissions");
+  }
+
   const meContext =
     meResult.kind === "ok" ? getParentAdmissionsContextFromMePayload(meResult.payload) : null;
   const context = meContext ?? queryContext;

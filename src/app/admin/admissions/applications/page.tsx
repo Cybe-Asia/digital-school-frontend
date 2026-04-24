@@ -25,7 +25,20 @@ type AdminApplication = {
     isVerified: boolean;
     createdAt: string;
   };
-  students: Array<{ fullName: string; targetGradeLevel: string; currentSchool: string }>;
+  students: Array<{
+    fullName: string;
+    targetGradeLevel: string;
+    currentSchool: string;
+    // Online test signals — populated once the student finishes the
+    // Moodle quiz and admission-service's /online-test/sync writes back
+    // to the Student node. `null` means the test hasn't been attempted
+    // yet (or the sync hasn't run).
+    onlineTestState?: string | null;
+    onlineTestScore?: number | null;
+    onlineTestMaxScore?: number | null;
+    onlineTestPercentage?: number | null;
+    onlineTestCompletedAt?: string | null;
+  }>;
   latestPayment?: {
     status: string;
     amount: number;
@@ -172,6 +185,7 @@ export default async function AdminApplicationsPage({
                   <th className="px-5 py-3.5 font-bold">Parent</th>
                   <th className="px-5 py-3.5 font-bold">School</th>
                   <th className="px-5 py-3.5 font-bold">Students</th>
+                  <th className="px-5 py-3.5 font-bold">Test</th>
                   <th className="px-5 py-3.5 font-bold">Application</th>
                   <th className="px-5 py-3.5 font-bold">Fee</th>
                   <th className="px-5 py-3.5 font-bold">Submitted</th>
@@ -197,9 +211,26 @@ export default async function AdminApplicationsPage({
                       {app.students.length === 0 ? (
                         <span className="text-xs text-[var(--ds-text-secondary)]">none yet</span>
                       ) : (
-                        <span className="text-[var(--ds-text-primary)]">
-                          {app.students.map((s) => s.fullName).join(", ")}
-                        </span>
+                        // Stack names so the Test column can align one
+                        // badge per student on the same row.
+                        <div className="flex flex-col gap-1">
+                          {app.students.map((s, i) => (
+                            <span key={`${s.fullName}-${i}`} className="text-[var(--ds-text-primary)]">
+                              {s.fullName}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </td>
+                    <td className="px-5 py-4">
+                      {app.students.length === 0 ? (
+                        <span className="text-xs text-[var(--ds-text-secondary)]">—</span>
+                      ) : (
+                        <div className="flex flex-col gap-1">
+                          {app.students.map((s, i) => (
+                            <TestScoreCell key={`test-${s.fullName}-${i}`} student={s} />
+                          ))}
+                        </div>
                       )}
                     </td>
                     <td className="px-5 py-4">
@@ -254,6 +285,64 @@ function formatDate(iso: string): string {
   } catch {
     return iso;
   }
+}
+
+/**
+ * Render a compact per-student online-test badge. Four states:
+ *
+ *   - no attempt yet         →  "—"           (muted)
+ *   - in progress            →  "In progress" (amber)
+ *   - finished, >= pass mark →  "3/5 · 60%"   (green, bold)
+ *   - finished, below mark   →  "1/5 · 20%"   (red,   bold)
+ *
+ * Pass threshold is hard-coded at 60 % for now. When the admin
+ * review flow lands this will move to a per-school config field.
+ */
+const PASS_THRESHOLD_PCT = 60;
+
+function TestScoreCell({
+  student,
+}: {
+  student: {
+    onlineTestState?: string | null;
+    onlineTestScore?: number | null;
+    onlineTestMaxScore?: number | null;
+    onlineTestPercentage?: number | null;
+  };
+}) {
+  const state = student.onlineTestState ?? null;
+
+  if (state === "in_progress") {
+    return (
+      <span className="inline-flex items-center rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700">
+        In progress
+      </span>
+    );
+  }
+
+  if (state === "finished") {
+    const score = student.onlineTestScore ?? 0;
+    const max = student.onlineTestMaxScore ?? 0;
+    const pct = student.onlineTestPercentage ?? 0;
+    const passed = pct >= PASS_THRESHOLD_PCT;
+    const cls = passed
+      ? "bg-green-50 text-green-800"
+      : "bg-red-50 text-red-800";
+    return (
+      <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${cls}`}>
+        {formatScore(score)}/{formatScore(max)} · {pct}%
+      </span>
+    );
+  }
+
+  // Catches both null (never started) and "not_started".
+  return <span className="text-xs text-[var(--ds-text-secondary)]">—</span>;
+}
+
+function formatScore(n: number): string {
+  // Moodle stores fractional marks as floats; chop trailing zeros so
+  // "3.00" reads as "3" but "2.5" stays as "2.5".
+  return Number.isInteger(n) ? String(n) : n.toFixed(2).replace(/\.?0+$/, "");
 }
 
 function formatMoney(amount: number, currency: string): string {

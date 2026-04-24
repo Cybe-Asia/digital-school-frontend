@@ -69,17 +69,28 @@ export function LoginForm() {
 
     await setSession(result.accessToken);
 
-    // Admin-only accounts (e.g. a school staff email added to
-    // ADMIN_EMAILS but never filled an EOI) have no Lead under
-    // their User. Sending them to /parent/dashboard would show the
-    // "No lead found" error panel. Probe /api/me after the session
-    // is set; if it 404s, the user is admin-only and belongs on
-    // /admin/admissions. Everyone else follows the standard path.
+    // Route by role. Staff (emails on ADMIN_EMAILS) always land on
+    // /admin/admissions — never the parent tree, even if they also
+    // happen to have a Lead record from testing. We probe /api/me
+    // right after the session is set and trust its `isAdmin` field.
+    //
+    // Falls back to:
+    //  - 404 inference (no Lead at all → must be admin-only) — kept
+    //    for backward-compat with older admission-service builds that
+    //    predate the `isAdmin` field.
+    //  - `result.redirectTo` when /me is unreachable (network blip).
     let target = result.redirectTo ?? "/parent/dashboard";
     try {
       const me = await fetch("/api/me", { cache: "no-store" });
       if (me.status === 404) {
         target = "/admin/admissions";
+      } else if (me.ok) {
+        const body = (await me.json().catch(() => null)) as
+          | { data?: { isAdmin?: boolean } }
+          | null;
+        if (body?.data?.isAdmin === true) {
+          target = "/admin/admissions";
+        }
       }
     } catch {
       // Network blip — fall through to the standard target. The

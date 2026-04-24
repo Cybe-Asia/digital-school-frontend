@@ -43,6 +43,15 @@ type AdminApplication = {
     applicantStatus?: string;
     applicationMode?: string;
     ageAtApplication?: number | null;
+    // Online-assessment results from Moodle, synced by admission-
+    // service's /online-test/sync endpoint. All five are nullable
+    // until the student has actually started/finished the quiz —
+    // the UI treats "no data" and "not_started" identically.
+    onlineTestState?: string | null;
+    onlineTestScore?: number | null;
+    onlineTestMaxScore?: number | null;
+    onlineTestPercentage?: number | null;
+    onlineTestCompletedAt?: string | null;
   }>;
   latestPayment?: {
     paymentId: string;
@@ -257,6 +266,13 @@ export default async function AdminApplicationDetailPage({ params }: PageProps) 
 
                   <div className="mt-4 border-t border-[var(--ds-border)] pt-3">
                     <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-[var(--ds-text-secondary)]">
+                      Online assessment
+                    </p>
+                    <TestResultPanel student={s} />
+                  </div>
+
+                  <div className="mt-4 border-t border-[var(--ds-border)] pt-3">
+                    <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-[var(--ds-text-secondary)]">
                       Advance student status
                     </p>
                     <StudentStatusForm
@@ -333,6 +349,98 @@ function KV({ label, value }: { label: string; value: string }) {
       <p className="mt-0.5 text-sm font-medium text-[var(--ds-text-primary)]">{value}</p>
     </div>
   );
+}
+
+/**
+ * Pass threshold used to colour the test-result badge and show the
+ * admin a subtle "consider rejection" hint for failed attempts. Hard-
+ * coded at 60 % for now; when per-school configuration lands this
+ * constant should move to the school's admin settings record.
+ */
+const ADMIN_PASS_THRESHOLD_PCT = 60;
+
+/**
+ * Render the online-assessment block inside a student card on the
+ * admin detail page. Shows four distinct states with clear guidance
+ * so the admin knows what action (if any) to take:
+ *
+ *   - never started → plain "Not started yet" note
+ *   - in progress   → amber pill + explanation that attempt is live
+ *   - finished pass → green pill, score + %, "Ready to issue offer" hint
+ *   - finished fail → red pill, score + %, "Consider rejection" hint
+ *
+ * All data points come from the Student node; the admission-service
+ * syncs them from Moodle whenever the parent dashboard polls.
+ */
+function TestResultPanel({
+  student,
+}: {
+  student: {
+    onlineTestState?: string | null;
+    onlineTestScore?: number | null;
+    onlineTestMaxScore?: number | null;
+    onlineTestPercentage?: number | null;
+    onlineTestCompletedAt?: string | null;
+  };
+}) {
+  const state = student.onlineTestState ?? null;
+
+  if (state === "in_progress") {
+    return (
+      <div className="flex flex-col gap-2">
+        <span className="inline-flex w-fit items-center rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-semibold text-amber-700">
+          In progress
+        </span>
+        <p className="text-xs text-[var(--ds-text-secondary)]">
+          Student has opened the quiz but not yet submitted. Scores will
+          appear here automatically once the attempt is finished.
+        </p>
+      </div>
+    );
+  }
+
+  if (state === "finished") {
+    const score = student.onlineTestScore ?? 0;
+    const max = student.onlineTestMaxScore ?? 0;
+    const pct = student.onlineTestPercentage ?? 0;
+    const passed = pct >= ADMIN_PASS_THRESHOLD_PCT;
+    const badgeCls = passed
+      ? "bg-green-50 text-green-800"
+      : "bg-red-50 text-red-800";
+    const hint = passed
+      ? "Above the 60 % threshold — ready to issue an offer once documents are verified."
+      : `Below the ${ADMIN_PASS_THRESHOLD_PCT} % threshold. Consider setting the student status to "rejected" or requesting a retake.`;
+    return (
+      <div className="flex flex-col gap-2">
+        <div className="flex flex-wrap items-center gap-3">
+          <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${badgeCls}`}>
+            {formatScore(score)}/{formatScore(max)} · {pct}%
+          </span>
+          {student.onlineTestCompletedAt ? (
+            <span className="text-xs text-[var(--ds-text-secondary)]">
+              Completed {formatDate(student.onlineTestCompletedAt)}
+            </span>
+          ) : null}
+        </div>
+        <p className="text-xs text-[var(--ds-text-secondary)]">{hint}</p>
+      </div>
+    );
+  }
+
+  return (
+    <p className="text-sm text-[var(--ds-text-secondary)]">
+      Not started yet. Parent can launch the assessment from their
+      dashboard once the application fee has been paid.
+    </p>
+  );
+}
+
+/**
+ * Trim trailing zeros from Moodle's float marks so "3.00" renders as
+ * "3" but "2.5" is preserved. Shared with the applications list cell.
+ */
+function formatScore(n: number): string {
+  return Number.isInteger(n) ? String(n) : n.toFixed(2).replace(/\.?0+$/, "");
 }
 
 function formatDate(iso: string): string {

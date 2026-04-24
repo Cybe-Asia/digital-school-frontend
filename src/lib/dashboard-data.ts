@@ -385,6 +385,12 @@ export type ParentMePayload = {
   /** Sum of unread messages across all leads this parent owns. Used as
    *  the authoritative unread badge on the updates nav item. */
   unreadMessageCount?: number;
+  /** `true` when this session's email is on the backend's ADMIN_EMAILS
+   *  allowlist. The parent dashboard treats this as a hard redirect
+   *  signal: admins are staff and must never see the parent tree, even
+   *  if they happen to also have a Lead record (e.g. developer testing
+   *  both flows from the same account). */
+  isAdmin?: boolean;
 };
 
 /**
