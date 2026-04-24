@@ -353,21 +353,69 @@ export type MoodleLaunchContext = {
 };
 
 export type MoodleLaunchResult = {
-  loginUrl: string;          // public Moodle login endpoint (POST target)
-  quizReturnUrl: string;     // public URL of the quiz (after login)
-  username: string;
-  password: string;
+  /**
+   * One-shot auth_userkey URL. When the student's browser visits it,
+   * Moodle logs them in and (via the internal `wantsurl` param built
+   * into the URL) drops them on the quiz page. No form submission,
+   * no credentials in the client. Single-use: consuming the URL
+   * invalidates the key.
+   */
+  ssoUrl: string;
 };
 
 /**
+ * Request a one-shot auth_userkey login URL from Moodle via the
+ * web-service API. Under the hood this:
+ *   - Ensures the target user exists in Moodle (creates if absent,
+ *     since the plugin is configured with createuser=1).
+ *   - Generates a time-bound key (60 s) tied to the student's email.
+ *   - Returns a fully-qualified login URL that, when visited, logs
+ *     the student in and redirects to `wantsUrl`.
+ */
+async function requestUserKeyLoginUrl(
+  cfg: MoodleConfig,
+  email: string,
+  firstName: string,
+  lastName: string,
+  wantsUrl: string,
+): Promise<string> {
+  // Synthetic username matching what the rest of our code expects
+  // (derived from email). The plugin uses `mappingfield=email` so
+  // username is cosmetic; we still pass it so user creation is
+  // deterministic.
+  const username = moodleUsernameFor(email);
+  const body: MoodleApiBody = {
+    "user[email]": email,
+    "user[firstname]": firstName || "Student",
+    "user[lastname]": lastName || "Applicant",
+    "user[username]": username,
+  };
+  const resp = await moodleRest<{ loginurl?: string }>(
+    cfg,
+    "auth_userkey_request_login_url",
+    body,
+  );
+  if (!resp.loginurl) {
+    throw new Error(
+      "Moodle auth_userkey returned no loginurl; check plugin config",
+    );
+  }
+  // Append wantsurl so Moodle post-login lands on the quiz. The
+  // plugin's login.php honours this query param.
+  const url = new URL(resp.loginurl);
+  url.searchParams.set("wantsurl", wantsUrl);
+  return url.toString();
+}
+
+/**
  * End-to-end "prepare for quiz" flow:
- *   1. Ensure Moodle user exists for this student.
- *   2. Enrol them into the right course (IIHS or IISS).
- *   3. Return the login URL + credentials the frontend auto-submits.
+ *   1. Ensure Moodle user exists + enrol in the right course.
+ *   2. Ask auth_userkey for a one-shot login URL that lands on
+ *      the quiz page.
  *
- * The caller (API route) wraps the result in a tiny HTML page that
- * POSTs to `loginUrl` with username+password and `redirectto` set
- * to `quizReturnUrl`. Moodle logs them in and redirects to the quiz.
+ * The caller just redirects the browser to the returned URL. No
+ * credentials in client HTML, no form auto-submit, no Moodle CSRF
+ * concerns.
  */
 export async function prepareMoodleLaunch(
   ctx: MoodleLaunchContext,
@@ -383,12 +431,15 @@ export async function prepareMoodleLaunch(
   const { courseId, quizCmid } = courseForSchool(ctx.school, cfg);
   await enrolUserInCourse(cfg, user.userId, courseId);
 
-  return {
-    loginUrl: `${cfg.publicUrl}/login/index.php`,
-    quizReturnUrl: `${cfg.publicUrl}/mod/quiz/view.php?id=${quizCmid}`,
-    username: user.username,
-    password: user.password,
-  };
+  const quizReturnUrl = `${cfg.publicUrl}/mod/quiz/view.php?id=${quizCmid}`;
+  const ssoUrl = await requestUserKeyLoginUrl(
+    cfg,
+    ctx.email,
+    ctx.firstName,
+    ctx.lastName,
+    quizReturnUrl,
+  );
+  return { ssoUrl };
 }
 
 /** Attempt state for a single student on a single quiz. */

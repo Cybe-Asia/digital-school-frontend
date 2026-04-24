@@ -3,16 +3,14 @@
 // GET /api/me/students/{studentId}/moodle-launch
 //
 // Called from the parent dashboard's "Take Online Test" button.
-// Returns a self-submitting HTML page that POSTs the student's
-// Moodle credentials to `/login/index.php` and lands them on the
-// quiz page. The browser never sees the raw password in JS — the
-// HTML form has hidden inputs, `<script>document.forms[0].submit()</script>`
-// fires on load, and on arrival Moodle clears the credential field
-// from the POST body.
+// Returns an HTTP 302 to a one-shot auth_userkey login URL that
+// drops the student directly on the quiz page after silently
+// authenticating against Moodle. No form submission, no password
+// in the browser, no CSRF/logintoken juggling.
 //
 // Auth: requires the ds-session cookie. We call admission-service
 // /me to confirm the current parent owns this student before
-// provisioning a Moodle user.
+// asking Moodle for the SSO URL.
 
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
@@ -136,7 +134,7 @@ export async function GET(_req: Request, ctx: RouteCtx): Promise<Response> {
   const { first, last } = splitName(student);
   const school = schoolFor(student);
 
-  // 3. Ensure user exists in Moodle + enroled; get launch URLs.
+  // 3. Ensure user exists in Moodle + enroled; get SSO URL.
   let launch;
   try {
     launch = await prepareMoodleLaunch({
@@ -154,63 +152,18 @@ export async function GET(_req: Request, ctx: RouteCtx): Promise<Response> {
     );
   }
 
-  // 4. Render an auto-submitting login form. Must be a full HTML page
-  //    because the browser submits it cross-origin — not an API call.
-  const html = `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Opening your test…</title>
-  <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-           display: flex; align-items: center; justify-content: center;
-           min-height: 100vh; margin: 0; background: #FBF8F3; color: #2d2d2d; }
-    .box { max-width: 380px; text-align: center; padding: 2rem; }
-    h1 { font-size: 1.1rem; font-weight: 600; margin: 0 0 .5rem; }
-    p { font-size: .9rem; color: #666; margin: 0 0 1.5rem; line-height: 1.5; }
-    .spinner { width: 28px; height: 28px; border: 3px solid #e8e0d4;
-               border-top-color: #2F8F6B; border-radius: 50%;
-               animation: spin 0.8s linear infinite; margin: 0 auto 1rem; }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    .fallback { font-size: .8rem; color: #999; margin-top: 1rem; }
-    .fallback button { background: #2F8F6B; color: white; border: 0;
-                       padding: .5rem 1rem; border-radius: 9999px;
-                       font-weight: 600; cursor: pointer; }
-  </style>
-</head>
-<body>
-  <div class="box">
-    <div class="spinner"></div>
-    <h1>Opening ${escAttr(first)}'s ${escAttr(school)} test…</h1>
-    <p>Hand the device to ${escAttr(first)} once the test page loads. Signing them in automatically — this usually takes a second.</p>
-    <form id="moodle-login-form" method="POST" action="${escAttr(launch.loginUrl)}">
-      <input type="hidden" name="username" value="${escAttr(launch.username)}">
-      <input type="hidden" name="password" value="${escAttr(launch.password)}">
-      <input type="hidden" name="rememberusername" value="0">
-      <input type="hidden" name="anchor" value="">
-      <input type="hidden" name="redirect" value="${escAttr(launch.quizReturnUrl)}">
-      <noscript>
-        <div class="fallback">
-          JavaScript is disabled. Click the button to continue:
-          <button type="submit">Continue to test</button>
-        </div>
-      </noscript>
-    </form>
-    <script>
-      // Submit immediately. If it fails (network issue), the noscript
-      // branch above shows a manual button after 5s.
-      document.getElementById('moodle-login-form').submit();
-    </script>
-  </div>
-</body>
-</html>`;
-
-  return new Response(html, {
-    status: 200,
+  // 4. Redirect the browser straight to Moodle's auth_userkey login.
+  //    The key is single-use and expires in 60 s, so caching the
+  //    redirect would be a bug. No HTML body needed — this endpoint
+  //    is opened in a new tab so the browser will just follow the
+  //    302 transparently.
+  void escAttr; // previously used for the HTML form; retained import.
+  void first;
+  void school;
+  return new Response(null, {
+    status: 302,
     headers: {
-      "Content-Type": "text/html; charset=utf-8",
-      // Never cache: the POST target contains a per-student password.
+      Location: launch.ssoUrl,
       "Cache-Control": "no-store, no-cache, must-revalidate",
       "X-Frame-Options": "DENY",
     },
