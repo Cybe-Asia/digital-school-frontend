@@ -44,14 +44,18 @@ type AdminApplication = {
     applicationMode?: string;
     ageAtApplication?: number | null;
     // Online-assessment results from Moodle, synced by admission-
-    // service's /online-test/sync endpoint. All five are nullable
-    // until the student has actually started/finished the quiz —
-    // the UI treats "no data" and "not_started" identically.
+    // service's /online-test/sync endpoint. All nullable until the
+    // student has actually started/finished the quiz — the UI treats
+    // "no data" and "not_started" identically.
     onlineTestState?: string | null;
     onlineTestScore?: number | null;
     onlineTestMaxScore?: number | null;
     onlineTestPercentage?: number | null;
     onlineTestCompletedAt?: string | null;
+    // Moodle `quiz_attempts.id` — present only after a finished
+    // attempt. Used to build a direct link to the review page so
+    // admins can audit per-question answers.
+    onlineTestAttemptId?: number | null;
   }>;
   latestPayment?: {
     paymentId: string;
@@ -124,6 +128,14 @@ export default async function AdminApplicationDetailPage({ params }: PageProps) 
       </div>
     );
   }
+
+  // Read directly from process.env here — the admin page only needs
+  // the public base to construct review links, not the full Moodle
+  // config (internal URL, API token, salts). Reading a single var
+  // keeps the dependency surface narrow. Null when the deployment
+  // hasn't wired Moodle yet, in which case TestResultPanel below
+  // simply omits the review-link button.
+  const moodlePublicUrl = process.env.MOODLE_PUBLIC_URL?.replace(/\/$/, "") ?? null;
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 space-y-6">
@@ -268,7 +280,7 @@ export default async function AdminApplicationDetailPage({ params }: PageProps) 
                     <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-[var(--ds-text-secondary)]">
                       Online assessment
                     </p>
-                    <TestResultPanel student={s} />
+                    <TestResultPanel student={s} moodlePublicUrl={moodlePublicUrl} />
                   </div>
 
                   <div className="mt-4 border-t border-[var(--ds-border)] pt-3">
@@ -374,6 +386,7 @@ const ADMIN_PASS_THRESHOLD_PCT = 60;
  */
 function TestResultPanel({
   student,
+  moodlePublicUrl,
 }: {
   student: {
     onlineTestState?: string | null;
@@ -381,7 +394,12 @@ function TestResultPanel({
     onlineTestMaxScore?: number | null;
     onlineTestPercentage?: number | null;
     onlineTestCompletedAt?: string | null;
+    onlineTestAttemptId?: number | null;
   };
+  /** Public Moodle base URL, without trailing slash. `null` when the
+   *  deployment hasn't configured Moodle — the review link is hidden
+   *  in that case rather than rendering a broken href. */
+  moodlePublicUrl: string | null;
 }) {
   const state = student.onlineTestState ?? null;
 
@@ -410,6 +428,15 @@ function TestResultPanel({
     const hint = passed
       ? "Above the 60 % threshold — ready to issue an offer once documents are verified."
       : `Below the ${ADMIN_PASS_THRESHOLD_PCT} % threshold. Consider setting the student status to "rejected" or requesting a retake.`;
+    // Build the review URL only if we have both the attempt id and a
+    // configured public base. The admin clicks through and — if not
+    // already logged into Moodle — authenticates with their staff
+    // account there. No SSO handshake is attempted from here; admin
+    // Moodle credentials are managed separately from the parent flow.
+    const reviewUrl =
+      student.onlineTestAttemptId && moodlePublicUrl
+        ? `${moodlePublicUrl}/mod/quiz/review.php?attempt=${student.onlineTestAttemptId}`
+        : null;
     return (
       <div className="flex flex-col gap-2">
         <div className="flex flex-wrap items-center gap-3">
@@ -420,6 +447,16 @@ function TestResultPanel({
             <span className="text-xs text-[var(--ds-text-secondary)]">
               Completed {formatDate(student.onlineTestCompletedAt)}
             </span>
+          ) : null}
+          {reviewUrl ? (
+            <a
+              href={reviewUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 rounded-full border border-[var(--ds-border)] bg-[var(--ds-surface)] px-2.5 py-0.5 text-xs font-semibold text-[var(--ds-primary)] hover:bg-[var(--ds-soft)]"
+            >
+              Review in Moodle ↗
+            </a>
           ) : null}
         </div>
         <p className="text-xs text-[var(--ds-text-secondary)]">{hint}</p>
