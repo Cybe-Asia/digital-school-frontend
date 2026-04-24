@@ -20,7 +20,8 @@ import {
   type OnlineTestState,
 } from "@/features/admissions-portal/presentation/components/parent-online-test-card";
 import { ParentDocumentUpload } from "@/features/admissions-portal/presentation/components/parent-document-upload";
-import { fetchMoodleAttemptStatus, pickSchool } from "@/lib/moodle-client";
+import { cookies } from "next/headers";
+import { getServerServiceEndpoints } from "@/features/admissions-auth/infrastructure/service-endpoints";
 import { WarnLinkClient } from "@/components/parent-ui/warn-link-client";
 import { PayButtonClient } from "@/components/parent-ui/pay-button-client";
 import { KidAvatar, Screen, Tile, BigButton } from "@/components/parent-ui";
@@ -839,35 +840,75 @@ function BackHeaderOnly() {
 }
 
 /**
- * Server-side fetch of the student's Moodle attempt state for the
- * "Online test" card. We render the page with the resolved status so
- * the parent sees the right variant (not_started / in_progress /
- * finished) on first paint — no loading spinner, no layout shift.
+ * Server-side resolve of the student's Moodle attempt state for the
+ * "Online test" card. Calls admission-service's sync endpoint which
+ * both reads Moodle (authoritative source) AND writes back to Neo4j
+ * (so the admin dashboard + future loads see the score without needing
+ * a live Moodle hop).
  *
- * Failure modes are all mapped to "not_started" rather than surfacing
- * errors: if Moodle is offline, env vars aren't set, or the student
- * simply hasn't been provisioned yet, the launch CTA still works.
- * The parent just won't see a resume or score on this load; they'll
- * see it on the next dashboard visit once the attempt state changes.
+ * Failure modes all map to "not_started" rather than surfacing errors:
+ * if Moodle is offline, env vars aren't set, or the backend returns
+ * 5xx, the launch CTA still works. The parent just won't see a resume
+ * or score on this load; they'll see it on the next dashboard visit
+ * once things are back.
+ *
+ * Why not call /api/me/students/[id]/online-test-sync from the server
+ * component? Fetching our own Next.js route from a server component
+ * requires knowing the absolute URL of our pod — awkward + fragile.
+ * We call admission-service directly with the session cookie, same
+ * pattern used elsewhere (e.g. loadParentMe).
  */
 async function resolveOnlineTestStatus(
   studentId: string,
-  application: ApplicationDetail,
+  _application: ApplicationDetail,
 ): Promise<OnlineTestState> {
   try {
-    const school = application.school === "iihs" ? "IIHS" : "IISS";
-    void pickSchool; // the helper is only needed for DOB-based defaulting;
-                     // the application already has a resolved school.
-    // Email shape matches what /api/me/students/{id}/moodle-launch
-    // provisions — synthetic "s-<studentId>@cybe.tech" so each
-    // child gets a separate Moodle account independent of the
-    // parent's login email.
-    const studentEmail = `s-${studentId}@cybe.tech`;
-    return await fetchMoodleAttemptStatus(studentEmail, school);
+    const cookieStore = await cookies();
+    const token = cookieStore.get("ds-session")?.value;
+    if (!token) return { state: "not_started" };
+
+    const { admission } = getServerServiceEndpoints();
+    const res = await fetch(
+      `${admission}/me/students/${encodeURIComponent(studentId)}/online-test/sync`,
+      {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        cache: "no-store",
+      },
+    );
+    if (!res.ok) return { state: "not_started" };
+    const body = (await res.json().catch(() => null)) as
+      | {
+          data?: {
+            state: "not_started" | "in_progress" | "finished";
+            score?: number;
+            maxScore?: number;
+            percentage?: number;
+          };
+        }
+      | null;
+    const data = body?.data;
+    if (!data) return { state: "not_started" };
+
+    if (
+      data.state === "finished" &&
+      typeof data.score === "number" &&
+      typeof data.maxScore === "number" &&
+      typeof data.percentage === "number"
+    ) {
+      return {
+        state: "finished",
+        score: data.score,
+        maxScore: data.maxScore,
+        percentage: data.percentage,
+      };
+    }
+    if (data.state === "in_progress") return { state: "in_progress" };
+    return { state: "not_started" };
   } catch {
     // Swallow silently — the launch CTA is still usable in the
-    // "not_started" path. Don't let a Moodle outage break the
-    // whole admissions portal.
+    // "not_started" path. Don't let a Moodle outage or a backend
+    // hiccup break the whole admissions portal.
     return { state: "not_started" };
   }
 }
