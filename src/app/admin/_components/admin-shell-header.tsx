@@ -3,6 +3,9 @@ import { cookies } from "next/headers";
 import { getServerServiceEndpoints } from "@/features/admissions-auth/infrastructure/service-endpoints";
 import { LogoutButton } from "@/features/admissions-auth/presentation/components/logout-button";
 import LanguageToggle from "@/components/language-toggle";
+import { RoleSwitcher } from "@/components/role-switcher";
+import { getSessionRoles } from "@/features/admissions-auth/infrastructure/session-roles";
+import { getServerI18n } from "@/i18n/server";
 
 const SESSION_COOKIE_NAME = "ds-session";
 
@@ -49,14 +52,20 @@ async function loadAdminIdentity(): Promise<AdminIdentity | null> {
 }
 
 /**
- * Admin-only shell header, mirroring the parent portal sticky header
- * layout (brand, title, actions) but WITHOUT the role switcher. The
- * intent is to keep admins in admin context and avoid tempting them
- * into the parent/student dashboards which require a different
- * session shape.
+ * Admin shell header. Mirrors the parent portal sticky header layout
+ * (brand, title, actions). When the logged-in account is a hybrid
+ * (has a Lead AND is in ADMIN_EMAILS), the RoleSwitcher renders a
+ * two-pill toggle so the admin can jump to /parent/dashboard and
+ * back without typing URLs. Admin-only accounts (no Lead) see no
+ * switcher — going to /parent/dashboard would show the 'no lead'
+ * error panel.
  */
 export default async function AdminShellHeader() {
-  const identity = await loadAdminIdentity();
+  const [identity, roles, { t }] = await Promise.all([
+    loadAdminIdentity(),
+    getSessionRoles(),
+    getServerI18n(),
+  ]);
 
   return (
     <header className="surface-card mb-6 flex flex-col gap-3 rounded-3xl p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
@@ -78,6 +87,16 @@ export default async function AdminShellHeader() {
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
+        <RoleSwitcher
+          roles={roles}
+          activeView="admin"
+          labels={{
+            parent: t("role_switcher.parent"),
+            admin: t("role_switcher.admin"),
+            switchToParent: t("role_switcher.switch_to_parent"),
+            switchToAdmin: t("role_switcher.switch_to_admin"),
+          }}
+        />
         <LanguageToggle />
         <Link
           href="/"

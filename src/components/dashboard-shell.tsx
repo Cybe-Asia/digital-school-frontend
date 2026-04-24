@@ -6,6 +6,8 @@ import {
 } from "@/features/admissions-portal/presentation/lib/admissions-portal-routes";
 import { LogoutButton } from "@/features/admissions-auth/presentation/components/logout-button";
 import LanguageToggle from "@/components/language-toggle";
+import { RoleSwitcher } from "@/components/role-switcher";
+import { getSessionRoles } from "@/features/admissions-auth/infrastructure/session-roles";
 import { getServerI18n } from "@/i18n/server";
 import { BigButton, KidAvatar, Screen, Tile } from "@/components/parent-ui";
 import {
@@ -44,6 +46,7 @@ type DashboardShellProps = {
  */
 export default async function DashboardShell({ config }: DashboardShellProps) {
   const { language, t } = await getServerI18n();
+  const roles = await getSessionRoles();
   const admissionsContext = config.admissionsContext;
   const parentPortal = config.parentPortal;
 
@@ -121,6 +124,16 @@ export default async function DashboardShell({ config }: DashboardShellProps) {
           </span>
         </div>
         <div className="flex items-center gap-2">
+          <RoleSwitcher
+            roles={roles}
+            activeView="parent"
+            labels={{
+              parent: t("role_switcher.parent"),
+              admin: t("role_switcher.admin"),
+              switchToParent: t("role_switcher.switch_to_parent"),
+              switchToAdmin: t("role_switcher.switch_to_admin"),
+            }}
+          />
           <LanguageToggle />
           <LogoutButton />
         </div>
