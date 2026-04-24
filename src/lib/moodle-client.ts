@@ -29,6 +29,8 @@
 //   MOODLE_IISS_QUIZ_CMID    int — course module id of the IISS quiz
 
 import { createHash } from "node:crypto";
+import * as http from "node:http";
+import * as https from "node:https";
 
 /** School selection / age band → which Moodle course to enrol. */
 export type MoodleSchool = "IIHS" | "IISS";
@@ -140,13 +142,22 @@ type MoodleApiBody = Record<string, string | number | undefined>;
  * Low-level REST call to Moodle. All Moodle web-service endpoints
  * share one base URL + token scheme; this wraps the boilerplate.
  *
- * We always set the Host header to the public hostname so Moodle's
- * generated URLs (assets, redirects, image URLs) point at the
- * browser-reachable domain. Without this, Moodle would derive URLs
- * from the cluster-internal service name, which the browser can't
- * resolve.
+ * Uses Node's raw `http`/`https` module instead of `fetch` for ONE
+ * critical reason: we need to set the Host header to the public
+ * Moodle hostname so Moodle's wwwroot canonicalization doesn't
+ * redirect us. The Fetch standard intentionally forbids setting the
+ * Host header (it's derived from the URL), but Moodle inside the
+ * cluster is reached at `http://moodle:80` — if Moodle sees
+ * `Host: moodle`, it 303-redirects to the canonical
+ * `https://school-test-moodle.cybe.tech/...` and we end up trying
+ * to follow a cert chain the pod doesn't trust (lab-ca).
+ *
+ * Passing Host explicitly via http.request makes Moodle see the
+ * canonical host on the first hop and respond without redirect.
+ * X-Forwarded-Proto: https goes along so sslproxy in Moodle accepts
+ * the request as TLS-terminated already.
  */
-async function moodleRest<T>(
+function moodleRest<T>(
   cfg: MoodleConfig,
   wsfunction: string,
   body: MoodleApiBody,
@@ -158,33 +169,103 @@ async function moodleRest<T>(
   for (const [k, v] of Object.entries(body)) {
     if (v !== undefined && v !== null) form.set(k, String(v));
   }
+  const bodyStr = form.toString();
+
+  const internalUrl = new URL(cfg.internalUrl);
   const publicHost = new URL(cfg.publicUrl).host;
-  const url = `${cfg.internalUrl}/webservice/rest/server.php`;
-  const res = await fetch(url, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/x-www-form-urlencoded",
-      // Route by Host header so Moodle sees the public name.
-      "Host": publicHost,
-    },
-    body: form,
-    // API calls are all server-side; don't cache.
-    cache: "no-store",
+  const useTls = internalUrl.protocol === "https:";
+  const transport = useTls ? https : http;
+
+  return new Promise<T>((resolve, reject) => {
+    const req = transport.request(
+      {
+        host: internalUrl.hostname,
+        port: internalUrl.port
+          ? Number(internalUrl.port)
+          : useTls
+          ? 443
+          : 80,
+        path: "/webservice/rest/server.php",
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          "Content-Length": Buffer.byteLength(bodyStr),
+          // Override Host so Moodle sees the canonical public name,
+          // not the in-cluster service name.
+          "Host": publicHost,
+          // Tell Moodle (with sslproxy=true) that this request is
+          // already HTTPS-terminated upstream — so it doesn't redirect.
+          "X-Forwarded-Proto": "https",
+          "X-Forwarded-Host": publicHost,
+        },
+        // Intranet self-signed cert acceptance is irrelevant here
+        // because internalUrl is plain http://moodle. Kept explicit
+        // in case someone flips internalUrl to https:// later.
+        rejectUnauthorized: false,
+      },
+      (res) => {
+        const chunks: Buffer[] = [];
+        res.on("data", (c: Buffer) => chunks.push(c));
+        res.on("end", () => {
+          const raw = Buffer.concat(chunks).toString("utf8");
+          if (!res.statusCode || res.statusCode >= 400) {
+            reject(
+              new Error(
+                `Moodle ${wsfunction} HTTP ${res.statusCode}: ${raw.slice(
+                  0,
+                  200,
+                )}`,
+              ),
+            );
+            return;
+          }
+          // Moodle returns 303 with an HTML "Redirect" page when it
+          // disagrees with our Host header. Treat that as an error
+          // so we don't try to JSON-parse HTML.
+          if (res.statusCode >= 300 && res.statusCode < 400) {
+            reject(
+              new Error(
+                `Moodle ${wsfunction} unexpected redirect: ${res.statusCode} -> ${
+                  res.headers.location ?? "(no location)"
+                }`,
+              ),
+            );
+            return;
+          }
+          let parsed: unknown;
+          try {
+            parsed = JSON.parse(raw);
+          } catch (e) {
+            reject(
+              new Error(
+                `Moodle ${wsfunction} non-JSON response: ${raw.slice(0, 200)}`,
+              ),
+            );
+            return;
+          }
+          if (
+            parsed &&
+            typeof parsed === "object" &&
+            "exception" in (parsed as Record<string, unknown>)
+          ) {
+            const err = parsed as { exception?: string; message?: string };
+            reject(
+              new Error(
+                `Moodle ${wsfunction} failed: ${err.exception ?? ""} ${
+                  err.message ?? ""
+                }`.trim(),
+              ),
+            );
+            return;
+          }
+          resolve(parsed as T);
+        });
+      },
+    );
+    req.on("error", (e) => reject(e));
+    req.write(bodyStr);
+    req.end();
   });
-  if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    throw new Error(
-      `Moodle ${wsfunction} HTTP ${res.status}: ${text.slice(0, 200)}`,
-    );
-  }
-  const payload = (await res.json()) as T | { exception?: string; message?: string };
-  if (payload && typeof payload === "object" && "exception" in payload) {
-    const err = payload as { exception?: string; message?: string };
-    throw new Error(
-      `Moodle ${wsfunction} failed: ${err.exception ?? ""} ${err.message ?? ""}`.trim(),
-    );
-  }
-  return payload as T;
 }
 
 type MoodleUser = { id: number; username: string; email?: string };
