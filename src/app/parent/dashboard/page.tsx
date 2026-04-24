@@ -144,12 +144,16 @@ export default async function ParentDashboardPage({ searchParams }: ParentDashbo
     loadParentMessages(),
   ]);
 
-  // Users with a Lead always see the parent dashboard — including
-  // admin-role users who happen to also be parents (e.g. a school
-  // manager enrolling their own kid). Being an admin is a capability,
-  // not an exile from the parent portal. Admin-only accounts (no
-  // Lead, so /me returns 404) get routed to /admin/admissions at
-  // login time.
+  // Role fence: admin accounts (email on ADMIN_EMAILS) belong on
+  // /admin/admissions, not the parent tree — even if they also have
+  // a Lead record. If a user genuinely needs both views (rare), they
+  // should maintain two separate accounts (Gmail +alias works). This
+  // mirrors what the login form does at login time, and catches the
+  // case where an admin manually navigates to /parent/dashboard.
+  if (meResult.kind === "ok" && meResult.payload.isAdmin === true) {
+    redirect("/admin/admissions");
+  }
+
   const meContext =
     meResult.kind === "ok" ? getParentAdmissionsContextFromMePayload(meResult.payload) : null;
   const context = meContext ?? queryContext;

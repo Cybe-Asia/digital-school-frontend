@@ -69,19 +69,31 @@ export function LoginForm() {
 
     await setSession(result.accessToken);
 
-    // Route based on whether the session owns a Lead, not on admin
-    // role. A user with a Lead (= a parent applying, or an admin who
-    // is also a parent enrolling their own kid) always lands on the
-    // parent dashboard. Only admin-only accounts — staff with no
-    // Lead, so /api/me returns 404 — go straight to /admin/admissions.
+    // Role-based routing. Two clean destinations, picked by the
+    // account type:
+    //   - Admin email (on ADMIN_EMAILS)           → /admin/admissions
+    //   - Non-admin account (parent with Lead)    → /parent/dashboard
     //
-    // isAdmin is no longer a routing signal. Admins who want the
-    // admin console bookmark /admin/admissions directly.
+    // If a user needs BOTH (rare: someone who's a parent of a student
+    // AND also on staff), give them two separate accounts — one per
+    // role — using a Gmail `+alias`. Don't try to merge the two UIs
+    // into one account.
+    //
+    // We probe /api/me post-login and trust its `isAdmin` field. The
+    // 404 fallback covers admin-only accounts that never had a Lead
+    // (older admission-service builds and edge cases).
     let target = result.redirectTo ?? "/parent/dashboard";
     try {
       const me = await fetch("/api/me", { cache: "no-store" });
       if (me.status === 404) {
         target = "/admin/admissions";
+      } else if (me.ok) {
+        const body = (await me.json().catch(() => null)) as
+          | { data?: { isAdmin?: boolean } }
+          | null;
+        if (body?.data?.isAdmin === true) {
+          target = "/admin/admissions";
+        }
       }
     } catch {
       // Network blip — fall through to the standard target. The
