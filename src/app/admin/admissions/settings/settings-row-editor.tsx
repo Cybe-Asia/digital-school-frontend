@@ -34,6 +34,13 @@ export function SettingsRowEditor({ initial }: { initial: Settings }) {
             default_offer_days: state.defaultOfferDays,
             required_documents: state.requiredDocuments,
             terms_version: state.termsVersion,
+            // Threshold can be blank in the form — send null in that
+            // case so the backend's coalesce clause preserves the
+            // previous value instead of writing 0.
+            online_test_pass_threshold:
+              state.onlineTestPassThreshold == null
+                ? null
+                : state.onlineTestPassThreshold,
           }),
         },
       );
@@ -66,7 +73,8 @@ export function SettingsRowEditor({ initial }: { initial: Settings }) {
           </p>
           <p className="mt-0.5 text-xs text-[var(--ds-text-secondary)]">
             App fee {formatIDR(initial.applicationFeeAmount)} · Enrolment fee {formatIDR(initial.enrolmentFeeAmount)} ·
-            Accept in {initial.defaultOfferDays}d · Terms {initial.termsVersion || "(none)"}
+            Accept in {initial.defaultOfferDays}d · Terms {initial.termsVersion || "(none)"} ·
+            Pass mark {initial.onlineTestPassThreshold != null ? `${initial.onlineTestPassThreshold}%` : "60% (default)"}
           </p>
           <p className="mt-0.5 text-[11px] text-[var(--ds-text-secondary)]/80">
             Last updated {initial.updatedAt ? formatDate(initial.updatedAt) : "—"}
@@ -133,6 +141,23 @@ export function SettingsRowEditor({ initial }: { initial: Settings }) {
             placeholder="v1.2"
             value={state.termsVersion}
             onChange={(e) => setState({ ...state, termsVersion: e.target.value })}
+            className={INPUT_CLS}
+          />
+        </Field>
+        <Field label="Online-test pass mark (%)">
+          <input
+            type="number"
+            min={0}
+            max={100}
+            placeholder="60"
+            value={state.onlineTestPassThreshold ?? ""}
+            onChange={(e) => {
+              const raw = e.target.value.trim();
+              setState({
+                ...state,
+                onlineTestPassThreshold: raw === "" ? null : parseInt(raw, 10),
+              });
+            }}
             className={INPUT_CLS}
           />
         </Field>

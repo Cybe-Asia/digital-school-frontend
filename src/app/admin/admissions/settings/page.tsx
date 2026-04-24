@@ -19,6 +19,9 @@ export type Settings = {
   defaultOfferDays: number;
   requiredDocuments: string;
   termsVersion: string;
+  /** Pass mark (0..=100) for the Moodle online assessment. Null
+   *  means "not configured" — admin pages fall back to 60 %. */
+  onlineTestPassThreshold?: number | null;
   updatedAt: string;
   updatedBy?: string | null;
 };

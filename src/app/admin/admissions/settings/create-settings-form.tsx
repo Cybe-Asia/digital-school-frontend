@@ -11,7 +11,16 @@ export function CreateSettingsForm() {
   const router = useRouter();
   const toast = useToast();
   const [isPending, startTransition] = useTransition();
-  const [state, setState] = useState({
+  const [state, setState] = useState<{
+    school_id: string;
+    academic_year: string;
+    application_fee_amount: number;
+    enrolment_fee_amount: number;
+    default_offer_days: number;
+    required_documents: string;
+    terms_version: string;
+    online_test_pass_threshold: number | null;
+  }>({
     school_id: "SCH-IISS",
     academic_year: new Date().getFullYear().toString(),
     application_fee_amount: 500000,
@@ -19,6 +28,7 @@ export function CreateSettingsForm() {
     default_offer_days: 14,
     required_documents: "birth_certificate,family_card,transcript,photo",
     terms_version: "v1.0",
+    online_test_pass_threshold: 60,
   });
 
   const submit = async (e: React.FormEvent) => {
@@ -35,6 +45,7 @@ export function CreateSettingsForm() {
             default_offer_days: state.default_offer_days,
             required_documents: state.required_documents,
             terms_version: state.terms_version,
+            online_test_pass_threshold: state.online_test_pass_threshold,
           }),
         },
       );
@@ -125,6 +136,25 @@ export function CreateSettingsForm() {
           <input
             value={state.terms_version}
             onChange={(e) => setState({ ...state, terms_version: e.target.value })}
+            className={INPUT_CLS}
+          />
+        </label>
+        <label className="block text-xs font-semibold text-[var(--ds-text-secondary)]">
+          <span className="mb-0.5 block uppercase tracking-wider">
+            Online-test pass mark (%)
+          </span>
+          <input
+            type="number"
+            min={0}
+            max={100}
+            value={state.online_test_pass_threshold ?? ""}
+            onChange={(e) => {
+              const raw = e.target.value.trim();
+              setState({
+                ...state,
+                online_test_pass_threshold: raw === "" ? null : parseInt(raw, 10),
+              });
+            }}
             className={INPUT_CLS}
           />
         </label>

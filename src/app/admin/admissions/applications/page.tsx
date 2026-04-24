@@ -38,6 +38,10 @@ type AdminApplication = {
     onlineTestMaxScore?: number | null;
     onlineTestPercentage?: number | null;
     onlineTestCompletedAt?: string | null;
+    // Resolved per-school pass threshold. Populated by the admin
+    // handlers from AdmissionsSettings; null means no school-level
+    // setting exists yet and we should fall back to the UI default.
+    passThresholdPct?: number | null;
   }>;
   latestPayment?: {
     status: string;
@@ -295,10 +299,13 @@ function formatDate(iso: string): string {
  *   - finished, >= pass mark →  "3/5 · 60%"   (green, bold)
  *   - finished, below mark   →  "1/5 · 20%"   (red,   bold)
  *
- * Pass threshold is hard-coded at 60 % for now. When the admin
- * review flow lands this will move to a per-school config field.
+ * Pass threshold comes from each student's per-school
+ * `AdmissionsSettings` (via `passThresholdPct`). The fallback
+ * below only applies when the school has no setting row yet —
+ * e.g. a fresh cluster where admin hasn't opened the settings
+ * page.
  */
-const PASS_THRESHOLD_PCT = 60;
+const DEFAULT_PASS_THRESHOLD_PCT = 60;
 
 function TestScoreCell({
   student,
@@ -308,6 +315,7 @@ function TestScoreCell({
     onlineTestScore?: number | null;
     onlineTestMaxScore?: number | null;
     onlineTestPercentage?: number | null;
+    passThresholdPct?: number | null;
   };
 }) {
   const state = student.onlineTestState ?? null;
@@ -324,7 +332,8 @@ function TestScoreCell({
     const score = student.onlineTestScore ?? 0;
     const max = student.onlineTestMaxScore ?? 0;
     const pct = student.onlineTestPercentage ?? 0;
-    const passed = pct >= PASS_THRESHOLD_PCT;
+    const threshold = student.passThresholdPct ?? DEFAULT_PASS_THRESHOLD_PCT;
+    const passed = pct >= threshold;
     const cls = passed
       ? "bg-green-50 text-green-800"
       : "bg-red-50 text-red-800";

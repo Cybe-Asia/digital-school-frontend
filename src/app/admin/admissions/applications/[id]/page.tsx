@@ -56,6 +56,11 @@ type AdminApplication = {
     // attempt. Used to build a direct link to the review page so
     // admins can audit per-question answers.
     onlineTestAttemptId?: number | null;
+    // Per-school pass threshold resolved by the admin handler
+    // from `AdmissionsSettings.online_test_pass_threshold`. Null
+    // when the school has no setting row yet; the UI falls back
+    // to the 60 % default in that case.
+    passThresholdPct?: number | null;
   }>;
   latestPayment?: {
     paymentId: string;
@@ -364,12 +369,13 @@ function KV({ label, value }: { label: string; value: string }) {
 }
 
 /**
- * Pass threshold used to colour the test-result badge and show the
- * admin a subtle "consider rejection" hint for failed attempts. Hard-
- * coded at 60 % for now; when per-school configuration lands this
- * constant should move to the school's admin settings record.
+ * Fallback pass threshold used when a school's `AdmissionsSettings`
+ * row has no `online_test_pass_threshold` configured. Per-school
+ * values come from the admin handler via `student.passThresholdPct`;
+ * this default only applies to fresh clusters where no setting row
+ * exists yet.
  */
-const ADMIN_PASS_THRESHOLD_PCT = 60;
+const DEFAULT_PASS_THRESHOLD_PCT = 60;
 
 /**
  * Render the online-assessment block inside a student card on the
@@ -395,6 +401,7 @@ function TestResultPanel({
     onlineTestPercentage?: number | null;
     onlineTestCompletedAt?: string | null;
     onlineTestAttemptId?: number | null;
+    passThresholdPct?: number | null;
   };
   /** Public Moodle base URL, without trailing slash. `null` when the
    *  deployment hasn't configured Moodle — the review link is hidden
@@ -421,13 +428,14 @@ function TestResultPanel({
     const score = student.onlineTestScore ?? 0;
     const max = student.onlineTestMaxScore ?? 0;
     const pct = student.onlineTestPercentage ?? 0;
-    const passed = pct >= ADMIN_PASS_THRESHOLD_PCT;
+    const threshold = student.passThresholdPct ?? DEFAULT_PASS_THRESHOLD_PCT;
+    const passed = pct >= threshold;
     const badgeCls = passed
       ? "bg-green-50 text-green-800"
       : "bg-red-50 text-red-800";
     const hint = passed
-      ? "Above the 60 % threshold — ready to issue an offer once documents are verified."
-      : `Below the ${ADMIN_PASS_THRESHOLD_PCT} % threshold. Consider setting the student status to "rejected" or requesting a retake.`;
+      ? `Above the ${threshold} % threshold — ready to issue an offer once documents are verified.`
+      : `Below the ${threshold} % threshold. Consider setting the student status to "rejected" or requesting a retake.`;
     // Build the review URL only if we have both the attempt id and a
     // configured public base. The admin clicks through and — if not
     // already logged into Moodle — authenticates with their staff
