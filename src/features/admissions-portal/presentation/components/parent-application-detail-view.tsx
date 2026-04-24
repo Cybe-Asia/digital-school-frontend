@@ -15,8 +15,12 @@ import {
   buildParentApplicationId,
 } from "@/features/admissions-portal/presentation/lib/admissions-portal-routes";
 import { ParentScheduleBooking } from "@/features/admissions-portal/presentation/components/parent-schedule-booking";
-import { ParentOnlineTestCard } from "@/features/admissions-portal/presentation/components/parent-online-test-card";
+import {
+  ParentOnlineTestCard,
+  type OnlineTestState,
+} from "@/features/admissions-portal/presentation/components/parent-online-test-card";
 import { ParentDocumentUpload } from "@/features/admissions-portal/presentation/components/parent-document-upload";
+import { fetchMoodleAttemptStatus, pickSchool } from "@/lib/moodle-client";
 import { WarnLinkClient } from "@/components/parent-ui/warn-link-client";
 import { PayButtonClient } from "@/components/parent-ui/pay-button-client";
 import { KidAvatar, Screen, Tile, BigButton } from "@/components/parent-ui";
@@ -573,7 +577,7 @@ function DocumentsScreen({
 
 /* ---------------- Schedule screen --------------------------------- */
 
-function ScheduleScreen({
+async function ScheduleScreen({
   t,
   application,
   firstName,
@@ -681,11 +685,20 @@ function ScheduleScreen({
            * so the fast path is the first thing parents see. The
            * card owns its own CTA; clicking opens Moodle in a new
            * tab via /api/me/students/:id/moodle-launch.
+           *
+           * We pre-fetch the Moodle attempt state server-side so the
+           * card renders the right variant immediately (not_started
+           * → hero + CTA; in_progress → resume; finished → score).
+           * If Moodle is unreachable or the env isn't wired, fall
+           * back to not_started — the launch CTA still works, the
+           * user just won't see the resume/finished states on this
+           * load. They'll see them on the next dashboard visit.
            */}
           <ParentOnlineTestCard
             studentId={kidStudentId}
             firstName={firstName}
             schoolShortName={schoolShortName}
+            status={await resolveOnlineTestStatus(kidStudentId, application)}
             t={t}
           />
 
@@ -823,6 +836,40 @@ function BackHeaderOnly() {
   // When a screen renders a hero tile as its entire content, we skip
   // the StudentHeader row (it would repeat the kid's name twice).
   return null;
+}
+
+/**
+ * Server-side fetch of the student's Moodle attempt state for the
+ * "Online test" card. We render the page with the resolved status so
+ * the parent sees the right variant (not_started / in_progress /
+ * finished) on first paint — no loading spinner, no layout shift.
+ *
+ * Failure modes are all mapped to "not_started" rather than surfacing
+ * errors: if Moodle is offline, env vars aren't set, or the student
+ * simply hasn't been provisioned yet, the launch CTA still works.
+ * The parent just won't see a resume or score on this load; they'll
+ * see it on the next dashboard visit once the attempt state changes.
+ */
+async function resolveOnlineTestStatus(
+  studentId: string,
+  application: ApplicationDetail,
+): Promise<OnlineTestState> {
+  try {
+    const school = application.school === "iihs" ? "IIHS" : "IISS";
+    void pickSchool; // the helper is only needed for DOB-based defaulting;
+                     // the application already has a resolved school.
+    // Email shape matches what /api/me/students/{id}/moodle-launch
+    // provisions — synthetic "s-<studentId>@cybe.tech" so each
+    // child gets a separate Moodle account independent of the
+    // parent's login email.
+    const studentEmail = `s-${studentId}@cybe.tech`;
+    return await fetchMoodleAttemptStatus(studentEmail, school);
+  } catch {
+    // Swallow silently — the launch CTA is still usable in the
+    // "not_started" path. Don't let a Moodle outage break the
+    // whole admissions portal.
+    return { state: "not_started" };
+  }
 }
 
 // Kept re-exports to avoid breaking callers that imported these two
