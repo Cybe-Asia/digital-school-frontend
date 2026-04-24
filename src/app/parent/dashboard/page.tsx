@@ -144,15 +144,12 @@ export default async function ParentDashboardPage({ searchParams }: ParentDashbo
     loadParentMessages(),
   ]);
 
-  // Hard fence: staff (emails on ADMIN_EMAILS) must never see the
-  // parent tree, even if they also happen to have a Lead record from
-  // testing. Admins belong on /admin/admissions. We short-circuit as
-  // soon as /me confirms `isAdmin` so the downstream payload parsing
-  // can assume we're dealing with a real parent session.
-  if (meResult.kind === "ok" && meResult.payload.isAdmin === true) {
-    redirect("/admin/admissions");
-  }
-
+  // Users with a Lead always see the parent dashboard — including
+  // admin-role users who happen to also be parents (e.g. a school
+  // manager enrolling their own kid). Being an admin is a capability,
+  // not an exile from the parent portal. Admin-only accounts (no
+  // Lead, so /me returns 404) get routed to /admin/admissions at
+  // login time.
   const meContext =
     meResult.kind === "ok" ? getParentAdmissionsContextFromMePayload(meResult.payload) : null;
   const context = meContext ?? queryContext;

@@ -69,28 +69,19 @@ export function LoginForm() {
 
     await setSession(result.accessToken);
 
-    // Route by role. Staff (emails on ADMIN_EMAILS) always land on
-    // /admin/admissions — never the parent tree, even if they also
-    // happen to have a Lead record from testing. We probe /api/me
-    // right after the session is set and trust its `isAdmin` field.
+    // Route based on whether the session owns a Lead, not on admin
+    // role. A user with a Lead (= a parent applying, or an admin who
+    // is also a parent enrolling their own kid) always lands on the
+    // parent dashboard. Only admin-only accounts — staff with no
+    // Lead, so /api/me returns 404 — go straight to /admin/admissions.
     //
-    // Falls back to:
-    //  - 404 inference (no Lead at all → must be admin-only) — kept
-    //    for backward-compat with older admission-service builds that
-    //    predate the `isAdmin` field.
-    //  - `result.redirectTo` when /me is unreachable (network blip).
+    // isAdmin is no longer a routing signal. Admins who want the
+    // admin console bookmark /admin/admissions directly.
     let target = result.redirectTo ?? "/parent/dashboard";
     try {
       const me = await fetch("/api/me", { cache: "no-store" });
       if (me.status === 404) {
         target = "/admin/admissions";
-      } else if (me.ok) {
-        const body = (await me.json().catch(() => null)) as
-          | { data?: { isAdmin?: boolean } }
-          | null;
-        if (body?.data?.isAdmin === true) {
-          target = "/admin/admissions";
-        }
       }
     } catch {
       // Network blip — fall through to the standard target. The
