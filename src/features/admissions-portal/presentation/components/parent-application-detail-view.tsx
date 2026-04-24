@@ -15,6 +15,7 @@ import {
   buildParentApplicationId,
 } from "@/features/admissions-portal/presentation/lib/admissions-portal-routes";
 import { ParentScheduleBooking } from "@/features/admissions-portal/presentation/components/parent-schedule-booking";
+import { ParentOnlineTestCard } from "@/features/admissions-portal/presentation/components/parent-online-test-card";
 import { ParentDocumentUpload } from "@/features/admissions-portal/presentation/components/parent-document-upload";
 import { WarnLinkClient } from "@/components/parent-ui/warn-link-client";
 import { PayButtonClient } from "@/components/parent-ui/pay-button-client";
@@ -674,11 +675,49 @@ function ScheduleScreen({
       </header>
 
       {kidStudentId ? (
-        <ParentScheduleBooking
-          studentId={kidStudentId}
-          studentName={application.studentName}
-          schoolId={`SCH-${schoolShortName}`}
-        />
+        <div className="flex flex-col gap-5">
+          {/*
+           * Online (Moodle) option — sits above the in-person booking
+           * so the fast path is the first thing parents see. The
+           * card owns its own CTA; clicking opens Moodle in a new
+           * tab via /api/me/students/:id/moodle-launch.
+           */}
+          <ParentOnlineTestCard
+            studentId={kidStudentId}
+            firstName={firstName}
+            schoolShortName={schoolShortName}
+            t={t}
+          />
+
+          {/*
+           * Divider + secondary header explaining the in-person
+           * alternative. Kept as a clearly-labeled second option
+           * rather than a buried sub-section — some parents will
+           * prefer on-campus (younger kids, connectivity concerns).
+           */}
+          <div className="flex items-center gap-3" aria-hidden="true">
+            <div className="h-px flex-1 bg-[color:var(--ink-200)]" />
+            <span className="text-xs font-semibold uppercase tracking-[0.14em] text-[color:var(--ink-500)]">
+              {t("parent.detail.schedule.or_divider")}
+            </span>
+            <div className="h-px flex-1 bg-[color:var(--ink-200)]" />
+          </div>
+
+          <div>
+            <h2 className="parent-text-serif text-[clamp(18px,3.5vw,22px)] leading-tight text-[color:var(--ink-900)]">
+              {t("parent.detail.schedule.in_person_title")}
+            </h2>
+            <p className="mt-2 text-sm text-[color:var(--ink-500)]">
+              {t("parent.detail.schedule.in_person_body")}
+            </p>
+          </div>
+
+          <ParentScheduleBooking
+            studentId={kidStudentId}
+            studentName={application.studentName}
+            schoolId={`SCH-${schoolShortName}`}
+          />
+        </div>
       ) : (
         <Tile variant="flat">
           <p className="text-sm text-[color:var(--ink-500)]">
