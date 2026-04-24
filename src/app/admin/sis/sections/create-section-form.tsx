@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useState, useTransition } from "react";
 import { useToast } from "@/app/admin/toast";
 
@@ -9,6 +9,7 @@ const INPUT_CLS =
 
 export function CreateSectionForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const toast = useToast();
   const [isPending, startTransition] = useTransition();
   const [state, setState] = useState({
@@ -35,7 +36,20 @@ export function CreateSectionForm() {
       }
       toast.success(`Section "${state.name}" created`);
       setState({ ...state, name: "", year_group: "" });
-      startTransition(() => router.refresh());
+      // If the admin created a section in a different school than the
+      // current list filter, switch the filter so the new row is
+      // visible. An empty `school` filter means "all schools" — in
+      // that case refresh is enough. Same pattern as tests/schedules.
+      startTransition(() => {
+        const currentSchool = searchParams.get("school") ?? "";
+        if (currentSchool && currentSchool !== state.school_id) {
+          const next = new URLSearchParams(searchParams.toString());
+          next.set("school", state.school_id);
+          router.push(`/admin/sis/sections?${next.toString()}`);
+        } else {
+          router.refresh();
+        }
+      });
     } catch (e) {
       toast.error(e instanceof Error ? e.message : String(e));
     }
