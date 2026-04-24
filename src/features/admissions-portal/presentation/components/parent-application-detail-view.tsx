@@ -1,5 +1,6 @@
 import Link from "next/link";
 import {
+  isApplicationRejected,
   isAssessmentBookingLocked,
   isDocumentUploadLocked,
 } from "@/features/admissions-portal/domain/application-flow";
@@ -483,7 +484,33 @@ function DocumentsScreen({
   application: ApplicationDetail;
   firstName: string;
 }) {
+  const rejected = isApplicationRejected(application);
   const locked = isDocumentUploadLocked(application);
+
+  // Rejection gets its own screen (checked before the generic lock so
+  // the copy + CTA are rejection-specific, not "pay now"). Uses a
+  // mailto: link instead of routing inside the portal — there's
+  // nothing more for the parent to do here.
+  if (rejected) {
+    return (
+      <>
+        <BackHeaderOnly />
+        <Tile variant="hero">
+          <h1 className="parent-text-serif text-[clamp(24px,4.5vw,32px)] leading-tight">
+            {t("parent.detail.documents.rejected_title")}
+          </h1>
+          <p className="mt-3 text-[15px] leading-relaxed text-[color:var(--ink-500)]">
+            {t("parent.detail.documents.rejected_body", { name: firstName })}
+          </p>
+          <div className="mt-6">
+            <BigButton href="mailto:admissions@cybe.tech">
+              {t("parent.detail.documents.rejected_cta")}
+            </BigButton>
+          </div>
+        </Tile>
+      </>
+    );
+  }
 
   if (locked) {
     return (

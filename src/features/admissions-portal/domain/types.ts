@@ -18,7 +18,12 @@ export type PaymentStatus = "unpaid" | "pending_verification" | "paid";
 export type DocumentStatus = "missing" | "uploaded" | "verified";
 export type AssessmentStatus = "not_booked" | "scheduled" | "completed";
 export type AssessmentResultStatus = "pending" | "passed" | "failed";
-export type DecisionStatus = "pending" | "offer_released" | "accepted";
+// "rejected" covers any terminal negative outcome shown to the parent:
+// admin-marked rejection, withdrawn application, or a failed assessment
+// the admin decides not to progress. The UI treats all three identically
+// — a sympathetic "this intake didn't work out" screen with a contact
+// path rather than exposing the internal distinction.
+export type DecisionStatus = "pending" | "offer_released" | "accepted" | "rejected";
 
 export type AdmissionsPortalContext = {
   parentName: string;

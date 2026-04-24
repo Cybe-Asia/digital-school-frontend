@@ -31,7 +31,20 @@ export function isAssessmentBookingLocked(application: Pick<ApplicationDetail, "
   return !isAssessmentPaymentCleared(application);
 }
 
-export function isDocumentUploadLocked(application: Pick<ApplicationDetail, "payment" | "assessment">) {
+/**
+ * A rejected application is a terminal negative state — parents should
+ * never see the upload form again because there's no review pending. We
+ * treat this as a lock on top of the assessment gate so the component
+ * can branch on it for rejection-specific copy.
+ */
+export function isApplicationRejected(application: Pick<ApplicationDetail, "decision">) {
+  return application.decision.status === "rejected";
+}
+
+export function isDocumentUploadLocked(
+  application: Pick<ApplicationDetail, "payment" | "assessment" | "decision">,
+) {
+  if (isApplicationRejected(application)) return true;
   return !isAssessmentPassed(application);
 }
 
@@ -110,12 +123,21 @@ export function getAdmissionsPortalSections(
   const stageMap = new Map(
     getAdmissionsJourneyStages(application).map((stage) => [stage.id, stage.state] as const),
   );
-  const documentsReadyForDecision = !isDocumentUploadLocked(application) && !hasOutstandingDocuments(application);
-  const decisionState: AdmissionsPortalSectionState = !documentsReadyForDecision
-    ? "locked"
-    : application.decision.status === "offer_released" || application.decision.status === "accepted"
-      ? "complete"
-      : "current";
+  // Rejection is a terminal "complete" state — there IS a final
+  // decision, it's just a negative one. Marking it "complete" makes
+  // the sidebar render the decision section as done (rather than
+  // "current" with a prompt to wait) so the parent doesn't keep
+  // refreshing looking for an offer that isn't coming.
+  const rejected = isApplicationRejected(application);
+  const documentsReadyForDecision =
+    !isDocumentUploadLocked(application) && !hasOutstandingDocuments(application);
+  const decisionState: AdmissionsPortalSectionState = rejected
+    ? "complete"
+    : !documentsReadyForDecision
+      ? "locked"
+      : application.decision.status === "offer_released" || application.decision.status === "accepted"
+        ? "complete"
+        : "current";
 
   return [
     {

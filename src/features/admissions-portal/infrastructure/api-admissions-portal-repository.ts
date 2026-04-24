@@ -617,6 +617,31 @@ function buildAssessment(student: ParentMeRawStudent): ApplicationAssessment {
 function buildDecision(student: ParentMeRawStudent): ApplicationDecision {
   const normalised = (student.applicantStatus ?? "").toLowerCase();
 
+  // Terminal negative outcomes — admin-rejected, withdrawn, declined
+  // offer, or a failed assessment the admin chose not to progress.
+  // We flatten all four onto the same parent-facing "rejected"
+  // decision so the UI only has to know ONE not-successful state.
+  // The distinction is kept inside the admin console (see the
+  // applicantStatus column there) but doesn't leak into parent copy.
+  //
+  // NOTE this branch sits BEFORE the positive ones so a student who
+  // was rejected AFTER an offer (edge case: admin reverses decision)
+  // still reads as rejected — the latest applicantStatus wins.
+  if (
+    normalised === "rejected" ||
+    normalised === "test_failed" ||
+    normalised === "offer_declined" ||
+    normalised === "withdrawn"
+  ) {
+    return {
+      status: "rejected",
+      statusLabelKey: "admissions.portal.decision.status.rejected",
+      titleKey: "admissions.portal.decision.title.rejected",
+      helperKey: "admissions.portal.decision.helper.rejected",
+      ctaLabelKey: "admissions.portal.decision.cta.contact_admissions",
+    };
+  }
+
   // Any post-offer-accepted state (enroled, handed_to_sis) means the
   // decision is accepted and the student is enrolled. handed_to_sis
   // in particular is the "past the admissions funnel entirely" state
