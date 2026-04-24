@@ -3,8 +3,8 @@ import { AuthShell } from "@/features/admissions-auth/presentation/components/au
 import { EOIForm } from "@/features/admissions-auth/presentation/components/eoi-form";
 
 export const metadata: Metadata = {
-  title: "Register | Cybe Digital School",
-  description: "Start your admissions enquiry at Cybe Digital School.",
+  title: "Register | TWSI",
+  description: "Start your admissions enquiry at TWSI.",
 };
 
 /**

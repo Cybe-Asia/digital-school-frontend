@@ -292,50 +292,77 @@
 }
 
 :root {
-  --font-sans-stack: "Inter", "Segoe UI", "Helvetica Neue", sans-serif;
-  --font-heading-stack: "Fraunces", "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+  --font-sans-stack: "Montserrat", "Segoe UI", "Helvetica Neue", sans-serif;
+  --font-heading-stack: "Montserrat", "Segoe UI", "Helvetica Neue", sans-serif;
+  --font-display-stack: "Cinzel", "Palatino Linotype", Georgia, serif;
   --background: var(--ds-bg);
   --foreground: var(--ds-text-primary);
 
   /*
    * ============================================================
-   *  PARENT-APP BRAND TOKENS (2026 redesign)
+   *  TWSI BRAND TOKENS — parent / student portal
    * ------------------------------------------------------------
-   *  One warm accent + a calm neutral palette. These are the
-   *  ONLY colors the parent/student redesign reaches for — the
-   *  older --ds-* tokens are still here for admin pages but
-   *  the parent tree should not touch them.
+   *  Sourced from TWSI's brand guidelines (light-mode palette):
    *
-   *  Accent: Headspace-ish fresh green (#2F8F6B). Why: it reads
-   *  as "calm + growth", not "enterprise SaaS mint". Rich enough
-   *  for primary buttons, gentle enough to tint cards.
+   *    Primary      Emerald Green   #0B6E4F  → --brand
+   *    Secondary    Indigo Blue     #2B4162
+   *    Accent       Soft Gold       #E1C15A  → --warm-amber
+   *    Highlight    Fresh Mint      #6FD6B3
+   *    Background   Soft Mint White #F4FAF8  → --cream-50
+   *    Surface      Pure White      #FFFFFF  → --paper
+   *    Text 1       Charcoal        #2A2A2A  → --ink-900
+   *    Text 2       Medium Grey     #777777  → --ink-500
+   *    CTA fill     Emerald Action  #0FB67A  → --brand-cta
+   *    CTA hover    Dark Emerald    #084D37  → --brand-strong
+   *
+   *  Admin console (`--ds-*` tokens) already uses the same
+   *  palette via `option2-light`; the parent layer mirrors it
+   *  here so both halves of the product speak TWSI.
    * ============================================================
    */
-  --brand: #2f8f6b;
-  --brand-strong: #1f6a4f;
-  --brand-soft: #d7efe3;
-  --brand-wash: #ecf7f1;
 
-  --ink-900: #1c1d1c;
-  --ink-700: #353736;
-  --ink-500: #6a6d6b;
-  --ink-400: #8a8d8b;
-  --ink-300: #b3b7b4;
+  /* Primary brand — emerald family */
+  --brand: #0b6e4f;          /* Emerald Green    — default primary */
+  --brand-cta: #0fb67a;      /* Emerald Action   — CTA buttons */
+  --brand-strong: #084d37;   /* Dark Emerald     — CTA hover / pressed */
+  --brand-soft: #d9efe4;     /* ~18% Emerald tint — surface fills */
+  --brand-wash: #ecf7f1;     /* ~8%  Emerald tint — page washes */
 
-  --cream-50: #fbf8f3;
-  --cream-100: #f5efe5;
-  --cream-200: #ebe3d3;
+  /* Secondary — academic indigo used for headings + chrome */
+  --indigo-900: #2b4162;
+  --indigo-800: #1a2a44;
 
-  --paper: #ffffff;
-  --line: #e6dfd0;
-  --line-soft: #f0ead9;
+  /* Highlights + accent */
+  --mint-100: #6fd6b3;       /* Fresh Mint — status chips, progress */
+  --gold-100: #e1c15a;       /* Soft Gold  — awards / highlight */
 
-  --warm-amber: #f2a93b;
-  --warm-coral: #e87a5d;
-  --sky: #3a88c4;
+  /* Neutral text ramp — anchored on Charcoal + Medium Grey */
+  --ink-900: #2a2a2a;        /* Charcoal primary text */
+  --ink-700: #3d3d3d;
+  --ink-500: #777777;        /* Medium Grey — secondary text */
+  --ink-400: #9a9a9a;
+  --ink-300: #bfbfbf;
 
-  --brand-shadow-soft: 0 10px 30px -22px rgba(47, 143, 107, 0.45);
-  --brand-shadow-float: 0 28px 60px -32px rgba(28, 29, 28, 0.28);
+  /* Backgrounds — soft mint white + pure white */
+  --cream-50: #f4faf8;       /* Soft Mint White — page background */
+  --cream-100: #e9f2ee;      /* Mint surface tint */
+  --cream-200: #d9eae2;      /* Deeper tint for active states */
+
+  --paper: #ffffff;          /* Pure White — cards */
+  --line: #d7e4dd;           /* Neutral-green border */
+  --line-soft: #e8f0ea;      /* Softer inner divider */
+
+  /* Legacy token names — remapped to the TWSI equivalents so
+     existing classes don't break. `--warm-coral` is kept for
+     back-compat but now returns Indigo (the brand secondary) —
+     every consumer was using it as "accent colour", not
+     literally "coral", so this reads correctly across the UI. */
+  --warm-amber: #e1c15a;     /* Soft Gold — legacy alias */
+  --warm-coral: #2b4162;     /* Indigo Blue — legacy alias */
+  --sky: #42a3df;            /* TWSI logo Azure — still a blue accent */
+
+  --brand-shadow-soft: 0 10px 30px -22px rgba(11, 110, 79, 0.45);
+  --brand-shadow-float: 0 28px 60px -32px rgba(42, 42, 42, 0.28);
 }
 
 @theme inline {

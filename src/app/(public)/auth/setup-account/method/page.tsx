@@ -6,7 +6,7 @@ import { buildSetupStepIndicator } from "@/features/admissions-auth/presentation
 import { getServerI18n } from "@/i18n/server";
 
 export const metadata: Metadata = {
-  title: "Setup Account Method | Cybe Digital School",
+  title: "Setup Account Method | TWSI",
   description: "Choose Google login or set your own password after OTP verification.",
 };
 

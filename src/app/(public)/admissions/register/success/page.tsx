@@ -4,7 +4,7 @@ import { EOISuccessView } from "@/features/admissions-auth/presentation/componen
 import { getSingleSearchParam, type SearchParamsRecord } from "@/shared/lib/search-params";
 
 export const metadata: Metadata = {
-  title: "Interest Registered | Cybe Digital School",
+  title: "Interest Registered | TWSI",
   description: "Confirmation page after submitting a parent admissions enquiry.",
 };
 

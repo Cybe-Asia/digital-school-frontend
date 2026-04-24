@@ -7,7 +7,7 @@ import { getSingleSearchParam } from "@/shared/lib/search-params";
 import { getServerI18n } from "@/i18n/server";
 
 export const metadata: Metadata = {
-  title: "Setup Account OTP | Cybe Digital School",
+  title: "Setup Account OTP | TWSI",
   description: "Verify your WhatsApp OTP before continuing to account access setup.",
 };
 

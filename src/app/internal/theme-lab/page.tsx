@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import ThemeLabPageContent from "@/components/theme-lab-page-content";
 
 export const metadata: Metadata = {
-  title: "Theme Lab | Cybe Digital School",
+  title: "Theme Lab | TWSI",
   description: "Internal theme preview page for admissions and dashboard styling.",
 };
 

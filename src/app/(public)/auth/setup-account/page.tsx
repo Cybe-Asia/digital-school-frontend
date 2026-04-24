@@ -9,7 +9,7 @@ import { buildSetupStepIndicator } from "@/features/admissions-auth/presentation
 import { getServerI18n } from "@/i18n/server";
 
 export const metadata: Metadata = {
-  title: "Setup Account | Cybe Digital School",
+  title: "Setup Account | TWSI",
   description: "Set or reset your parent admissions account password.",
 };
 

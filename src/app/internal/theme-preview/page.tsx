@@ -4,7 +4,7 @@ import ThemePreviewContent from "@/components/theme-preview-content";
 import { getSingleSearchParam, type SearchParamsRecord } from "@/shared/lib/search-params";
 
 export const metadata: Metadata = {
-  title: "Theme Preview | Cybe Digital School",
+  title: "Theme Preview | TWSI",
   description: "Isolated preview frame for a single theme variant.",
 };
 

@@ -12,7 +12,7 @@ import en from "@/i18n/translations/en.json";
 const SESSION_COOKIE_NAME = "ds-session";
 
 export const metadata: Metadata = {
-  title: "Pesan | Cybe Digital School",
+  title: "Pesan | TWSI",
   description: en["parent.messages.metadata_description"] ?? "Pesan dari sekolah",
 };
 

@@ -4,7 +4,7 @@ import { GoogleCallbackContent } from "@/features/admissions-auth/presentation/c
 import { getSingleSearchParam, type SearchParamsRecord } from "@/shared/lib/search-params";
 
 export const metadata: Metadata = {
-  title: "Google Login Callback | Cybe Digital School",
+  title: "Google Login Callback | TWSI",
   description: "Handle Google login callback for admissions.",
 };
 

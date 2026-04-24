@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "Teacher Dashboard | Cybe Digital School",
+  title: "Teacher Dashboard | TWSI",
 };
 
 /**

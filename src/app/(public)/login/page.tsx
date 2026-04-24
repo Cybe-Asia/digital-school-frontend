@@ -3,8 +3,8 @@ import { AuthShell } from "@/features/admissions-auth/presentation/components/au
 import { LoginForm } from "@/features/admissions-auth/presentation/components/login-form";
 
 export const metadata: Metadata = {
-  title: "Login | Cybe Digital School",
-  description: "Parent + staff sign-in for Cybe Digital School.",
+  title: "Login | TWSI",
+  description: "Parent + staff sign-in for TWSI.",
 };
 
 /**

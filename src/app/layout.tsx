@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
-import { Fraunces, Inter } from "next/font/google";
+import { Cinzel, Montserrat } from "next/font/google";
 import Providers from "@/app/providers";
 import type { ThemeId } from "@/components/theme-provider";
 import type { LanguageCode } from "@/components/language-provider";
@@ -15,30 +15,33 @@ import {
 import { resolveUnleashConfig } from "@/shared/feature-flags/runtime-config";
 import "./globals.css";
 
-// Parent-app font pairing (2026 redesign).
-//   display: Fraunces — a warm optical-sized serif. Gives headings a
-//            "parenting-app" softness; the opposite of the dry uniform
-//            sans that made the old revamp feel like a spreadsheet.
-//   body:    Inter — neutral, legible at 15-16px, pairs cleanly with
-//            Fraunces without competing for attention.
+// TWSI typography system (per brand guidelines):
+//   Cinzel    — the TWSI wordmark ONLY (logo). A classical Roman
+//               serif; too stately for body or headings.
+//   Montserrat — literally everything else. Bold for titles,
+//               Semi-Bold for sub-headings, Regular for body.
 // Exposed via CSS custom properties read by globals.css
-// (--font-sans-stack / --font-heading-stack).
-const bodyFont = Inter({
+// (--font-sans-stack / --font-heading-stack / --font-display-stack).
+const bodyFont = Montserrat({
   subsets: ["latin"],
   display: "swap",
   variable: "--font-parent-body",
+  weight: ["400", "500", "600", "700"],
 });
 
-const displayFont = Fraunces({
+// Cinzel is reserved for the logo wordmark. Kept in the subset list
+// so the fonts payload is small; only the `TWSI` logo component
+// actually applies this stack.
+const displayFont = Cinzel({
   subsets: ["latin"],
   display: "swap",
   variable: "--font-parent-display",
-  axes: ["SOFT", "opsz"],
+  weight: ["700"],
 });
 
 export const metadata: Metadata = {
-  title: "TWSI Digital School Dashboard",
-  description: "Role-based dashboard suite for student, parent, and staff portals.",
+  title: "TWSI · The World Scholars Institute",
+  description: "Admissions and student portal for The World Scholars Institute.",
 };
 
 export default async function RootLayout({
@@ -63,13 +66,15 @@ export default async function RootLayout({
       suppressHydrationWarning
       className={`${bodyFont.variable} ${displayFont.variable}`}
       style={{
-        // Wire the Next/font CSS variables into the globals.css stacks
-        // so parent-app surfaces pick up Inter + Fraunces automatically
-        // without admin pages (which rely on --ds-* tokens) changing
-        // fonts too — they inherit sans-serif via the same stack.
+        // Wire the Next/font CSS variables into the globals.css stacks.
+        // Per TWSI guidelines, Montserrat is the universal face for both
+        // body and headings; Cinzel is reserved for the logo wordmark
+        // and only applied to `--font-display-stack` (consumed by the
+        // `<TwsiLogo>` component — not the rest of the UI).
         // @ts-expect-error - custom properties
-        "--font-sans-stack": `var(--font-parent-body), "Inter", "Segoe UI", sans-serif`,
-        "--font-heading-stack": `var(--font-parent-display), "Fraunces", Georgia, serif`,
+        "--font-sans-stack": `var(--font-parent-body), "Montserrat", "Segoe UI", sans-serif`,
+        "--font-heading-stack": `var(--font-parent-body), "Montserrat", "Segoe UI", sans-serif`,
+        "--font-display-stack": `var(--font-parent-display), "Cinzel", "Palatino Linotype", Georgia, serif`,
       }}
     >
       <body className="antialiased">

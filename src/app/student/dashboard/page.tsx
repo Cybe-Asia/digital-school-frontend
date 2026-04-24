@@ -9,7 +9,7 @@ import {
 import { getServerI18n } from "@/i18n/server";
 
 export const metadata: Metadata = {
-  title: "Student Portal | Cybe Digital School",
+  title: "Student Portal | TWSI",
 };
 
 /**

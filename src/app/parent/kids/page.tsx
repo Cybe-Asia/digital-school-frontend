@@ -16,7 +16,7 @@ import en from "@/i18n/translations/en.json";
 const SESSION_COOKIE_NAME = "ds-session";
 
 export const metadata: Metadata = {
-  title: "Anak | Cybe Digital School",
+  title: "Anak | TWSI",
   description: en["parent.kids.metadata_description"] ?? "Daftar anak Anda",
 };
 

@@ -19,7 +19,7 @@ import en from "@/i18n/translations/en.json";
 const SESSION_COOKIE_NAME = "ds-session";
 
 export const metadata: Metadata = {
-  title: "Parent Dashboard | Cybe Digital School",
+  title: "Parent Dashboard | TWSI",
   description: en["dashboard.parent.subtitle"] ?? "Parent portal",
 };
 

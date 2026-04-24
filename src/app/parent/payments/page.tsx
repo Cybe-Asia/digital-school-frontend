@@ -14,7 +14,7 @@ import en from "@/i18n/translations/en.json";
 const SESSION_COOKIE_NAME = "ds-session";
 
 export const metadata: Metadata = {
-  title: "Pembayaran | Cybe Digital School",
+  title: "Pembayaran | TWSI",
   description: en["parent.payments.metadata_description"] ?? "Detail tagihan Anda",
 };
 

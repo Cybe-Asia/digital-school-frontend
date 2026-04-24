@@ -3,7 +3,7 @@ import { AuthShell } from "@/features/admissions-auth/presentation/components/au
 import { RequestPasswordResetForm } from "@/features/admissions-auth/presentation/components/request-password-reset-form";
 
 export const metadata: Metadata = {
-  title: "Reset Password | Cybe Digital School",
+  title: "Reset Password | TWSI",
   description: "Request a password reset link for admissions login.",
 };
 
