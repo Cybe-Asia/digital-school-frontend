@@ -549,56 +549,16 @@ function DocumentsScreen({
         </p>
       </header>
 
-      {/* Real document upload wired to /api/me/document-requests
-          multipart proxy. The static `application.documents` list below
-          is kept as a fallback visual summary when there is no real
-          DocumentRequest seeded yet (e.g. a kid whose application was
-          jump-started past the admissions stage in demo seed). */}
+      {/* Real document upload — POSTs to /api/me/document-requests
+          multipart proxy. Renders one row per requiredDocumentType
+          on each open DocumentRequest. When there's no DocumentRequest
+          for the student, the component itself shows an empty-state
+          message ("parent.documents.empty") explaining that nothing
+          is yet required. The previous static `application.documents`
+          fallback was removed because its "Upload" buttons looked
+          interactive but were decoration only — clicking them did
+          nothing, leading to user confusion. */}
       <ParentDocumentUpload studentId={application.studentId ?? undefined} />
-
-      <div className="mt-6 space-y-3">
-        {application.documents.map((doc) => {
-          const verified = doc.status === "verified";
-          const uploaded = doc.status === "uploaded";
-          const label = verified
-            ? t("parent.detail.documents.item_verified")
-            : uploaded
-              ? t("parent.detail.documents.item_replace")
-              : t("parent.detail.documents.item_upload");
-
-          return (
-            <Tile key={doc.id}>
-              <div className="flex items-start gap-3">
-                <span
-                  className={`mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl ${
-                    verified
-                      ? "bg-[color:var(--brand-soft)] text-[color:var(--brand-strong)]"
-                      : "bg-[color:var(--cream-100)] text-[color:var(--ink-500)]"
-                  }`}
-                  aria-hidden="true"
-                >
-                  <span className="h-5 w-5">
-                    {verified ? <CheckCircleIcon /> : <DocIcon />}
-                  </span>
-                </span>
-                <div className="min-w-0 flex-1">
-                  <p className="parent-text-serif text-[17px] leading-snug text-[color:var(--ink-900)]">
-                    {t(doc.labelKey)}
-                  </p>
-                  <p className="mt-1 text-sm text-[color:var(--ink-500)]">
-                    {t(doc.helperKey)}
-                  </p>
-                </div>
-              </div>
-              {!verified ? (
-                <div className="mt-4">
-                  <BigButton variant="ghost">{label}</BigButton>
-                </div>
-              ) : null}
-            </Tile>
-          );
-        })}
-      </div>
     </>
   );
 }
