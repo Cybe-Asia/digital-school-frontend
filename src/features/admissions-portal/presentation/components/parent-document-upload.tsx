@@ -209,10 +209,20 @@ function DocumentRow({
 }) {
   const { t } = useI18n();
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const dialogRef = useRef<HTMLDialogElement | null>(null);
   const uploaded = Boolean(existing) || state.kind === "success";
   const label = t(`parent.documents.type.${docType}`) || docType;
   const fileName =
     state.kind === "success" ? state.fileName : (existing?.fileName ?? null);
+
+  const previewUrl = existing?.documentArtifactId
+    ? `/api/me/documents/${encodeURIComponent(existing.documentArtifactId)}/download`
+    : null;
+  const isImage = (existing?.mimeType ?? "").startsWith("image/");
+  const isPdf = (existing?.mimeType ?? "") === "application/pdf";
+
+  const openPreview = () => dialogRef.current?.showModal();
+  const closePreview = () => dialogRef.current?.close();
 
   return (
     <Tile variant={uploaded ? "flat" : "default"}>
@@ -259,15 +269,14 @@ function DocumentRow({
             </span>
           ) : null}
 
-          {existing?.documentArtifactId ? (
-            <a
-              href={`/api/me/documents/${encodeURIComponent(existing.documentArtifactId)}/download`}
-              target="_blank"
-              rel="noopener noreferrer"
+          {previewUrl ? (
+            <button
+              type="button"
               className="parent-ghost-btn w-auto px-4 py-2 text-sm"
+              onClick={openPreview}
             >
               {t("parent.documents.preview_cta")}
-            </a>
+            </button>
           ) : null}
 
           <input
@@ -294,6 +303,66 @@ function DocumentRow({
           </button>
         </div>
       </div>
+
+      {/* Inline preview modal. Native <dialog> gives us focus-trap +
+          escape-to-close + backdrop click semantics for free. We render
+          <img> for image MIME types and <iframe> for PDFs; anything
+          else (rare) falls back to a download link. The dialog is
+          rendered for every row with an existing artifact so the
+          render order is stable; .showModal() is what makes it
+          actually visible. */}
+      {previewUrl ? (
+        <dialog
+          ref={dialogRef}
+          className="parent-doc-preview-dialog"
+          onClick={(e) => {
+            // Backdrop click closes — the dialog element itself is the
+            // backdrop target when the click misses inner content.
+            if (e.target === dialogRef.current) closePreview();
+          }}
+        >
+          <div className="parent-doc-preview-dialog__inner">
+            <header className="parent-doc-preview-dialog__header">
+              <p className="text-sm font-semibold text-[color:var(--ink-900)] truncate">
+                {label}
+                {fileName ? <span className="text-[color:var(--ink-500)] font-normal"> · {fileName}</span> : null}
+              </p>
+              <button
+                type="button"
+                onClick={closePreview}
+                className="parent-doc-preview-dialog__close"
+                aria-label={t("parent.documents.preview_close") || "Close"}
+              >
+                ×
+              </button>
+            </header>
+            <div className="parent-doc-preview-dialog__body">
+              {isImage ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={previewUrl} alt={label} />
+              ) : isPdf ? (
+                <iframe src={previewUrl} title={label} />
+              ) : (
+                <p className="text-sm text-[color:var(--ink-500)] p-6">
+                  {t("parent.documents.preview_unsupported") ||
+                    "Preview not supported for this file type."}
+                </p>
+              )}
+            </div>
+            <footer className="parent-doc-preview-dialog__footer">
+              <a
+                href={previewUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="parent-ghost-btn w-auto px-4 py-2 text-sm"
+                download={fileName ?? undefined}
+              >
+                {t("parent.documents.preview_download") || "Download"}
+              </a>
+            </footer>
+          </div>
+        </dialog>
+      ) : null}
     </Tile>
   );
 }

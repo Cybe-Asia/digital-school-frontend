@@ -952,6 +952,84 @@ a.parent-tile--locked:hover {
   background: var(--brand-wash);
 }
 
+/* -----------------------------------------------------------------
+   Document preview dialog. Native <dialog> element styled to match
+   the parent UI's rounded surfaces. Backdrop dim is the browser
+   default (::backdrop pseudo-element).
+   ----------------------------------------------------------------- */
+.parent-doc-preview-dialog {
+  border: 0;
+  padding: 0;
+  border-radius: 16px;
+  background: var(--paper);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.18);
+  max-width: min(92vw, 960px);
+  width: 100%;
+  max-height: 92vh;
+  overflow: hidden;
+}
+.parent-doc-preview-dialog::backdrop {
+  background: rgba(20, 22, 28, 0.55);
+}
+.parent-doc-preview-dialog__inner {
+  display: flex;
+  flex-direction: column;
+  max-height: 92vh;
+}
+.parent-doc-preview-dialog__header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--line);
+}
+.parent-doc-preview-dialog__header > p {
+  flex: 1;
+  margin: 0;
+}
+.parent-doc-preview-dialog__close {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  font-size: 22px;
+  line-height: 1;
+  color: var(--ink-500);
+  cursor: pointer;
+  padding: 4px 10px;
+  border-radius: 8px;
+}
+.parent-doc-preview-dialog__close:hover {
+  background: var(--ink-100, #f0ece6);
+  color: var(--ink-900);
+}
+.parent-doc-preview-dialog__body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--cream-100, #f7f3ec);
+  overflow: auto;
+}
+.parent-doc-preview-dialog__body img {
+  max-width: 100%;
+  max-height: 100%;
+  display: block;
+  object-fit: contain;
+}
+.parent-doc-preview-dialog__body iframe {
+  width: 100%;
+  height: 80vh;
+  border: 0;
+  background: white;
+}
+.parent-doc-preview-dialog__footer {
+  display: flex;
+  justify-content: flex-end;
+  padding: 12px 18px;
+  border-top: 1px solid var(--line);
+}
+
 .parent-chip {
   display: inline-flex;
   align-items: center;
