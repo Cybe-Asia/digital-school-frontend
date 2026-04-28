@@ -75,14 +75,25 @@ describe("ApiAdmissionsAuthRepository", () => {
     sessionStorage.clear();
   });
 
-  it("returns a failure result when no cached setup context exists", async () => {
-    const fetchMock = vi.fn();
+  it("falls back to backend setup-context endpoint on cache miss", async () => {
+    // New behaviour: when sessionStorage has nothing for this
+    // admissionId, getSetupContext calls GET /setup-context — the
+    // ds-setup HttpOnly cookie (set by /verifyEmail) auths it. On
+    // 401/404 / network error the result is still { success: false },
+    // matching the previous failure shape so existing UI branches keep
+    // working.
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 401,
+      json: async () => ({ responseCode: 401, responseMessage: "unauthorized", data: null }),
+    });
     vi.stubGlobal("fetch", fetchMock);
 
     const repository = new ApiAdmissionsAuthRepository(TEST_ENDPOINTS);
     const result = await repository.getSetupContext("unknown-token");
 
-    expect(fetchMock).not.toHaveBeenCalled();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock.mock.calls[0][0]).toContain("/setup-context?admissionId=unknown-token");
     expect(result.success).toBe(false);
   });
 
