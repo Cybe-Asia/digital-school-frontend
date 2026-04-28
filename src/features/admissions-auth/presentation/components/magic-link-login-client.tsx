@@ -22,7 +22,12 @@ type MagicLinkLoginClientProps = {
 export function MagicLinkLoginClient({ token, returnTo }: MagicLinkLoginClientProps) {
   const { t } = useI18n();
   const router = useRouter();
-  const [error, setError] = useState<string | null>(null);
+  // Derive the missing-token error at render-time so we don't have
+  // to setState synchronously inside the effect (the React Hooks
+  // lint rule rejects that as a cascading-render risk).
+  const [error, setError] = useState<string | null>(
+    token ? null : t("auth.magic_link.missing_token"),
+  );
   const ranRef = useRef(false);
 
   useEffect(() => {
@@ -30,10 +35,10 @@ export function MagicLinkLoginClient({ token, returnTo }: MagicLinkLoginClientPr
     if (ranRef.current) return;
     ranRef.current = true;
 
-    if (!token) {
-      setError(t("auth.magic_link.missing_token"));
-      return;
-    }
+    // Bail without firing the request if we already flagged a
+    // missing token at render time. No setError here — state is
+    // already correct.
+    if (!token) return;
 
     (async () => {
       try {
