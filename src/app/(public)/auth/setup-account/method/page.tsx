@@ -3,6 +3,7 @@ import { AuthShell } from "@/features/admissions-auth/presentation/components/au
 import { SetupAccountMethodForm } from "@/features/admissions-auth/presentation/components/setup-account-method-form";
 import { getSetupAdmissionIdFromSearchParams } from "@/features/admissions-auth/presentation/lib/setup-account-routes";
 import { buildSetupStepIndicator } from "@/features/admissions-auth/presentation/lib/setup-account-steps";
+import { requireSetupStep } from "@/features/admissions-auth/presentation/lib/wizard-guard";
 import { getServerI18n } from "@/i18n/server";
 
 export const metadata: Metadata = {
@@ -17,6 +18,12 @@ type SetupAccountMethodPageProps = {
 export default async function SetupAccountMethodPage({ searchParams }: SetupAccountMethodPageProps) {
   const admissionId = getSetupAdmissionIdFromSearchParams(await searchParams);
   const { t } = await getServerI18n();
+
+  // Method picker is the page right after email-verify success. The
+  // guard accepts both `email_verified` (just clicked the email)
+  // and `sign_in_set` (came back via a re-share, idempotent — no-op
+  // redirect inside the same step keeps the page rendering).
+  await requireSetupStep(admissionId, ["email_verified", "sign_in_set"]);
 
   return (
     <AuthShell

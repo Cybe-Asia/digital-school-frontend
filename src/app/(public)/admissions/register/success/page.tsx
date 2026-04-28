@@ -17,6 +17,18 @@ export default async function AdmissionsRegisterSuccessPage({
 }: AdmissionsRegisterSuccessPageProps) {
   const params = await searchParams;
   const submittedEmail = getSingleSearchParam(params.email);
+  // qa/flow-fix: the EOI submit handler now resolves one of three
+  // branches and tags the success URL with `?action=`. The success
+  // view uses this to vary the success message — "check your inbox"
+  // vs "we already started, check your inbox" vs "we sent you a
+  // sign-in link". Pre-flow-fix backends omit it; treat undefined
+  // as the legacy verify-email copy.
+  const action =
+    (getSingleSearchParam(params.action) as
+      | "verify_email"
+      | "resume_existing"
+      | "magic_link_sent"
+      | undefined) ?? "verify_email";
 
   return (
     <AuthShell
@@ -24,7 +36,7 @@ export default async function AdmissionsRegisterSuccessPage({
       title="auth.eoi.success_title"
       description="auth.eoi.success_page_shell_description"
     >
-      <EOISuccessView submittedEmail={submittedEmail} />
+      <EOISuccessView submittedEmail={submittedEmail} action={action} />
     </AuthShell>
   );
 }

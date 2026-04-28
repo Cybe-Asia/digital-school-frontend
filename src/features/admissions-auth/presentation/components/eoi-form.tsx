@@ -91,7 +91,13 @@ export function EOIForm() {
       return;
     }
 
+    // Three-way branching on the action discriminator returned by the
+    // backend (qa/flow-fix). Older backends omit the field — treat
+    // undefined as the legacy verify_email branch.
     const params = new URLSearchParams({ email: result.email });
+    if (result.action) {
+      params.set("action", result.action);
+    }
     router.push(`/admissions/register/success?${params.toString()}`);
   });
 

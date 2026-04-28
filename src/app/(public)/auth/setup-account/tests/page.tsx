@@ -4,6 +4,12 @@ import { ParentBookTestClient } from "@/features/admissions-auth/presentation/co
 import { buildSetupStepIndicator } from "@/features/admissions-auth/presentation/lib/setup-account-steps";
 import { getServerI18n } from "@/i18n/server";
 
+// Note: this page is also entered from the parent dashboard with a
+// `studentId`/`schoolId` query (no admissionId). In that mode we
+// don't have a Lead context to guard on. The guard only triggers
+// when admissionId is present — see below.
+import { requireSetupStep } from "@/features/admissions-auth/presentation/lib/wizard-guard";
+
 export const metadata: Metadata = {
   title: "Book test",
   description: "Pick a test slot for your child.",
@@ -24,7 +30,24 @@ export default async function ParentBookTestPage({ searchParams }: PageProps) {
   const sp = await searchParams;
   const studentId = single(sp.studentId);
   const schoolId = single(sp.schoolId);
+  const admissionId = single(sp.admissionId);
   const { t } = await getServerI18n();
+
+  // Wizard-guard mode: admissionId in the URL means the parent came
+  // straight from /payment after fee-paid. They must be at
+  // application_fee_paid (or further) to book.
+  //
+  // Dashboard mode: studentId-only URLs come from the parent
+  // dashboard's "Book test" CTA after they've already authenticated.
+  // Skip the cookie-based guard there — the dashboard already
+  // gated entry.
+  if (admissionId) {
+    await requireSetupStep(admissionId, [
+      "application_fee_paid",
+      "test_booked",
+      "test_completed",
+    ]);
+  }
 
   return (
     <AuthShell

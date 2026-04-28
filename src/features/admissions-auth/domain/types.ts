@@ -78,10 +78,25 @@ export type AuthFailureResult<TFields extends string> = {
   formError?: string;
 };
 
+/** Three-way outcome of submitting an EOI. Matches the backend
+ *  `ProcessLeadResult` enum and is what the form's onSubmit branches
+ *  on to pick the right post-submit message and route. */
+export type EOISubmitAction = "verify_email" | "resume_existing" | "magic_link_sent";
+
 export type EOISubmitSuccessResult = AuthSuccessResult & {
   success: true;
   email: string;
   notificationSent: boolean;
+  /** Which of the three branches the backend resolved. Undefined on
+   *  responses from older backends — caller treats undefined as
+   *  `verify_email` for backwards compatibility. */
+  action?: EOISubmitAction;
+  /** Only present when `action === "resume_existing"`. Carries the
+   *  Lead's current setup_step so the success page can route the
+   *  parent to the right resume target if needed. */
+  currentStep?: SetupStep;
+  /** Only present when `action === "verify_email" | "resume_existing"`. */
+  leadId?: string;
 };
 
 export type SetupAccountSuccessResult = AuthSuccessResult & {
@@ -128,9 +143,32 @@ export type AdmissionData = {
   existingStudents: number | null;
   prospectiveChildrenAges?: number[] | null;
   isVerified: boolean;
+  /** Where this Lead is in the post-EOI setup-account wizard.
+   *  See SetupStep type for the full enum. Optional in the type
+   *  because old backends may not yet emit it; route guards must
+   *  fall back to the email_verified default when absent. */
+  setupStep?: SetupStep;
   createdAt: string;
   updatedAt: string;
 };
+
+/** Canonical state machine for `Lead.setup_step`. Matches the
+ *  `STEP_*` constants in admission-service's `lead_model.rs`. The
+ *  wizard guards on every setup-account route compare the page's
+ *  expected step against this value and redirect mismatches to the
+ *  canonical page for the actual step. See `stepToRoute`. */
+export type SetupStep =
+  | "eoi_submitted"
+  | "email_verified"
+  | "sign_in_set"
+  | "students_added"
+  | "application_fee_paid"
+  | "test_booked"
+  | "test_completed"
+  | "documents_requested"
+  | "documents_complete"
+  | "offer_pending"
+  | "closed";
 
 export type CheckVerificationSuccessResult = {
   success: true;

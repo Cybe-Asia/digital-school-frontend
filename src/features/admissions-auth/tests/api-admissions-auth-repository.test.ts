@@ -295,6 +295,11 @@ describe("ApiAdmissionsAuthRepository", () => {
       success: true,
       email: "arief@example.com",
       notificationSent: false,
+      // Legacy backend (no action discriminator) -> defaults to
+      // verify_email so the form keeps working during the rollout.
+      action: "verify_email",
+      currentStep: undefined,
+      leadId: "lead-456",
       message: "submitted",
     });
   });
@@ -350,6 +355,9 @@ describe("ApiAdmissionsAuthRepository", () => {
       success: true,
       email: "parent@example.com",
       notificationSent: false,
+      action: "verify_email",
+      currentStep: undefined,
+      leadId: "lead-789",
       message: undefined,
     });
   });

@@ -105,7 +105,7 @@ describe("EOIForm", () => {
     expect(routerPush).not.toHaveBeenCalled();
   });
 
-  it("routes to the dedicated success page after submit", async () => {
+  it("routes to the dedicated success page after submit (legacy backend, no action)", async () => {
     const user = userEvent.setup();
     stubFetch(async () =>
       jsonResponse(200, {
@@ -131,8 +131,83 @@ describe("EOIForm", () => {
     await user.type(screen.getByLabelText(/occupation/i), "Entrepreneur");
     await user.click(screen.getByRole("button", { name: /register your child's interest/i }));
 
+    // Legacy backends omit the action discriminator, so the repository
+    // defaults to `verify_email`. The URL therefore includes the
+    // action param.
     await waitFor(() => {
-      expect(routerPush).toHaveBeenCalledWith("/admissions/register/success?email=parent%40example.com");
+      expect(routerPush).toHaveBeenCalledWith(
+        "/admissions/register/success?email=parent%40example.com&action=verify_email",
+      );
+    });
+  });
+
+  it("forwards the magic_link_sent action when the backend resolves a returning parent", async () => {
+    const user = userEvent.setup();
+    stubFetch(async () =>
+      jsonResponse(200, {
+        responseCode: 200,
+        responseMessage: "success",
+        data: {
+          email: "returning@example.com",
+          action: "magic_link_sent",
+          responseMessage: "auth.eoi.magic_link_sent",
+        },
+      }),
+    );
+
+    render(
+      <QueryProvider>
+        <EOIForm />
+      </QueryProvider>,
+    );
+
+    await user.type(screen.getByLabelText(/parent name/i), "Siti Rahmawati");
+    await user.type(screen.getByLabelText(/email address/i), "returning@example.com");
+    await user.type(screen.getByLabelText(/whatsapp number/i), "+62 812 3456 7890");
+    await user.type(screen.getByLabelText(/location \/ suburb/i), "South Jakarta");
+    await user.type(screen.getByLabelText(/occupation/i), "Entrepreneur");
+    await user.click(screen.getByRole("button", { name: /register your child's interest/i }));
+
+    await waitFor(() => {
+      expect(routerPush).toHaveBeenCalledWith(
+        "/admissions/register/success?email=returning%40example.com&action=magic_link_sent",
+      );
+    });
+  });
+
+  it("forwards the resume_existing action when the backend finds an existing Lead", async () => {
+    const user = userEvent.setup();
+    stubFetch(async () =>
+      jsonResponse(200, {
+        responseCode: 200,
+        responseMessage: "success",
+        data: {
+          email: "halffinished@example.com",
+          action: "resume_existing",
+          leadId: "LEAD-half-1",
+          currentStep: "students_added",
+          responseMessage: "auth.eoi.resume_existing",
+        },
+      }),
+    );
+
+    render(
+      <QueryProvider>
+        <EOIForm />
+      </QueryProvider>,
+    );
+
+    await user.type(screen.getByLabelText(/parent name/i), "Siti Rahmawati");
+    await user.type(screen.getByLabelText(/email address/i), "halffinished@example.com");
+    await user.type(screen.getByLabelText(/whatsapp number/i), "+62 812 3456 7890");
+    await user.type(screen.getByLabelText(/location \/ suburb/i), "South Jakarta");
+    await user.type(screen.getByLabelText(/occupation/i), "Entrepreneur");
+    await user.click(screen.getByRole("button", { name: /register your child's interest/i }));
+
+    await waitFor(() => {
+      expect(routerPush).toHaveBeenCalledWith(
+        "/admissions/register/success?email=halffinished%40example.com&action=resume_existing",
+      );
     });
   });
 });

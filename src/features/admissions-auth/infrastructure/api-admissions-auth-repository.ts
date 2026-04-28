@@ -113,8 +113,19 @@ type SubmitEOIApiRequest = {
 };
 
 type SubmitEOIApiData = {
-  lead_id: string;
+  /** Legacy field — present only when action ∈ {verify_email, resume_existing}. */
+  lead_id?: string;
+  /** Newer camelCase alias — same value as `lead_id`. Backend writes both
+   *  during the qa/flow-fix transition; we read whichever is populated. */
+  leadId?: string;
   email: string;
+  /** New action discriminator. Undefined on pre-flow-fix backends. */
+  action?: "verify_email" | "resume_existing" | "magic_link_sent";
+  /** Only set when action=resume_existing. */
+  currentStep?: import("@/features/admissions-auth/domain/types").SetupStep;
+  /** Translation key returned by the backend so the UI message tone
+   *  matches the resolved branch. */
+  responseMessage?: string;
 };
 
 type RequestOptions = {
@@ -193,12 +204,26 @@ export class ApiAdmissionsAuthRepository implements AdmissionsAuthRepository {
     return this.requestEnvelope<SubmitEOIApiData, EOISubmitResult>("/api/v1/submitAdmission", {
       method: "POST",
       body: mapSubmitEOIRequest(input),
-      mapSuccess: (payload) => ({
-        success: true,
-        email: payload.data.email,
-        notificationSent: false,
-        message: payload.responseMessage === "success" ? undefined : payload.responseMessage,
-      }),
+      mapSuccess: (payload) => {
+        const data = payload.data;
+        // Pre-flow-fix backends just return `{lead_id, email}` with no
+        // action discriminator — treat that as the legacy
+        // `verify_email` branch so the existing UX keeps working
+        // during the rollout.
+        const action = data.action ?? "verify_email";
+        const leadId = data.leadId ?? data.lead_id;
+        return {
+          success: true,
+          email: data.email,
+          notificationSent: false,
+          action,
+          currentStep: data.currentStep,
+          leadId,
+          message:
+            data.responseMessage ??
+            (payload.responseMessage === "success" ? undefined : payload.responseMessage),
+        };
+      },
     });
   }
 

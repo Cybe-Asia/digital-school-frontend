@@ -5,11 +5,16 @@ import { useI18n } from "@/i18n";
 import { useFlag } from "@/components/feature-flags-provider";
 import { FLAGS } from "@/shared/feature-flags/flags";
 
+type EOISuccessAction = "verify_email" | "resume_existing" | "magic_link_sent";
+
 type EOISuccessViewProps = {
   submittedEmail?: string | null;
+  /** qa/flow-fix branch indicator. Undefined-treated-as-verify_email
+   *  for backwards compatibility with pre-flow-fix navigation. */
+  action?: EOISuccessAction;
 };
 
-export function EOISuccessView({ submittedEmail }: EOISuccessViewProps) {
+export function EOISuccessView({ submittedEmail, action = "verify_email" }: EOISuccessViewProps) {
   const { t } = useI18n();
 
   // Feature flag: when enabled in Unleash, hide both "back to form" and
@@ -21,6 +26,24 @@ export function EOISuccessView({ submittedEmail }: EOISuccessViewProps) {
     FLAGS.EoiSuccessHideActions.name,
     FLAGS.EoiSuccessHideActions.default,
   );
+
+  // Per-branch copy. Translation keys with sensible English fallbacks
+  // so a missing dictionary entry still renders something meaningful
+  // — `useI18n().t` returns the key when the key isn't in the
+  // dictionary, but the keys themselves are descriptive.
+  const headline =
+    action === "magic_link_sent"
+      ? t("auth.eoi.magic_link_title")
+      : action === "resume_existing"
+        ? t("auth.eoi.resume_title")
+        : t("auth.eoi.success_page_title");
+
+  const description =
+    action === "magic_link_sent"
+      ? t("auth.eoi.magic_link_description")
+      : action === "resume_existing"
+        ? t("auth.eoi.resume_description")
+        : t("auth.eoi.success_page_description");
 
   return (
     <div className="rounded-[28px] border border-[var(--ds-border)] bg-[var(--ds-surface)] px-5 py-6 sm:px-6">
@@ -45,9 +68,9 @@ export function EOISuccessView({ submittedEmail }: EOISuccessViewProps) {
       </div>
 
       <div className="mt-5 text-center">
-        <h3 className="text-xl font-semibold text-[var(--ds-text-primary)]">{t("auth.eoi.success_page_title")}</h3>
+        <h3 className="text-xl font-semibold text-[var(--ds-text-primary)]">{headline}</h3>
         <p className="mt-2 text-sm leading-relaxed text-[var(--ds-text-secondary)]">
-          {t("auth.eoi.success_page_description")}
+          {description}
         </p>
         <p className="mt-3 text-sm leading-relaxed text-[var(--ds-text-primary)]">
           {submittedEmail
