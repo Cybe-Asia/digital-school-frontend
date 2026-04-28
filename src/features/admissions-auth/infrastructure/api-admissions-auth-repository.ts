@@ -30,7 +30,11 @@ import type {
   AdmissionsApiResponse,
 } from "@/features/admissions-auth/infrastructure/admissions-api-contract";
 import type { ServiceEndpoints } from "@/features/admissions-auth/infrastructure/service-endpoints";
-import { readCachedSetupContext } from "@/features/admissions-auth/infrastructure/setup-context-cache";
+import {
+  cacheSetupContext,
+  mapAdmissionToSetupContext,
+  readCachedSetupContext,
+} from "@/features/admissions-auth/infrastructure/setup-context-cache";
 
 type BaseFailure = {
   success: false;
@@ -199,18 +203,58 @@ export class ApiAdmissionsAuthRepository implements AdmissionsAuthRepository {
   }
 
   async getSetupContext(admissionId: string): Promise<SetupContextResult> {
-    // Read from sessionStorage cache populated by verifyEmail on the first page.
-    // The backend does not have a dedicated setup-context endpoint.
+    // Fast path: sessionStorage cache populated by the email-verify
+    // page. Hits in the same-tab flow.
     const cached = readCachedSetupContext(admissionId);
 
     if (cached) {
       return { success: true, context: cached };
     }
 
-    return {
-      success: false,
-      formError: "api.error.unable_to_process",
-    };
+    // Fallback: cookie-authed lookup against the backend. The
+    // `ds-setup` HttpOnly cookie set by /verifyEmail is sent
+    // automatically on this same-origin request. Lets a parent who
+    // closed the tab — or pasted their setup URL into a fresh device
+    // that has the cookie via the verification email open in the
+    // same browser — reach the Pay button without going back to the
+    // email.
+    //
+    // Anything other than a 200 envelope falls through to the
+    // existing failure shape; the UI already handles that branch by
+    // disabling the Pay button and prompting for re-verification.
+    try {
+      const url = `${this.endpoints.admission}/setup-context?admissionId=${encodeURIComponent(admissionId)}`;
+      const response = await fetch(url, {
+        method: "GET",
+        // Same-origin by default already, but be explicit so a future
+        // refactor that moves admission off-origin doesn't silently
+        // strip the cookie.
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+      });
+
+      if (!response.ok) {
+        return { success: false, formError: "api.error.unable_to_process" };
+      }
+
+      const parsed = (await response.json()) as Record<string, unknown>;
+
+      if (
+        !isAdmissionsApiResponse<AdmissionData>(parsed) ||
+        !isSuccessfulResponseCode(parsed.responseCode)
+      ) {
+        return { success: false, formError: "api.error.unable_to_process" };
+      }
+
+      const context = mapAdmissionToSetupContext(parsed.data);
+      // Repopulate the sessionStorage cache so subsequent calls in
+      // this tab hit the fast path. Best-effort; cacheSetupContext
+      // already swallows storage errors.
+      cacheSetupContext(admissionId, context);
+      return { success: true, context };
+    } catch {
+      return { success: false, formError: "api.error.network" };
+    }
   }
 
   async sendSetupOtp(input: SendSetupOtpInput): Promise<SendSetupOtpResult> {
